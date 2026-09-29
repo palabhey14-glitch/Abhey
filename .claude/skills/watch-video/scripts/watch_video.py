@@ -1,16 +1,24 @@
 #!/usr/bin/env python3
-"""Send a video file to the Gemini API and get back an answer about its contents.
+"""Send a video (local file or YouTube URL) to the Gemini API and get back
+an answer about its contents.
 
 Usage:
-    python3 watch_video.py <video_path> "<question or instruction>"
+    python3 watch_video.py <video_path_or_youtube_url> ["<question>"]
+        [--clip START-END] [--fps N]
+
+    START-END is a clip range in M:SS or H:MM:SS format, e.g. 0:00-0:05.
+    --fps sets the frames-per-second Gemini samples from the clip (default
+    is Gemini's own default when omitted).
 
 Requires the GEMINI_API_KEY environment variable. Get a free key at
 https://aistudio.google.com/apikey and set it in your shell or Claude Code
 settings — never paste it directly into chat.
 """
 
+import argparse
 import mimetypes
 import os
+import re
 import sys
 import time
 import urllib.request
@@ -18,6 +26,10 @@ import json
 
 API_BASE = "https://generativelanguage.googleapis.com"
 MODEL = "gemini-2.5-flash"
+
+YOUTUBE_RE = re.compile(
+    r"^https?://(www\.)?(youtube\.com/watch\?v=|youtu\.be/)", re.IGNORECASE
+)
 
 
 def die(msg: str) -> None:
@@ -36,7 +48,32 @@ def api_key() -> str:
     return key
 
 
-def upload_file(path: str, key: str) -> str:
+def parse_timestamp(value: str) -> int:
+    parts = value.strip().split(":")
+    if not 1 <= len(parts) <= 3:
+        die(f"Invalid timestamp: {value!r} (expected M:SS or H:MM:SS)")
+    seconds = 0
+    for part in parts:
+        seconds = seconds * 60 + int(part)
+    return seconds
+
+
+def parse_clip(value: str):
+    if "-" not in value:
+        die(f"Invalid --clip range: {value!r} (expected START-END, e.g. 0:00-0:05)")
+    start_str, end_str = value.split("-", 1)
+    start = parse_timestamp(start_str)
+    end = parse_timestamp(end_str)
+    if end <= start:
+        die(f"--clip end must be after start (got {value!r})")
+    return start, end
+
+
+def is_youtube_url(value: str) -> bool:
+    return bool(YOUTUBE_RE.match(value))
+
+
+def upload_file(path: str, key: str):
     size = os.path.getsize(path)
     mime_type = mimetypes.guess_type(path)[0] or "application/octet-stream"
 
@@ -90,17 +127,31 @@ def upload_file(path: str, key: str) -> str:
     return file_uri, mime_type
 
 
-def ask_about_video(file_uri: str, mime_type: str, question: str, key: str) -> str:
-    body = {
-        "contents": [
-            {
-                "parts": [
-                    {"file_data": {"file_uri": file_uri, "mime_type": mime_type}},
-                    {"text": question},
-                ]
-            }
-        ]
-    }
+def ask_about_video(
+    file_uri: str,
+    mime_type: str,
+    question: str,
+    key: str,
+    clip=None,
+    fps=None,
+):
+    file_data = {"file_uri": file_uri}
+    if mime_type:
+        file_data["mime_type"] = mime_type
+
+    part = {"file_data": file_data}
+
+    video_metadata = {}
+    if clip is not None:
+        start, end = clip
+        video_metadata["start_offset"] = f"{start}s"
+        video_metadata["end_offset"] = f"{end}s"
+    if fps is not None:
+        video_metadata["fps"] = fps
+    if video_metadata:
+        part["video_metadata"] = video_metadata
+
+    body = {"contents": [{"parts": [part, {"text": question}]}]}
     req = urllib.request.Request(
         f"{API_BASE}/v1beta/models/{MODEL}:generateContent?key={key}",
         method="POST",
@@ -117,24 +168,45 @@ def ask_about_video(file_uri: str, mime_type: str, question: str, key: str) -> s
 
 
 def main() -> None:
-    if len(sys.argv) < 2:
-        die("usage: watch_video.py <video_path> [\"question\"]")
+    parser = argparse.ArgumentParser(add_help=True)
+    parser.add_argument("video", help="Local video path or YouTube URL")
+    parser.add_argument("question", nargs="?", default=None)
+    parser.add_argument(
+        "--clip",
+        metavar="START-END",
+        help="Clip range as M:SS-M:SS or H:MM:SS-H:MM:SS, e.g. 0:00-0:05",
+    )
+    parser.add_argument(
+        "--fps",
+        type=float,
+        default=None,
+        help="Frames per second to sample from the clip",
+    )
+    args = parser.parse_args()
 
-    video_path = sys.argv[1]
-    question = sys.argv[2] if len(sys.argv) > 2 else (
+    question = args.question or (
         "Describe what happens in this video in detail, including any spoken "
         "dialogue, on-screen text, and notable visual events with approximate "
         "timestamps."
     )
 
-    if not os.path.isfile(video_path):
-        die(f"No such file: {video_path}")
+    clip = parse_clip(args.clip) if args.clip else None
 
     key = api_key()
-    print(f"Uploading {video_path} to Gemini...", file=sys.stderr)
-    file_uri, mime_type = upload_file(video_path, key)
+
+    if is_youtube_url(args.video):
+        print(f"Using YouTube URL directly: {args.video}", file=sys.stderr)
+        file_uri, mime_type = args.video, None
+    else:
+        if not os.path.isfile(args.video):
+            die(f"No such file: {args.video}")
+        print(f"Uploading {args.video} to Gemini...", file=sys.stderr)
+        file_uri, mime_type = upload_file(args.video, key)
+
     print("Analyzing video...", file=sys.stderr)
-    answer = ask_about_video(file_uri, mime_type, question, key)
+    answer = ask_about_video(
+        file_uri, mime_type, question, key, clip=clip, fps=args.fps
+    )
     print(answer)
 
 
