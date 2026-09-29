@@ -1,5 +1,40 @@
 # Brand Color Palettes
 
+## Chosen direction: Abhey Pal, Mortgage Navigators
+
+Brief: mortgage broking only (refinancers and first home buyers), Australia,
+English, Instagram (carousels plus one paid post). Bright, clean, blue and
+white, nothing too sharp. Visual preview: `brand/palette-preview.html`.
+
+### A. Clear Sky (recommended)
+
+| Role | Color | Hex |
+|---|---|---|
+| Primary | Brand blue | `#1A5FD0` |
+| Text | Navy | `#0B2545` |
+| Background | Sky | `#E8F1FD` |
+| Background | White | `#FFFFFF` |
+| Accent (CTAs only) | Sand | `#F4C77D` |
+
+Navy on white 15.39, navy on sky 13.51, navy on sand 9.75, white on brand
+blue 5.85, brand blue on sky 5.13 all pass AA. White on sand (1.58) never.
+
+### B. Coastal
+
+Ocean `#2A6F97`, navy `#12304A`, mist `#E7F3F5`, white `#FFFFFF`, coral
+`#FF8A6B`. All navy pairings and white on ocean (5.50) pass; white on coral
+(2.31) never.
+
+### C. Harbour
+
+Navy `#13315C`, cornflower `#4F7FE0`, ice `#F1F5FF`, white `#FFFFFF`, butter
+`#FFD978`. Navy pairings pass; cornflower (3.36–3.86) is for shapes and
+large headlines only.
+
+---
+
+## Earlier shortlist
+
 Working shortlist for the brand. Pick **one primary, one secondary, one accent**
 and lock the hex codes into Canva (Brand Kit → Colors).
 
