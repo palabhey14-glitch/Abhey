@@ -25,7 +25,9 @@ import urllib.request
 import json
 
 API_BASE = "https://generativelanguage.googleapis.com"
-MODEL = "gemini-2.5-flash"
+# Tried in order; Gemini model availability shifts over time (models get
+# deprecated or hit temporary capacity limits), so fall back down the list.
+MODELS = ["gemini-3.8-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"]
 
 YOUTUBE_RE = re.compile(
     r"^https?://(www\.)?(youtube\.com/watch\?v=|youtu\.be/)", re.IGNORECASE
@@ -152,19 +154,31 @@ def ask_about_video(
         part["video_metadata"] = video_metadata
 
     body = {"contents": [{"parts": [part, {"text": question}]}]}
-    req = urllib.request.Request(
-        f"{API_BASE}/v1beta/models/{MODEL}:generateContent?key={key}",
-        method="POST",
-        headers={"Content-Type": "application/json"},
-        data=json.dumps(body).encode(),
-    )
-    with urllib.request.urlopen(req) as resp:
-        result = json.load(resp)
 
-    try:
-        return result["candidates"][0]["content"]["parts"][0]["text"]
-    except (KeyError, IndexError):
-        die(f"Unexpected response from Gemini: {json.dumps(result)[:500]}")
+    last_error = None
+    for model in MODELS:
+        req = urllib.request.Request(
+            f"{API_BASE}/v1beta/models/{model}:generateContent?key={key}",
+            method="POST",
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(body).encode(),
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                result = json.load(resp)
+        except urllib.error.HTTPError as e:
+            # 404 (model retired) or 503 (overloaded): try the next model.
+            if e.code in (404, 503):
+                last_error = e.read().decode()[:500]
+                continue
+            raise
+
+        try:
+            return result["candidates"][0]["content"]["parts"][0]["text"]
+        except (KeyError, IndexError):
+            die(f"Unexpected response from Gemini: {json.dumps(result)[:500]}")
+
+    die(f"All Gemini models unavailable. Last error: {last_error}")
 
 
 def main() -> None:
