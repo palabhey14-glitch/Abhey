@@ -7,6 +7,6 @@
 // in this repo; that one bypasses every rule.
 window.REWIRED_CONFIG = {
   supabaseUrl: 'https://njdqwhawdiloghoxajag.supabase.co',
-  supabaseAnonKey: 'YOUR-ANON-OR-PUBLISHABLE-KEY',
+  supabaseAnonKey: 'sb_publishable_XKeg_EnCYosKhF0tIORJ1g_9cAhTtTY',
   coachName: 'Abhey',
 };
