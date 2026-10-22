@@ -20,7 +20,8 @@
     .nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; }
     .nav .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; color: var(--navy); text-decoration: none; }
     .nav .brand img { width: 36px; height: 36px; border-radius: 9px; }
-    .hero { background: var(--brand-blue); color: var(--white); }
+    /* Matches the launch video's background (#2a40f1) so the video blends in. */
+    .hero { background: #2a40f1; color: var(--white); }
     .hero .wrap { display: grid; gap: 24px; padding-top: 40px; padding-bottom: 48px; align-items: center; }
     @media (min-width: 820px) { .hero .wrap { grid-template-columns: 1.2fr 0.8fr; padding-top: 64px; padding-bottom: 72px; } }
     .hero h1 { font-size: clamp(34px, 7vw, 56px); letter-spacing: -0.02em; }
