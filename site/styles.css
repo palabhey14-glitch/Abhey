@@ -1,0 +1,188 @@
+/* Rewired Coaching: shared styles for the landing page and the client app.
+   Colours follow brand/brand-guide.md (Clear Sky rules), with brand blue
+   taken from the Rewired "R." logo. White on brand blue is 6.4:1. */
+:root {
+  --brand-blue: #2444f9;
+  --navy: #0b2545;
+  --sky: #e8f1fd;
+  --white: #ffffff;
+  --sand: #f4c77d;
+  --line: #c9d8f0;
+  --good: #146c43;
+  --warn: #8a4b00;
+  --bad: #b42318;
+  --radius: 14px;
+  --shadow: 0 1px 2px rgba(11, 37, 69, 0.06), 0 4px 16px rgba(11, 37, 69, 0.06);
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--navy);
+  background: var(--white);
+}
+
+img,
+video {
+  max-width: 100%;
+  display: block;
+}
+
+a {
+  color: var(--brand-blue);
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.15;
+  margin: 0 0 0.5em;
+}
+
+.wrap {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 12px 20px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  background: var(--brand-blue);
+  color: var(--white);
+}
+
+.btn:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--sand);
+  outline-offset: 2px;
+}
+
+.btn-cta {
+  background: var(--sand);
+  color: var(--navy);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--brand-blue);
+  border: 2px solid var(--brand-blue);
+}
+
+.btn-small {
+  min-height: 36px;
+  padding: 6px 14px;
+  font-size: 14px;
+}
+
+.btn[disabled] {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.card {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.kicker {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brand-blue);
+  margin: 0 0 6px;
+}
+
+label {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 16px; /* stops iOS zooming into fields */
+  color: var(--navy);
+  background: var(--white);
+  border: 1px solid #8fa6c8;
+  border-radius: 10px;
+}
+
+textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.field {
+  margin-bottom: 14px;
+}
+
+.hint {
+  font-size: 13px;
+  margin: 4px 0 0;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 380px) {
+  .grid-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

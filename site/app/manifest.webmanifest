@@ -1,0 +1,17 @@
+{
+  "name": "Rewired Coaching",
+  "short_name": "Rewired",
+  "description": "Daily check-ins, weekly progress and photos for Rewired Coaching clients.",
+  "id": "/app/",
+  "start_url": "/app/",
+  "scope": "/app/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#2444f9",
+  "theme_color": "#2444f9",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
