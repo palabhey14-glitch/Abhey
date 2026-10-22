@@ -36,7 +36,7 @@ decision, a preference), add it here before the session ends.
 ### Mortgage Navigators
 - **Name:** Abhey Pal, Mortgage Navigators
 - **One-line pitch:** Mortgage broking for first home buyers and refinancers.
-- **Stage:** TODO (idea / validating / building / launched)
+- **Stage:** Parked as of 2026-10-22. Coaching gets full focus first.
 - **Target customer:** First home buyers and refinancers in Australia.
 - **Channels:** Instagram (carousels plus one paid post).
 - **Brand direction:** Bright, clean, blue and white, nothing too sharp.
@@ -53,7 +53,8 @@ decision, a preference), add it here before the session ends.
 - **One-line pitch:** "Rewired 12 Week Executive Recomp": private coaching for
   busy South Asian men who want to lose belly fat, build visible muscle and
   keep eating the family food they enjoy.
-- **Stage:** Pre-launch ("launching soon" videos made). Launch date: TODO.
+- **Stage:** Pre-launch, top priority. Launch by about 2026-11-05 ("within 2
+  weeks" as of 2026-10-22). No paying clients yet. "Launching soon" videos made.
 - **Target customer:** Men working 38+ hours a week who keep stopping and
   starting at the gym, often with a wedding, holiday or event deadline. Not
   for bargain hunters, people unwilling to track food, or contest prep.
@@ -68,9 +69,9 @@ decision, a preference), add it here before the session ends.
   week completed), coaching continues free in 4-week blocks for up to 12 weeks.
 - **Assets (project files, not in this repo):** offer PDF, client template and
   carb cycle calculator spreadsheets, launch videos. Payments via Stripe.
-- **Key assumptions still untested:** TODO (will the target buyer pay
-  AUD $2,249? How many paying clients so far?)
-- **Next action:** TODO
+- **Key assumptions still untested:** Will the target buyer pay AUD $2,249
+  with no testimonials yet? Where do the first clients come from? TODO.
+- **Next action:** Launch and sign the first paying client. Plan: TODO.
 - **Links:** TODO
 
 ### Template
@@ -90,6 +91,8 @@ decision, a preference), add it here before the session ends.
   both. Decision: TODO.
 
 ## Decisions made (don't re-litigate without new evidence)
+- 2026-10-22: Rewired Coaching gets full capacity first. Mortgage Navigators
+  is parked until further notice.
 <!-- Date | Decision | Reason -->
 - Mortgage Navigators content covers mortgage broking only, in a blue and
   white look.
