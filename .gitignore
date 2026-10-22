@@ -1,0 +1,7 @@
+# Secrets: keep API keys (e.g. GEMINI_API_KEY) out of git
+.env
+.env.*
+*.key
+
+__pycache__/
+.DS_Store

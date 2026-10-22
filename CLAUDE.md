@@ -20,6 +20,8 @@ decision, a preference), add it here before the session ends.
   strongest counter-argument, and separate facts from assumptions.
 - Use the `honest-advisor` skill (`.claude/skills/honest-advisor/`) for
   brainstorming, idea validation, market/trend analysis, decisions and conflicts.
+- Use the `youtube-research` skill for any YouTube video/channel link (needs the
+  `GEMINI_API_KEY` env var; never commit or paste the key).
 - Lead with substance. No opening validation or filler.
 
 ## Projects
