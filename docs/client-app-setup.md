@@ -112,8 +112,8 @@ testing. Before clients rely on it:
 
 - [ ] **Booking link:** create a free Calendly (or Cal.com) event and replace
       `BOOKING_LINK` in [`site/thanks.html`](../site/thanks.html).
-- [ ] **Privacy policy:** fill in `[DATE]`, `[YOUR ABN]`, `[YOUR EMAIL]` and
-      `[X]` years in [`site/privacy.html`](../site/privacy.html), then have it checked (see below).
+- [ ] **Privacy policy:** details are filled in [`site/privacy.html`](../site/privacy.html)
+      (data kept 7 years after coaching ends). Have it checked (see below).
 - [ ] **Test as a client:** add a second email of yours (Gmail lets you use
       `you+test@gmail.com`) as a user. On your phone, open `/app/`, sign in with
       the code, agree to the privacy notice, fill in the profile, log a day, send
