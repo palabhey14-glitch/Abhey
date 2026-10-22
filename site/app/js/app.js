@@ -460,7 +460,12 @@
       const value = form.email.value.trim().toLowerCase();
       if (!/^\S+@\S+\.\S+$/.test(value)) return toast('Enter a valid email address.', true);
       withBusy(form.querySelector('button'), async () => {
-        must(await sb.auth.signInWithOtp({ email: value, options: { shouldCreateUser: false } }));
+        must(
+          await sb.auth.signInWithOtp({
+            email: value,
+            options: { shouldCreateUser: false, emailRedirectTo: location.origin + '/app/' },
+          })
+        );
         renderCode(value);
       });
     });
@@ -1365,6 +1370,17 @@
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 
+  // A sign-in link from the email lands here with the session in the hash
+  // (#access_token=...&refresh_token=...). Supabase's own URL detection is off
+  // because it would clash with the hash routes, so pick it up by hand.
+  const linkParams = new URLSearchParams(location.hash.replace(/^#/, ''));
+  const linkError = linkParams.get('error_description');
+  const linkSession =
+    linkParams.get('access_token') && linkParams.get('refresh_token')
+      ? { access_token: linkParams.get('access_token'), refresh_token: linkParams.get('refresh_token') }
+      : null;
+  if (linkSession || linkError) history.replaceState(null, '', location.pathname);
+
   if (sb) {
     sb.auth.onAuthStateChange((event, session) => {
       const changedUser = (session && session.user.id) !== (state.session && state.session.user.id);
@@ -1380,6 +1396,13 @@
         setTimeout(route, 0);
       }
     });
+    if (linkSession) {
+      sb.auth.setSession(linkSession).then(({ error }) => {
+        if (error) toast('That sign-in link has expired. Ask for a new code.', true);
+      });
+    } else if (linkError) {
+      setTimeout(() => toast('That sign-in link has expired. Ask for a new code.', true), 300);
+    }
   } else {
     route();
   }
