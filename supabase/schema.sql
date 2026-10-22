@@ -3,6 +3,8 @@
 -- Mirrors the "Rewired Coaching Client Template" workbook:
 --   Start Here      -> profiles (client fills) + targets (coach sets)
 --   Weekly Tracker  -> daily_logs (client) + macro_targets (coach, per week)
+--   Training        -> training_plan (coach sets an eight-day cycle)
+--   Supplements     -> general guide in the app (no per-client table)
 --   Check-In        -> weekly_checkins (client, coach adds feedback)
 --   Measurements    -> measurements (every 2 weeks)
 --   Progress photos -> progress_photos + private storage bucket
@@ -73,6 +75,26 @@ create table public.macro_targets (
   updated_at   timestamptz not null default now(),
   primary key (client_id, week_number)
 );
+
+-- Coach-assigned training sessions. A program is an eight-day repeating
+-- cycle; exercises hold the ordered sets, reps, effort, rest and notes.
+create table public.training_plan (
+  client_id          uuid not null references public.profiles (id) on delete cascade,
+  program_start_date date not null,
+  cycle_day          smallint not null check (cycle_day between 1 and 8),
+  program_name       text not null check (length(trim(program_name)) > 0),
+  session_name       text not null check (length(trim(session_name)) > 0),
+  is_rest_day        boolean not null default false,
+  exercises          jsonb not null default '[]'::jsonb check (jsonb_typeof(exercises) = 'array'),
+  session_note       text,
+  updated_at         timestamptz not null default now(),
+  primary key (client_id, program_start_date, cycle_day),
+  constraint training_plan_rest_exercises_check check
+    ((is_rest_day and jsonb_array_length(exercises) = 0)
+      or (not is_rest_day and jsonb_array_length(exercises) > 0))
+);
+create index training_plan_client_start_idx
+  on public.training_plan (client_id, program_start_date desc, cycle_day);
 
 -- Weekly Tracker daily rows: activity and actual intake.
 create table public.daily_logs (
@@ -200,6 +222,8 @@ create trigger touch_weekly_checkins before update on public.weekly_checkins
   for each row execute function public.touch_updated_at();
 create trigger touch_measurements before update on public.measurements
   for each row execute function public.touch_updated_at();
+create trigger touch_training_plan before update on public.training_plan
+  for each row execute function public.touch_updated_at();
 
 -- Clients can't write coach feedback; the coach can only write coach feedback
 -- on a client's check-in (never change the client's own answers).
@@ -242,7 +266,8 @@ create trigger guard_weekly_checkins before insert or update on public.weekly_ch
 
 -- Nobody signed out can touch these tables.
 revoke all on public.profiles, public.targets, public.macro_targets, public.daily_logs,
-  public.weekly_checkins, public.measurements, public.progress_photos from anon;
+  public.weekly_checkins, public.measurements, public.progress_photos,
+  public.training_plan from anon;
 
 -- Profiles are created by the trigger, never by the app, and the role column
 -- can only be changed from the SQL editor. Clients edit their own details.
@@ -265,6 +290,7 @@ alter table public.daily_logs      enable row level security;
 alter table public.weekly_checkins enable row level security;
 alter table public.measurements    enable row level security;
 alter table public.progress_photos enable row level security;
+alter table public.training_plan   enable row level security;
 
 -- profiles
 create policy "read own profile or coach reads all" on public.profiles
@@ -293,6 +319,18 @@ create policy "coach updates macros" on public.macro_targets
   for update to authenticated
   using ((select public.is_coach())) with check ((select public.is_coach()));
 create policy "coach deletes macros" on public.macro_targets
+  for delete to authenticated using ((select public.is_coach()));
+
+-- training_plan: coach writes, client reads their own program
+create policy "read own training plan or coach reads all" on public.training_plan
+  for select to authenticated
+  using (client_id = (select auth.uid()) or (select public.is_coach()));
+create policy "coach adds training plan" on public.training_plan
+  for insert to authenticated with check ((select public.is_coach()));
+create policy "coach updates training plan" on public.training_plan
+  for update to authenticated
+  using ((select public.is_coach())) with check ((select public.is_coach()));
+create policy "coach deletes training plan" on public.training_plan
   for delete to authenticated using ((select public.is_coach()));
 
 -- daily_logs: client owns, coach reads
