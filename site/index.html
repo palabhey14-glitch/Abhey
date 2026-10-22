@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rewired Coaching</title>
+  <meta name="description" content="The Rewired 12 Week Executive Recomp: private coaching for busy South Asian men who want to lose belly fat, build visible muscle and keep eating the family food they enjoy.">
+  <meta name="theme-color" content="#2444f9">
+  <meta property="og:title" content="Rewired 12 Week Executive Recomp">
+  <meta property="og:description" content="Lose the belly, build visible muscle, keep the family food. Private coaching for busy South Asian men.">
+  <meta property="og:image" content="/app/icons/icon-512.png">
+  <link rel="icon" href="/app/icons/favicon-32.png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/app/icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; }
+    .nav .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; color: var(--navy); text-decoration: none; }
+    .nav .brand img { width: 36px; height: 36px; border-radius: 9px; }
+    .hero { background: var(--brand-blue); color: var(--white); }
+    .hero .wrap { display: grid; gap: 24px; padding-top: 40px; padding-bottom: 48px; align-items: center; }
+    @media (min-width: 820px) { .hero .wrap { grid-template-columns: 1.2fr 0.8fr; padding-top: 64px; padding-bottom: 72px; } }
+    .hero h1 { font-size: clamp(34px, 7vw, 56px); letter-spacing: -0.02em; }
+    .hero p { font-size: 18px; max-width: 34em; }
+    .hero .kicker { color: var(--white); }
+    .hero video { width: 100%; max-width: 340px; border-radius: 20px; margin: 0 auto; background: var(--navy); }
+    .cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+    .hero .btn-ghost { color: var(--white); border-color: var(--white); }
+    section.block { padding: 56px 0; }
+    section.block.alt { background: var(--sky); }
+    section.block h2 { font-size: clamp(26px, 5vw, 36px); }
+    .cards { display: grid; gap: 14px; margin-top: 20px; }
+    @media (min-width: 720px) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (min-width: 980px) { .cards.three { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    .cards h3 { font-size: 19px; }
+    .cards p { margin: 0; }
+    .ticks { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+    .ticks li { padding-left: 30px; position: relative; }
+    .ticks li::before { content: '✓'; position: absolute; left: 0; top: 0; width: 22px; height: 22px; border-radius: 50%; background: var(--brand-blue); color: var(--white); font-size: 13px; font-weight: 800; display: grid; place-items: center; }
+    .crosses li::before { content: '×'; background: var(--navy); font-size: 16px; }
+    .steps { counter-reset: step; list-style: none; padding: 0; display: grid; gap: 14px; }
+    .steps li { counter-increment: step; display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: start; }
+    .steps li::before { content: counter(step); width: 44px; height: 44px; border-radius: 50%; background: var(--brand-blue); color: var(--white); font-weight: 800; font-size: 18px; display: grid; place-items: center; }
+    .price { font-size: clamp(40px, 8vw, 56px); font-weight: 800; letter-spacing: -0.02em; margin: 0; }
+    details { border-bottom: 1px solid var(--line); padding: 14px 0; }
+    summary { font-weight: 700; cursor: pointer; }
+    .apply { max-width: 640px; }
+    footer { background: var(--navy); color: var(--white); padding: 32px 0; font-size: 14px; }
+    footer a { color: var(--white); }
+    .hp { position: absolute; left: -9999px; }
+  </style>
+</head>
+<body>
+  <header class="wrap nav">
+    <a class="brand" href="/"><img src="/app/icons/icon-192.png" alt="">Rewired Coaching</a>
+    <a class="btn btn-ghost btn-small" href="/app/">Client login</a>
+  </header>
+
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <p class="kicker">Rewired 12 Week Executive Recomp</p>
+        <h1>Lose the belly. Build visible muscle. Keep the family food.</h1>
+        <p>Private coaching for busy South Asian men who work long hours and keep stopping and starting at the gym. A plan built around your job, your family and the food you grew up on.</p>
+        <div class="cta-row">
+          <a class="btn btn-cta" href="#apply">Apply for a spot</a>
+          <a class="btn btn-ghost" href="#how">How it works</a>
+        </div>
+      </div>
+      <video src="/assets/launch.mp4" autoplay muted loop playsinline preload="metadata" aria-label="Rewired launch video"></video>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <p class="kicker">Who it's for</p>
+      <h2>Built for men with more meetings than free time</h2>
+      <div class="cards">
+        <div class="card">
+          <h3>This is for you if</h3>
+          <ul class="ticks">
+            <li>You work 38+ hours a week and your training keeps falling over.</li>
+            <li>You want to lose belly fat and look like you lift, not just weigh less.</li>
+            <li>You don't want to give up roti, rice and family dinners to get there.</li>
+            <li>You have a wedding, holiday or event coming and want a real deadline.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>It's not for you if</h3>
+          <ul class="ticks crosses">
+            <li>You're looking for the cheapest plan you can find.</li>
+            <li>You're not willing to track your food.</li>
+            <li>You're preparing for a bodybuilding contest.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block alt" id="included">
+    <div class="wrap">
+      <p class="kicker">What you get</p>
+      <h2>Everything for 12 weeks, in one place</h2>
+      <div class="cards three">
+        <div class="card"><h3>Training that fits your week</h3><p>3 to 4 sessions a week, 45 to 60 minutes, updated every week, plus a fallback plan for busy weeks.</p></div>
+        <div class="card"><h3>Nutrition with your food</h3><p>Targets built around South Asian meals, with protein swaps so you can eat with your family.</p></div>
+        <div class="card"><h3>The Rewired app</h3><p>Log weight, steps, food and training in under a minute a day. Weekly check-ins, measurements and private progress photos, all on your phone.</p></div>
+        <div class="card"><h3>Real feedback</h3><p>A fortnightly video check-in and weekly voice-message feedback on how your week actually went.</p></div>
+        <div class="card"><h3>Support when you need it</h3><p>WhatsApp support Monday to Friday, with replies within 12 business hours.</p></div>
+        <div class="card"><h3>A plan for after week 12</h3><p>Leave with a plan to keep the results, not a rebound.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="how">
+    <div class="wrap">
+      <p class="kicker">How it works</p>
+      <h2>Three steps to start</h2>
+      <ol class="steps">
+        <li><div><h3>Apply</h3><p>Two minutes. Tell me about your goal, your schedule and what's stopped you before.</p></div></li>
+        <li><div><h3>Book a call</h3><p>A free call to see if we're a fit. If we're not, I'll tell you and point you somewhere better.</p></div></li>
+        <li><div><h3>Start your 12 weeks</h3><p>Kickoff call, your targets and plan, and access to the Rewired app.</p></div></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="block alt" id="price">
+    <div class="wrap">
+      <div class="grid-2" style="align-items:start;gap:24px">
+        <div>
+          <p class="kicker">Investment</p>
+          <p class="price">AUD $2,249</p>
+          <p>For the full 12 weeks of coaching. Payment is arranged after your call, so you only pay once we both agree it's the right fit.</p>
+          <a class="btn btn-cta" href="#apply">Apply for a spot</a>
+        </div>
+        <div class="card">
+          <p class="kicker">The Rewired Progress Promise</p>
+          <p>Complete the program (12 check-ins, 3+ sessions a week and 5+ tracking days a week) and if your body composition hasn't improved by week 12, coaching continues free in 4-week blocks for up to 12 more weeks.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <p class="kicker">Questions</p>
+      <h2>Frequently asked</h2>
+      <details><summary>Do I have to give up rice and roti?</summary><p>No. Your targets are built around the food you already eat, with swaps that make hitting protein easier.</p></details>
+      <details><summary>How much time does it take?</summary><p>3 to 4 sessions a week of 45 to 60 minutes, plus about a minute a day to log your numbers in the app.</p></details>
+      <details><summary>Do I need a gym?</summary><p>A gym gives the best results. If you train at home, tell me in your application and we'll talk about it on the call.</p></details>
+      <details><summary>Is my data private?</summary><p>Yes. Only you and your coach can see your logs and photos. Read the <a href="/privacy.html">privacy policy</a>.</p></details>
+    </div>
+  </section>
+
+  <section class="block alt" id="apply">
+    <div class="wrap apply">
+      <p class="kicker">Apply</p>
+      <h2>Apply for the 12 Week Executive Recomp</h2>
+      <p>Spots are limited so every client gets proper attention. I read every application myself.</p>
+      <form class="card" name="application" method="POST" action="/thanks.html" data-netlify="true" netlify-honeypot="company">
+        <input type="hidden" name="form-name" value="application">
+        <p class="hp"><label>Leave this empty <input name="company" tabindex="-1" autocomplete="off"></label></p>
+        <div class="grid-2">
+          <div class="field"><label for="a-name">Full name</label><input id="a-name" name="name" autocomplete="name" required></div>
+          <div class="field"><label for="a-age">Age</label><input id="a-age" name="age" type="number" inputmode="numeric" min="18" max="90" required></div>
+        </div>
+        <div class="grid-2">
+          <div class="field"><label for="a-email">Email</label><input id="a-email" name="email" type="email" autocomplete="email" required></div>
+          <div class="field"><label for="a-phone">Mobile</label><input id="a-phone" name="phone" type="tel" autocomplete="tel" required></div>
+        </div>
+        <div class="field"><label for="a-job">What do you do for work, and how many hours a week?</label><input id="a-job" name="work" required></div>
+        <div class="field"><label for="a-goal">What's the main goal?</label>
+          <select id="a-goal" name="goal" required>
+            <option value="">Pick one</option>
+            <option>Fat loss</option><option>Muscle gain</option><option>Improve body recomposition</option><option>Get ready for an event</option>
+          </select></div>
+        <div class="field"><label for="a-event">Any event or deadline? (wedding, holiday, date)</label><input id="a-event" name="deadline"></div>
+        <div class="field"><label for="a-before">What's stopped you getting results before?</label><textarea id="a-before" name="blockers" required></textarea></div>
+        <div class="field"><label for="a-ready">The program is AUD $2,249 for 12 weeks. If we're a fit, are you ready to invest in it now?</label>
+          <select id="a-ready" name="ready" required>
+            <option value="">Pick one</option>
+            <option>Yes, ready to start</option><option>Yes, but I'd need a payment plan</option><option>Not right now</option>
+          </select></div>
+        <p class="hint">By applying you agree to the <a href="/privacy.html">privacy policy</a>.</p>
+        <button class="btn btn-cta" type="submit" style="width:100%">Send my application</button>
+      </form>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <p><b>Rewired Coaching</b> with Abhey Pal · Australia</p>
+      <p>Coaching is general fitness and nutrition guidance, not medical advice. Check with your GP before starting a new training or nutrition program.</p>
+      <p><a href="/privacy.html">Privacy policy</a> · <a href="/app/">Client login</a></p>
+    </div>
+  </footer>
+</body>
+</html>
