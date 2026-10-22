@@ -11,6 +11,10 @@
   <meta property="og:image" content="/app/icons/icon-512.png">
   <link rel="icon" href="/app/icons/favicon-32.png" sizes="32x32">
   <link rel="apple-touch-icon" href="/app/icons/apple-touch-icon.png">
+  <script>
+    // Sign-in links from older emails land on this page; pass them to the app.
+    if (/access_token=|error_description=/.test(location.hash)) location.replace('/app/' + location.hash);
+  </script>
   <link rel="stylesheet" href="/styles.css">
   <style>
     .nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; }
