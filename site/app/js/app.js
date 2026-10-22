@@ -170,17 +170,18 @@
   // Everything about one client: the workbook, as rows.
   async function loadCtx(id, force) {
     if (!force && state.ctx[id]) return state.ctx[id];
-    const [profile, targets, macros, training, logs, checkins, measurements, photos] = await Promise.all([
+    const [profile, targets, macros, training, supplements, logs, checkins, measurements, photos] = await Promise.all([
       sb.from('profiles').select('*').eq('id', id).single(),
       sb.from('targets').select('*').eq('client_id', id).maybeSingle(),
       sb.from('macro_targets').select('*').eq('client_id', id).order('week_number'),
       sb.from('training_plan').select('*').eq('client_id', id).order('program_start_date', { ascending: false }).order('cycle_day'),
+      sb.from('supplement_plan').select('*').eq('client_id', id).order('sort_order').order('name'),
       sb.from('daily_logs').select('*').eq('user_id', id).order('day'),
       sb.from('weekly_checkins').select('*').eq('user_id', id).order('week_number'),
       sb.from('measurements').select('*').eq('user_id', id).order('week_number'),
       sb.from('progress_photos').select('*').eq('user_id', id).order('week_number'),
     ]).then((rs) => rs.map(must));
-    const ctx = { profile, targets: targets || {}, macros, training, logs, checkins, measurements, photos };
+    const ctx = { profile, targets: targets || {}, macros, training, supplements, logs, checkins, measurements, photos };
     state.ctx[id] = ctx;
     return ctx;
   }
@@ -718,27 +719,35 @@
   }
 
   async function renderTraining() {
-    const ctx = await loadCtx(state.me.id);
+    const ctx = await loadCtx(state.me.id, true);
     shell('Training', 'Your program', trainingHTML(ctx), 'training');
   }
 
   // ------------------------------------------------------ client: supplements
 
-  function suppsHTML() {
+  function suppsHTML(ctx) {
+    const assigned = ctx.supplements.length
+      ? `<section class="assigned-supps"><p class="kicker">From your coach</p><h2>Your supplements</h2>
+        <div class="supp-grid">${ctx.supplements.map((item) => `<article class="supp-card card">
+          <h3>${esc(item.name)}</h3><div class="supp-facts"><div><span>Dose</span><strong>${esc(item.dose)}</strong></div><div><span>When</span><strong>${esc(item.timing)}</strong></div></div>
+          ${item.coach_note ? `<p class="supp-coach-note">${esc(item.coach_note)}</p>` : ''}
+        </article>`).join('')}</div></section>`
+      : '<section class="card"><p class="kicker">From your coach</p><p>No supplements assigned yet.</p></section>';
     const cards = SUPPLEMENTS.map((item) => `<article class="supp-card card">
       <div class="supp-card-head"><span class="supp-priority">${esc(item.priority)}</span><span class="supp-evidence">Evidence: ${esc(item.evidence)}</span></div>
       <h3>${esc(item.name)}</h3>
       <div class="supp-facts"><div><span>Dose</span><strong>${esc(item.dose)}</strong></div><div><span>When</span><strong>${esc(item.when)}</strong></div></div>
       <p>${esc(item.why)}</p>
     </article>`).join('');
-    return `<section class="supp-intro"><p class="kicker">Supplement guide</p><h2>Supps</h2>
+    return `${assigned}<section class="supp-intro"><p class="kicker">Supplement guide</p><h2>Supps</h2>
       <p>General guidance only, not medical advice. Check with your GP before starting any supplement, especially if you take medication or have a medical condition. If you compete in tested sport, choose batch-tested products (e.g. Informed Sport).</p>
     </section><div class="supp-grid">${cards}</div>
     <p class="supp-source">Sources: ISSN position stands on creatine (Kreider et al., 2017), caffeine (Guest et al., 2021) and protein (Jäger et al., 2017). Magnesium upper limit for supplements: 350 mg/day (NHMRC Nutrient Reference Values).</p>`;
   }
 
-  function renderSupps() {
-    shell('Supps', 'General guide', suppsHTML(), 'supps');
+  async function renderSupps() {
+    const ctx = await loadCtx(state.me.id, true);
+    shell('Supps', 'Your plan and general guide', suppsHTML(ctx), 'supps');
   }
 
   // ---------------------------------------------------------------- client: weekly check-in
@@ -1135,13 +1144,16 @@
     const title = p.full_name || p.email;
     const sub = week ? `Week ${week} of 12` : p.start_date ? `Starts ${niceDate(p.start_date)}` : 'No start date yet';
 
-    if (tab === 'dashboard') return shell(title, sub, nav + dashboardHTML(ctx));
+    if (tab === 'dashboard') return shell(title, sub, `${nav}<div class="coach-shortcuts">
+      <a class="card" href="#client/${id}/training"><b>Training</b><span>Edit this client's exercises and sessions →</span></a>
+      <a class="card" href="#client/${id}/supps"><b>Supps</b><span>Assign and update supplements →</span></a>
+    </div>${dashboardHTML(ctx)}`);
     if (tab === 'logs') return renderCoachLogs(ctx, nav, title, sub, Number(arg) || Math.max(week, 1));
     if (tab === 'checkins') return renderCoachCheckins(ctx, nav, title, sub);
     if (tab === 'photos') return renderCoachPhotos(ctx, nav, title, sub, arg);
     if (tab === 'targets') return renderCoachTargets(ctx, nav, title, sub);
-    if (tab === 'training') return shell(title, sub, nav + trainingHTML(ctx));
-    if (tab === 'supps') return shell(title, sub, nav + suppsHTML());
+    if (tab === 'training') return renderCoachTraining(ctx, nav, title, sub);
+    if (tab === 'supps') return renderCoachSupps(ctx, nav, title, sub);
     if (tab === 'profile') {
       const rows = [
         ['Email', p.email],
@@ -1270,6 +1282,188 @@
     };
     document.getElementById('pa').addEventListener('change', go);
     document.getElementById('pb').addEventListener('change', go);
+  }
+
+  // The coach saves one complete eight-day version at a time. A new start
+  // date creates a new version; the old plan remains available in Supabase.
+  function exerciseEditorHTML(ex) {
+    const field = (key, label, extra) => `<label>${label}<input data-ex-field="${key}" value="${esc(ex[key] ?? '')}" ${extra || ''}></label>`;
+    return `<div class="exercise-editor" data-exercise>
+      <div class="exercise-editor-top">${field('name', 'Exercise', 'maxlength="120" required')}<button type="button" class="btn btn-ghost btn-small" data-remove-ex>Remove</button></div>
+      <div class="exercise-editor-grid">
+        ${field('sets', 'Sets', 'type="number" min="1" max="20" inputmode="numeric"')}
+        ${field('reps_min', 'Reps from', 'type="number" min="1" max="100" inputmode="numeric"')}
+        ${field('reps_max', 'Reps to', 'type="number" min="1" max="100" inputmode="numeric"')}
+        ${field('rpe_min', 'RPE from', 'type="number" min="1" max="10" step="0.5" inputmode="decimal"')}
+        ${field('rpe_max', 'RPE to', 'type="number" min="1" max="10" step="0.5" inputmode="decimal"')}
+        ${field('final_set_rpe_target', 'Final set RPE', 'type="number" min="1" max="10" step="0.5" inputmode="decimal"')}
+        ${field('rest_seconds_min', 'Rest from (sec)', 'type="number" min="0" max="1200" inputmode="numeric"')}
+        ${field('rest_seconds_max', 'Rest to (sec)', 'type="number" min="0" max="1200" inputmode="numeric"')}
+      </div>${field('note', 'Exercise note', 'maxlength="500"')}
+    </div>`;
+  }
+
+  function renderCoachTraining(ctx, nav, title, sub, newPlan) {
+    const latestStart = ctx.training.length ? ctx.training[0].program_start_date : null;
+    const latest = newPlan || !latestStart ? [] : ctx.training.filter((row) => row.program_start_date === latestStart);
+    const defaults = ['Chest-focused push', 'Pull', 'Legs', 'Rest', 'Shoulder-focused push', 'Pull 2', 'Hamstring-focused legs', 'Rest'];
+    const sessions = defaults.map((name, i) => latest.find((row) => row.cycle_day === i + 1) || {
+      cycle_day: i + 1, session_name: name, is_rest_day: i === 3 || i === 7, exercises: [], session_note: '',
+    });
+    const start = newPlan || !latestStart ? (ctx.profile.start_date || S.today()) : latestStart;
+    const programName = latest[0]?.program_name || 'Classic Physique — 3 On / 1 Off';
+    shell(title, sub, `${nav}
+      <section class="card coach-editor-intro"><p class="kicker">Coach controls · Training</p>
+        <h2>${newPlan ? 'Create a new training plan' : latest.length ? 'Edit training plan' : 'Assign a training plan'}</h2>
+        <p>Save all eight days together. Your client sees the updated program when they open Training.</p>
+        ${latest.length && !newPlan ? '<button class="btn btn-ghost btn-small" type="button" id="new-training-plan">Create a new program version</button>' : ''}
+        ${newPlan ? '<button class="btn btn-ghost btn-small" type="button" id="cancel-training-plan">Back to current program</button>' : ''}
+      </section>
+      <form id="training-editor" class="card" novalidate>
+        <div class="grid-2"><label>Program name<input name="program_name" value="${esc(programName)}" maxlength="160" required></label>
+        <label>Start date<input name="program_start_date" type="date" value="${esc(start)}"${latest.length && !newPlan ? ' readonly' : ''} required></label></div>
+        <p class="hint">To schedule a different start date, create a new program version.</p>
+        <div class="training-edit-days">${sessions.map((row) => `<details class="training-edit-day" data-training-day="${row.cycle_day}"${row.cycle_day === 1 ? ' open' : ''}>
+          <summary><b>Day ${row.cycle_day}</b> · ${esc(row.session_name)} <span>${row.is_rest_day ? 'Rest' : `${row.exercises.length} exercises`}</span></summary>
+          <div class="training-edit-body">
+            <label>Session name<input data-session-name value="${esc(row.session_name)}" maxlength="120" required></label>
+            <label class="training-rest-toggle"><input type="checkbox" data-rest-day${row.is_rest_day ? ' checked' : ''}> Rest day</label>
+            <div data-exercise-controls${row.is_rest_day ? ' hidden' : ''}>
+              <div data-exercise-list>${(Array.isArray(row.exercises) ? row.exercises : []).map(exerciseEditorHTML).join('')}</div>
+              <button class="btn btn-ghost btn-small" type="button" data-add-ex>Add exercise</button>
+            </div>
+            <label>Session note<textarea data-session-note maxlength="2000">${esc(row.session_note || '')}</textarea></label>
+          </div>
+        </details>`).join('')}</div>
+        <button class="btn" type="submit">Save training plan</button>
+      </form>
+      ${latest.length && !newPlan ? `<section class="coach-preview"><p class="kicker">Client preview</p>${trainingHTML(ctx)}</section>` : ''}`);
+
+    if (root.querySelector('#new-training-plan')) root.querySelector('#new-training-plan').addEventListener('click', () => renderCoachTraining(ctx, nav, title, sub, true));
+    if (root.querySelector('#cancel-training-plan')) root.querySelector('#cancel-training-plan').addEventListener('click', () => renderCoachTraining(ctx, nav, title, sub, false));
+    const form = root.querySelector('#training-editor');
+    form.addEventListener('click', (e) => {
+      const add = e.target.closest('[data-add-ex]');
+      if (add) add.closest('[data-training-day]').querySelector('[data-exercise-list]').insertAdjacentHTML('beforeend', exerciseEditorHTML({}));
+      const remove = e.target.closest('[data-remove-ex]');
+      if (remove) remove.closest('[data-exercise]').remove();
+    });
+    form.addEventListener('change', (e) => {
+      if (e.target.matches('[data-rest-day]')) e.target.closest('[data-training-day]').querySelector('[data-exercise-controls]').hidden = e.target.checked;
+    });
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      withBusy(form.querySelector('[type="submit"]'), async () => {
+        const name = form.elements.program_name.value.trim();
+        const programStart = form.elements.program_start_date.value;
+        if (!name || !programStart) throw new Error('Add a program name and start date.');
+        const rows = [...form.querySelectorAll('[data-training-day]')].map((day) => {
+          const cycleDay = Number(day.dataset.trainingDay);
+          const sessionName = day.querySelector('[data-session-name]').value.trim();
+          const rest = day.querySelector('[data-rest-day]').checked;
+          if (!sessionName) throw new Error(`Add a name for day ${cycleDay}.`);
+          const exercises = rest ? [] : [...day.querySelectorAll('[data-exercise]')].map((item) => {
+            const value = (key) => item.querySelector(`[data-ex-field="${key}"]`).value.trim();
+            const number = (key, low, high, required) => {
+              const raw = value(key);
+              if (!raw) { if (required) throw new Error(`Day ${cycleDay}: add ${key.replaceAll('_', ' ')}.`); return null; }
+              const n = Number(raw);
+              if (!Number.isFinite(n) || n < low || n > high) throw new Error(`Day ${cycleDay}: check ${key.replaceAll('_', ' ')}.`);
+              return n;
+            };
+            const ex = {
+              name: value('name'), sets: number('sets', 1, 20, true),
+              reps_min: number('reps_min', 1, 100, true), reps_max: number('reps_max', 1, 100, true),
+            };
+            if (!ex.name) throw new Error(`Day ${cycleDay}: add an exercise name.`);
+            if (ex.reps_min > ex.reps_max) throw new Error(`Day ${cycleDay}: rep range is reversed.`);
+            for (const key of ['rpe_min', 'rpe_max', 'final_set_rpe_target']) {
+              const n = number(key, 1, 10, false); if (n !== null) ex[key] = n;
+            }
+            for (const key of ['rest_seconds_min', 'rest_seconds_max']) {
+              const n = number(key, 0, 1200, false); if (n !== null) ex[key] = n;
+            }
+            if (ex.rpe_min != null && ex.rpe_max != null && ex.rpe_min > ex.rpe_max) throw new Error(`Day ${cycleDay}: RPE range is reversed.`);
+            if (ex.rest_seconds_min != null && ex.rest_seconds_max != null && ex.rest_seconds_min > ex.rest_seconds_max) throw new Error(`Day ${cycleDay}: rest range is reversed.`);
+            if (value('note')) ex.note = value('note');
+            return ex;
+          });
+          if (!rest && !exercises.length) throw new Error(`Day ${cycleDay}: add an exercise or mark it as rest.`);
+          return { client_id: ctx.profile.id, program_start_date: programStart, cycle_day: cycleDay,
+            program_name: name, session_name: sessionName, is_rest_day: rest, exercises,
+            session_note: day.querySelector('[data-session-note]').value.trim() || null };
+        });
+        const saved = must(await sb.from('training_plan').upsert(rows, { onConflict: 'client_id,program_start_date,cycle_day' }).select('cycle_day'));
+        if (saved.length !== 8) throw new Error('The full program was not saved. Please retry.');
+        invalidate(ctx.profile.id);
+        toast('Training plan saved for this client.');
+        renderClient(ctx.profile.id, 'training');
+      });
+    });
+  }
+
+  function renderCoachSupps(ctx, nav, title, sub) {
+    const fields = (item) => `<div class="grid-2"><label>Supplement<input name="name" value="${esc(item.name || '')}" maxlength="120" required></label>
+      <label>Dose<input name="dose" value="${esc(item.dose || '')}" maxlength="120" required></label>
+      <label>When<input name="timing" value="${esc(item.timing || '')}" maxlength="200" required></label>
+      <label>Coach note<input name="coach_note" value="${esc(item.coach_note || '')}" maxlength="1000"></label></div>`;
+    shell(title, sub, `${nav}<section class="card coach-editor-intro"><p class="kicker">Coach controls · Supps</p>
+      <h2>Assigned supplements</h2><p>Only items you assign here appear in this client's personal plan. The general guide stays available to every client.</p></section>
+      ${ctx.supplements.map((item) => `<form class="card assigned-supp-form" data-supp-id="${esc(item.id)}" novalidate>
+        ${fields(item)}<div class="row-actions"><button class="btn btn-small" type="submit">Save changes</button>
+        <button class="btn btn-ghost btn-small" type="button" data-remove-supp>Unassign</button></div></form>`).join('') || '<div class="card"><p>No supplements assigned to this client yet.</p></div>'}
+      <form id="add-supp-form" class="card" novalidate><p class="kicker">Assign a supplement</p>
+        <label>Choose from the guide<select id="supp-preset"><option value="">Custom supplement</option>${SUPPLEMENTS.map((item, i) => `<option value="${i}">${esc(item.name)}</option>`).join('')}</select></label>
+        ${fields({})}<button class="btn" type="submit">Assign to ${esc(ctx.profile.full_name || 'client')}</button>
+      </form><section class="coach-preview"><p class="kicker">Client preview</p>${suppsHTML(ctx)}</section>`);
+    const addForm = root.querySelector('#add-supp-form');
+    root.querySelector('#supp-preset').addEventListener('change', (e) => {
+      const preset = SUPPLEMENTS[Number(e.target.value)];
+      if (!e.target.value || !preset) return;
+      addForm.elements.name.value = preset.name;
+      addForm.elements.dose.value = preset.dose;
+      addForm.elements.timing.value = preset.when;
+    });
+    const payload = (form) => {
+      const data = {
+        name: form.elements.name.value.trim(), dose: form.elements.dose.value.trim(),
+        timing: form.elements.timing.value.trim(), coach_note: form.elements.coach_note.value.trim() || null,
+      };
+      if (!data.name || !data.dose || !data.timing) throw new Error('Add a supplement, dose and timing.');
+      return data;
+    };
+    addForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      withBusy(addForm.querySelector('[type="submit"]'), async () => {
+        const data = payload(addForm);
+        must(await sb.from('supplement_plan').insert({ ...data, client_id: ctx.profile.id, sort_order: ctx.supplements.length }).select('id').single());
+        invalidate(ctx.profile.id);
+        toast('Supplement assigned to this client.');
+        renderClient(ctx.profile.id, 'supps');
+      });
+    });
+    root.querySelectorAll('.assigned-supp-form').forEach((form) => {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        withBusy(form.querySelector('[type="submit"]'), async () => {
+          const saved = must(await sb.from('supplement_plan').update(payload(form)).eq('id', form.dataset.suppId).eq('client_id', ctx.profile.id).select('id'));
+          if (!saved.length) throw new Error('Supplement was not saved.');
+          invalidate(ctx.profile.id);
+          toast('Supplement updated.');
+          renderClient(ctx.profile.id, 'supps');
+        });
+      });
+      form.querySelector('[data-remove-supp]').addEventListener('click', (e) => {
+        if (!window.confirm('Unassign this supplement from the client?')) return;
+        withBusy(e.target, async () => {
+          const removed = must(await sb.from('supplement_plan').delete().eq('id', form.dataset.suppId).eq('client_id', ctx.profile.id).select('id'));
+          if (!removed.length) throw new Error('Supplement was not removed.');
+          invalidate(ctx.profile.id);
+          toast('Supplement unassigned.');
+          renderClient(ctx.profile.id, 'supps');
+        });
+      });
+    });
   }
 
   function renderCoachTargets(ctx, nav, title, sub) {
@@ -1425,7 +1619,7 @@
         case 'training':
           return await renderTraining();
         case 'supps':
-          return renderSupps();
+          return await renderSupps();
         case 'checkin':
           return await renderCheckin(parts[1]);
         case 'photos':
@@ -1451,6 +1645,14 @@
   }
 
   window.addEventListener('hashchange', route);
+
+  // Keep read-only client plans current while the app is open. Coach forms are
+  // never refreshed here, so unsaved edits cannot be lost.
+  function refreshOpenClientPlan() {
+    if (!document.hidden && state.me && state.me.role === 'client' && /^#(training|supps)(\/|$)/.test(location.hash)) route();
+  }
+  document.addEventListener('visibilitychange', refreshOpenClientPlan);
+  setInterval(refreshOpenClientPlan, 60000);
 
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     navigator.serviceWorker.register('sw.js').catch(() => {});
