@@ -7,7 +7,8 @@
   const S = window.RewiredStats;
   const cfg = window.REWIRED_CONFIG || {};
   const root = document.getElementById('root');
-  const configured = Boolean(cfg.supabaseUrl) && !/YOUR-PROJECT/.test(cfg.supabaseUrl);
+  const configured =
+    Boolean(cfg.supabaseUrl && cfg.supabaseAnonKey) && !/YOUR-/.test(cfg.supabaseUrl + cfg.supabaseAnonKey);
   const sb = configured
     ? window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
         auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },

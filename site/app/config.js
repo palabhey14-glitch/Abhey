@@ -6,7 +6,7 @@
 // can see. NEVER paste the "service_role" / "secret" key here or anywhere
 // in this repo; that one bypasses every rule.
 window.REWIRED_CONFIG = {
-  supabaseUrl: 'https://YOUR-PROJECT-ID.supabase.co',
+  supabaseUrl: 'https://njdqwhawdiloghoxajag.supabase.co',
   supabaseAnonKey: 'YOUR-ANON-OR-PUBLISHABLE-KEY',
   coachName: 'Abhey',
 };
