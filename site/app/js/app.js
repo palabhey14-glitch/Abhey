@@ -17,6 +17,16 @@
   const COACH = cfg.coachName || 'your coach';
   const BUCKET = 'progress-photos';
   const POSES = ['front', 'side', 'back'];
+  // General guide transcribed from the client workbook's Supplements sheet.
+  // These are informational options, not supplements assigned to a client.
+  const SUPPLEMENTS = [
+    { name: 'Creatine monohydrate', dose: '3–5 g daily', when: 'Any time, every day', why: 'Strength, muscle gain and training performance', evidence: 'Strong', priority: 'Core' },
+    { name: 'Protein powder (whey or plant)', dose: '1–2 scoops as needed', when: "Whenever you’re short of your protein target", why: 'Convenient way to hit daily protein', evidence: 'Strong (as food)', priority: 'Core if short' },
+    { name: 'Vitamin D3', dose: 'Per blood test / GP', when: 'With a meal that contains fat', why: 'Deficiency is common with darker skin and indoor office work', evidence: 'Strong if deficient', priority: 'Test first' },
+    { name: 'Caffeine', dose: '3–6 mg per kg bodyweight', when: '30–60 min pre-training. None within 8 h of bed', why: 'Training performance and focus. Start at the low end', evidence: 'Strong', priority: 'Optional' },
+    { name: 'Omega-3 (fish or algae oil)', dose: '1–2 g EPA + DHA daily', when: 'With meals', why: 'General health if you rarely eat oily fish', evidence: 'Moderate', priority: 'Optional' },
+    { name: 'Magnesium (glycinate)', dose: '200–350 mg', when: 'Evening', why: 'Only if dietary intake is low. May help sleep quality', evidence: 'Limited', priority: 'Optional' },
+  ];
 
   const state = { session: null, me: null, ctx: {}, renderId: 0 };
 
@@ -144,6 +154,10 @@
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 20h18M5 16l5-5 4 3 6-7"/></svg>',
     profile:
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>',
+    training:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9v6m3-9v12m12-12v12m3-9v6M6 12h12"/></svg>',
+    supps:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 4a5 5 0 0 1 7 0l6 6a5 5 0 0 1-7 7l-6-6a5 5 0 0 1 0-7Z"/><path d="m9 13 6-6"/></svg>',
   };
 
   // ------------------------------------------------------------------ data
@@ -156,16 +170,17 @@
   // Everything about one client: the workbook, as rows.
   async function loadCtx(id, force) {
     if (!force && state.ctx[id]) return state.ctx[id];
-    const [profile, targets, macros, logs, checkins, measurements, photos] = await Promise.all([
+    const [profile, targets, macros, training, logs, checkins, measurements, photos] = await Promise.all([
       sb.from('profiles').select('*').eq('id', id).single(),
       sb.from('targets').select('*').eq('client_id', id).maybeSingle(),
       sb.from('macro_targets').select('*').eq('client_id', id).order('week_number'),
+      sb.from('training_plan').select('*').eq('client_id', id).order('program_start_date', { ascending: false }).order('cycle_day'),
       sb.from('daily_logs').select('*').eq('user_id', id).order('day'),
       sb.from('weekly_checkins').select('*').eq('user_id', id).order('week_number'),
       sb.from('measurements').select('*').eq('user_id', id).order('week_number'),
       sb.from('progress_photos').select('*').eq('user_id', id).order('week_number'),
     ]).then((rs) => rs.map(must));
-    const ctx = { profile, targets: targets || {}, macros, logs, checkins, measurements, photos };
+    const ctx = { profile, targets: targets || {}, macros, training, logs, checkins, measurements, photos };
     state.ctx[id] = ctx;
     return ctx;
   }
@@ -191,6 +206,8 @@
       : `<nav class="tabs" aria-label="Main">
           ${[
             ['today', 'Today'],
+            ['training', 'Training'],
+            ['supps', 'Supps'],
             ['checkin', 'Check-in'],
             ['photos', 'Photos'],
             ['progress', 'Progress'],
@@ -663,6 +680,67 @@
     });
   }
 
+  // -------------------------------------------------------- client: training
+
+  function trainingHTML(ctx) {
+    if (!ctx.training.length) return '<section class="card"><p>Your coach has not added a training program yet.</p></section>';
+    const today = S.today();
+    const starts = [...new Set(ctx.training.map((row) => row.program_start_date))].sort().reverse();
+    const start = starts.find((date) => date <= today) || starts[starts.length - 1];
+    const sessions = ctx.training.filter((row) => row.program_start_date === start).sort((a, b) => a.cycle_day - b.cycle_day);
+    const cycleLength = Math.max(...sessions.map((row) => row.cycle_day));
+    const activeDay = start <= today ? (S.daysBetween(start, today) % cycleLength) + 1 : null;
+    const current = sessions.find((row) => row.cycle_day === activeDay);
+    const header = `<section class="training-intro">
+      <p class="kicker">Your training plan</p>
+      <h2>${esc(sessions[0].program_name)}</h2>
+      <p>Starts ${esc(niceDate(start, { day: 'numeric', month: 'long', year: 'numeric' }))} · ${cycleLength}-day repeating cycle</p>
+      ${current ? `<div class="training-today"><span>Today · Day ${activeDay}</span><strong>${esc(current.session_name)}</strong></div>` : ''}
+    </section>`;
+    const cards = sessions.map((row) => {
+      const exercises = Array.isArray(row.exercises) ? row.exercises : [];
+      const rows = exercises.map((ex, index) => {
+        const reps = ex.reps_min === ex.reps_max ? fmt(ex.reps_min) : `${fmt(ex.reps_min)}–${fmt(ex.reps_max)}`;
+        const rest = ex.rest_seconds_min && ex.rest_seconds_max ? `${fmt(ex.rest_seconds_min)}–${fmt(ex.rest_seconds_max)} sec rest` : '';
+        const effort = ex.rpe_min && ex.rpe_max ? `RPE ${fmt(ex.rpe_min)}–${fmt(ex.rpe_max)}` : '';
+        return `<li class="training-exercise"><div class="exercise-count">${index + 1}</div><div>
+          <strong>${esc(ex.name)}</strong><div class="exercise-meta">${fmt(ex.sets)} sets × ${esc(reps)} reps${effort ? ` · ${esc(effort)}` : ''}${rest ? ` · ${esc(rest)}` : ''}</div>
+          ${ex.final_set_rpe_target ? `<div class="exercise-meta">Final set: about RPE ${fmt(ex.final_set_rpe_target)} if technique stays solid</div>` : ''}
+          ${ex.note ? `<p class="exercise-note">${esc(ex.note)}</p>` : ''}
+        </div></li>`;
+      }).join('');
+      return `<details class="training-day card"${row.cycle_day === activeDay ? ' open' : ''}>
+        <summary><span class="day-pill">Day ${fmt(row.cycle_day)}</span><span><strong>${esc(row.session_name)}</strong><small>${row.is_rest_day ? 'Recovery day' : `${exercises.length} exercises`}</small></span>${row.cycle_day === activeDay ? '<em>Today</em>' : ''}</summary>
+        <div class="training-details">${rows ? `<ol class="training-exercises">${rows}</ol>` : ''}${row.session_note ? `<p class="training-session-note">${esc(row.session_note)}</p>` : ''}</div>
+      </details>`;
+    }).join('');
+    return `${header}<div class="training-days">${cards}</div>`;
+  }
+
+  async function renderTraining() {
+    const ctx = await loadCtx(state.me.id);
+    shell('Training', 'Your program', trainingHTML(ctx), 'training');
+  }
+
+  // ------------------------------------------------------ client: supplements
+
+  function suppsHTML() {
+    const cards = SUPPLEMENTS.map((item) => `<article class="supp-card card">
+      <div class="supp-card-head"><span class="supp-priority">${esc(item.priority)}</span><span class="supp-evidence">Evidence: ${esc(item.evidence)}</span></div>
+      <h3>${esc(item.name)}</h3>
+      <div class="supp-facts"><div><span>Dose</span><strong>${esc(item.dose)}</strong></div><div><span>When</span><strong>${esc(item.when)}</strong></div></div>
+      <p>${esc(item.why)}</p>
+    </article>`).join('');
+    return `<section class="supp-intro"><p class="kicker">Supplement guide</p><h2>Supps</h2>
+      <p>General guidance only, not medical advice. Check with your GP before starting any supplement, especially if you take medication or have a medical condition. If you compete in tested sport, choose batch-tested products (e.g. Informed Sport).</p>
+    </section><div class="supp-grid">${cards}</div>
+    <p class="supp-source">Sources: ISSN position stands on creatine (Kreider et al., 2017), caffeine (Guest et al., 2021) and protein (Jäger et al., 2017). Magnesium upper limit for supplements: 350 mg/day (NHMRC Nutrient Reference Values).</p>`;
+  }
+
+  function renderSupps() {
+    shell('Supps', 'General guide', suppsHTML(), 'supps');
+  }
+
   // ---------------------------------------------------------------- client: weekly check-in
 
   function weekOptions(max, selected, includeStart) {
@@ -1040,6 +1118,8 @@
     ['checkins', 'Check-ins'],
     ['photos', 'Photos'],
     ['targets', 'Targets'],
+    ['training', 'Training'],
+    ['supps', 'Supps'],
     ['profile', 'Profile'],
   ];
 
@@ -1060,6 +1140,8 @@
     if (tab === 'checkins') return renderCoachCheckins(ctx, nav, title, sub);
     if (tab === 'photos') return renderCoachPhotos(ctx, nav, title, sub, arg);
     if (tab === 'targets') return renderCoachTargets(ctx, nav, title, sub);
+    if (tab === 'training') return shell(title, sub, nav + trainingHTML(ctx));
+    if (tab === 'supps') return shell(title, sub, nav + suppsHTML());
     if (tab === 'profile') {
       const rows = [
         ['Email', p.email],
@@ -1340,6 +1422,10 @@
       if (!state.me.consent_at) return renderConsent();
       if (!state.me.full_name || !state.me.start_date) return renderOnboarding();
       switch (parts[0]) {
+        case 'training':
+          return await renderTraining();
+        case 'supps':
+          return renderSupps();
         case 'checkin':
           return await renderCheckin(parts[1]);
         case 'photos':
