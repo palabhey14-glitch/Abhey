@@ -4,7 +4,7 @@
 --   Start Here      -> profiles (client fills) + targets (coach sets)
 --   Weekly Tracker  -> daily_logs (client) + macro_targets (coach, per week)
 --   Training        -> training_plan (coach sets an eight-day cycle)
---   Supplements     -> general guide in the app (no per-client table)
+--   Supplements     -> supplement_plan (coach assignments) + general app guide
 --   Check-In        -> weekly_checkins (client, coach adds feedback)
 --   Measurements    -> measurements (every 2 weeks)
 --   Progress photos -> progress_photos + private storage bucket
@@ -95,6 +95,21 @@ create table public.training_plan (
 );
 create index training_plan_client_start_idx
   on public.training_plan (client_id, program_start_date desc, cycle_day);
+
+-- The coach assigns individual supplements; the client sees only their rows.
+-- The workbook's general supplement guide lives in the app separately.
+create table public.supplement_plan (
+  id          uuid primary key default gen_random_uuid(),
+  client_id   uuid not null references public.profiles (id) on delete cascade,
+  name        text not null check (length(trim(name)) between 1 and 120),
+  dose        text not null check (length(trim(dose)) between 1 and 120),
+  timing      text not null check (length(trim(timing)) between 1 and 200),
+  coach_note  text check (coach_note is null or length(coach_note) <= 1000),
+  sort_order  integer not null default 0,
+  updated_at  timestamptz not null default now()
+);
+create index supplement_plan_client_sort_idx
+  on public.supplement_plan (client_id, sort_order, name);
 
 -- Weekly Tracker daily rows: activity and actual intake.
 create table public.daily_logs (
@@ -224,6 +239,8 @@ create trigger touch_measurements before update on public.measurements
   for each row execute function public.touch_updated_at();
 create trigger touch_training_plan before update on public.training_plan
   for each row execute function public.touch_updated_at();
+create trigger touch_supplement_plan before update on public.supplement_plan
+  for each row execute function public.touch_updated_at();
 
 -- Clients can't write coach feedback; the coach can only write coach feedback
 -- on a client's check-in (never change the client's own answers).
@@ -267,7 +284,9 @@ create trigger guard_weekly_checkins before insert or update on public.weekly_ch
 -- Nobody signed out can touch these tables.
 revoke all on public.profiles, public.targets, public.macro_targets, public.daily_logs,
   public.weekly_checkins, public.measurements, public.progress_photos,
-  public.training_plan from anon;
+  public.training_plan, public.supplement_plan from anon;
+revoke all on public.supplement_plan from authenticated;
+grant select, insert, update, delete on public.supplement_plan to authenticated;
 
 -- Profiles are created by the trigger, never by the app, and the role column
 -- can only be changed from the SQL editor. Clients edit their own details.
@@ -291,6 +310,7 @@ alter table public.weekly_checkins enable row level security;
 alter table public.measurements    enable row level security;
 alter table public.progress_photos enable row level security;
 alter table public.training_plan   enable row level security;
+alter table public.supplement_plan enable row level security;
 
 -- profiles
 create policy "read own profile or coach reads all" on public.profiles
@@ -331,6 +351,18 @@ create policy "coach updates training plan" on public.training_plan
   for update to authenticated
   using ((select public.is_coach())) with check ((select public.is_coach()));
 create policy "coach deletes training plan" on public.training_plan
+  for delete to authenticated using ((select public.is_coach()));
+
+-- supplement_plan: coach writes, client reads their own assignments
+create policy "read own supplements or coach reads all" on public.supplement_plan
+  for select to authenticated
+  using (client_id = (select auth.uid()) or (select public.is_coach()));
+create policy "coach adds supplements" on public.supplement_plan
+  for insert to authenticated with check ((select public.is_coach()));
+create policy "coach updates supplements" on public.supplement_plan
+  for update to authenticated
+  using ((select public.is_coach())) with check ((select public.is_coach()));
+create policy "coach deletes supplements" on public.supplement_plan
   for delete to authenticated using ((select public.is_coach()));
 
 -- daily_logs: client owns, coach reads
