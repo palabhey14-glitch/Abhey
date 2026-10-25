@@ -4,16 +4,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Rewired Coaching with Abhey Pal</title>
-  <meta name="description" content="The 12 Week Executive Recomp: private training and nutrition coaching for busy South Asian men, built around your schedule and the food you enjoy.">
+  <meta name="description" content="The 12 Week Executive Recomp: one-to-one training and nutrition coaching for busy men, built around your week and the food your family cooks.">
   <meta name="theme-color" content="#0b2545">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Rewired Coaching with Abhey Pal">
-  <meta property="og:description" content="Lose the belly, build visible muscle, keep the family food. Private 12-week coaching built around your life.">
+  <meta property="og:description" content="Lose the belly, build visible muscle, keep the family food. One-to-one 12-week coaching built around your life.">
   <meta property="og:image" content="https://cerulean-jalebi-4e172d.netlify.app/assets/rewired-logo.png">
   <link rel="icon" href="/app/icons/favicon-32.png" sizes="32x32">
   <link rel="apple-touch-icon" href="/app/icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Source+Sans+3:ital,wght@0,400..700;1,400&display=swap">
   <link rel="preload" href="/assets/fonts/montserrat-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/home.css?rev=specify-1">
+  <link rel="stylesheet" href="/home.css?rev=human-1">
   <script>
     // Sign-in links from older emails land on this page; pass them to the app.
     if (/access_token=|error_description=/.test(location.hash)) location.replace('/app/' + location.hash);
@@ -27,8 +30,8 @@
         <span><b>Rewired Coaching</b><small>WITH ABHEY PAL</small></span>
       </a>
       <nav class="nav-links" aria-label="Main">
-        <a href="#method">The method</a>
-        <a href="#offer">What you get</a>
+        <a href="#method">How I coach</a>
+        <a href="#offer">What’s included</a>
         <a href="#app">The app</a>
         <a href="pricing.html">Pricing</a>
       </nav>
@@ -42,16 +45,17 @@
   <main id="top">
     <section class="hero" aria-labelledby="hero-title">
       <div class="wrap">
-        <span class="badge"><i></i>The 12 Week Executive Recomp</span>
-        <h1 id="hero-title">Your next chapter. <span class="grad">Rewired.</span></h1>
-        <p class="lead">Lose the belly, build visible muscle and keep the family food. Private training and nutrition coaching for busy South Asian men, from a coach with 15 years' experience.</p>
-        <div class="actions">
-          <a class="btn btn-light" data-book href="https://calendly.com/coaching-abheyrewired/30min" target="_blank" rel="noopener noreferrer">Book a Strategy Session ↗</a>
-          <a class="btn btn-ghost-light" href="#method">See how it works</a>
+        <div class="hero-copy">
+          <p class="eyebrow">The 12 Week Executive Recomp, with Abhey Pal</p>
+          <h1 id="hero-title">Your next chapter, <em>rewired.</em></h1>
+          <p class="lead">I coach busy men who are tired of starting over. Twelve weeks of training and nutrition built around your job, your travel and the food your family cooks. I’ve been doing this for 15 years.</p>
+          <div class="actions">
+            <a class="btn btn-light" data-book href="https://calendly.com/coaching-abheyrewired/30min" target="_blank" rel="noopener noreferrer">Book a free 30-minute call</a>
+            <a class="text-link light" href="#method">How it works</a>
+          </div>
         </div>
-        <p class="note">12 weeks · One-to-one · Gym, home or hotel</p>
 
-        <div class="engine" id="engine" role="img" aria-label="Animation: what a client logs (meals, training, habits, supplements and check-ins) goes into the Rewired R and comes out as a result on their progress log.">
+        <div class="engine" id="engine" role="img" aria-label="Animation: what a client logs (meals, training, habits, supplements and check-ins) goes into the Rewired R, and the body on the right slims down and gets more defined week by week.">
           <div class="engine-stage" id="stage" aria-hidden="true">
             <svg class="pipes" id="pipes">
               <path class="tube" id="tube"></path><path class="core" id="core"></path>
@@ -60,7 +64,7 @@
             </svg>
             <div class="before" id="cubes">
               <svg class="figure-before" id="figure-before" viewBox="-96 8 192 440"></svg>
-              <span>Before · Week 1</span>
+              <span>Week 1</span>
             </div>
             <div id="tiles"></div>
             <div class="e-hub" id="hub"><div class="ring"></div><div class="face"><div class="r">R<i>.</i></div></div></div>
@@ -76,7 +80,7 @@
                 </dl>
               </div>
               <p class="bp-last" id="bp-last">Logs turn into progress</p>
-              <p class="bp-note">Illustration · example client</p>
+              <p class="bp-note">An illustration with example numbers</p>
             </div>
           </div>
           <button class="engine-ctrl" type="button" id="engine-toggle">Pause</button>
@@ -84,163 +88,126 @@
       </div>
     </section>
 
-    <section class="band" aria-label="Built around your life">
+    <section class="band" aria-label="Who it fits">
       <div class="wrap">
-        <p>Built around the life you already have</p>
-        <ul>
-          <li>Gym<span>.</span></li>
-          <li>Home<span>.</span></li>
-          <li>Hotel<span>.</span></li>
-          <li>Vegetarian<span>.</span></li>
-          <li>Vegan<span>.</span></li>
-          <li>Pescatarian<span>.</span></li>
-          <li>Halal<span>.</span></li>
-          <li>Family food<span>.</span></li>
-        </ul>
+        <p>Gym, home or hotel room. Vegetarian, vegan, pescatarian, halal, or simply whatever your family cooks.</p>
       </div>
     </section>
 
-    <section class="section" id="method" aria-labelledby="method-title">
+    <section class="section letter" id="method" aria-labelledby="method-title">
       <div class="wrap">
-        <div class="head reveal">
-          <p class="kicker">The Rewired method</p>
-          <h2 id="method-title">Structure that moves with your life.</h2>
-          <p>Clear direction, personal feedback and a coach in your corner. Built around the week you actually have, not the one you wish you had.</p>
+        <h2 id="method-title" class="reveal">Most plans fall apart by Thursday.</h2>
+        <div class="letter-body reveal">
+          <p>Not because you lack discipline. Usually the plan was written for someone with an empty calendar and a different kitchen.</p>
+          <p>So I start with your actual week: the hours you work, when you travel, what’s on the table at your parents’ place on Sunday. Then we set targets you can hit on a normal week, not a perfect one.</p>
+          <p>Each week you log your meals, training and habits in the app. I go through them, and we adjust. Nothing clever. Just the basics, done properly, for twelve weeks.</p>
+          <p class="sign">Abhey</p>
         </div>
-        <div class="grid three">
-          <article class="card reveal">
-            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9v6M6 7v10M18 7v10M21 9v6M6 12h12"/></svg></span>
-            <span class="num">01</span>
-            <h3>Train with intention.</h3>
-            <p>A programme built for your goals and schedule, 3 to 4 sessions a week, with a fallback plan for the weeks that get busy. Gym, home or hotel.</p>
-          </article>
-          <article class="card reveal">
-            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M4 11h16a8 8 0 0 1-16 0Z"/><path d="M8 7c0-1.5 1-1.5 1-3M12 7c0-1.5 1-1.5 1-3M16 7c0-1.5 1-1.5 1-3"/></svg></span>
-            <span class="num">02</span>
-            <h3>Keep the family food.</h3>
-            <p>Nutrition built around dal, roti, rice and the meals you grew up on. Clear portions and smart protein swaps, whether you eat vegetarian, vegan, pescatarian or halal.</p>
-          </article>
-          <article class="card reveal">
-            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18l5-5 4 3 7-8"/><path d="M15 8h5v5"/></svg></span>
-            <span class="num">03</span>
-            <h3>Make progress visible.</h3>
-            <p>Weekly check-ins turn effort into a clear next step. Every week is compared with week 1, so you see the recomposition, not just the scale.</p>
-          </article>
-        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="how-title">
+      <div class="wrap">
+        <h2 id="how-title" class="reveal">What that looks like.</h2>
+        <ol class="ways">
+          <li class="reveal">
+            <h3>Training you can do anywhere</h3>
+            <p>Three or four sessions a week, 45 to 60 minutes each. Every session has a gym, home and hotel version, so a work trip doesn’t end the week.</p>
+          </li>
+          <li class="reveal">
+            <h3>Food you already eat</h3>
+            <p>Your plan is built from dal, roti, rice and the meals you grew up on, with clear portions and protein swaps. You don’t need to cook separately from your family.</p>
+          </li>
+          <li class="reveal">
+            <h3>Feedback from me, every week</h3>
+            <p>A voice note each week on how it actually went, a video check-in every fortnight, and WhatsApp Monday to Friday. I reply within 12 business hours.</p>
+          </li>
+        </ol>
       </div>
     </section>
 
     <section class="section soft" aria-labelledby="pain-title">
       <div class="wrap">
-        <div class="head reveal">
-          <p class="kicker">Sound familiar?</p>
-          <h2 id="pain-title">You've tried. It just never stuck.</h2>
-        </div>
-        <div class="grid two">
-          <article class="card pain reveal">
-            <span class="mark">?</span>
-            <div><p class="q">"I'm skinny fat. Slim in a shirt, soft without it."</p><p class="a">We build muscle and lose fat at the same time, so the shape changes, not just the number.</p></div>
-          </article>
-          <article class="card pain reveal">
-            <span class="mark">?</span>
-            <div><p class="q">"I start a diet every Monday and quit by Thursday."</p><p class="a">No crash plans. Targets you can hit on a work week, adjusted every week from what you actually logged.</p></div>
-          </article>
-          <article class="card pain reveal">
-            <span class="mark">?</span>
-            <div><p class="q">"I'm not giving up my mum's cooking."</p><p class="a">You don't have to. Your plan is built from the food your family already eats.</p></div>
-          </article>
-          <article class="card pain reveal">
-            <span class="mark">?</span>
-            <div><p class="q">"Between work and travel, I can't keep a routine."</p><p class="a">Sessions fit 45 to 60 minutes, with hotel and home versions ready for the weeks that fall apart.</p></div>
-          </article>
+        <h2 id="pain-title" class="reveal">You might recognise some of this.</h2>
+        <div class="quotes">
+          <figure class="reveal">
+            <blockquote>“Slim in a shirt. Soft without it.”</blockquote>
+            <figcaption>That’s usually too little muscle rather than too much fat. We build muscle and lose fat at the same time, so the shape changes, not just the scale.</figcaption>
+          </figure>
+          <figure class="reveal">
+            <blockquote>“I start every Monday and I’m done by Thursday.”</blockquote>
+            <figcaption>No crash plans. Targets you can hit on a work week, adjusted each week from what you actually logged.</figcaption>
+          </figure>
+          <figure class="reveal">
+            <blockquote>“I’m not giving up my mum’s cooking.”</blockquote>
+            <figcaption>You don’t have to. Your plan starts from the food your family already makes.</figcaption>
+          </figure>
+          <figure class="reveal">
+            <blockquote>“Between work and travel, I can’t keep a routine.”</blockquote>
+            <figcaption>Sessions fit into 45 to 60 minutes, and the hotel and home versions are ready for the weeks that fall apart.</figcaption>
+          </figure>
         </div>
       </div>
     </section>
 
     <section class="section" id="offer" aria-labelledby="offer-title">
-      <div class="wrap">
-        <div class="head reveal">
-          <p class="kicker">What you get</p>
-          <h2 id="offer-title">Everything for 12 weeks. In one place.</h2>
-          <p>Training, nutrition and personal support, delivered through your own Rewired app.</p>
+      <div class="wrap included">
+        <div class="included-head reveal">
+          <h2 id="offer-title">What’s included.</h2>
+          <p>Twelve weeks, one to one. Everything below runs through your own Rewired app.</p>
+          <a class="text-link" href="pricing.html">Full details on the pricing page</a>
         </div>
-        <div class="spread">
-          <article class="card block-navy reveal">
-            <span class="tag">Training</span>
-            <h3>A plan that fits your week</h3>
-            <ul>
-              <li>3 to 4 sessions a week, 45 to 60 minutes</li>
-              <li>Updated every week from your logs</li>
-              <li>Gym, home and hotel versions</li>
-            </ul>
-          </article>
-          <article class="card center reveal">
-            <span class="tag">Coaching</span>
-            <h3>A coach in your corner</h3>
-            <p>Fifteen years of coaching, applied to your goals, your schedule and your food.</p>
-            <ul>
-              <li>Fortnightly video check-ins</li>
-              <li>Weekly voice-message feedback</li>
-              <li>WhatsApp support Monday to Friday, replies within 12 business hours</li>
-              <li>A plan to keep the results after week 12</li>
-            </ul>
-          </article>
-          <article class="card block-blue reveal">
-            <span class="tag">Nutrition</span>
-            <h3>Your food, your targets</h3>
-            <ul>
-              <li>Meal plans built from South Asian meals</li>
-              <li>Log food in the app, see planned vs eaten</li>
-              <li>Protein swaps so you can eat with family</li>
-            </ul>
-          </article>
-        </div>
+        <dl class="list reveal">
+          <div><dt>Training</dt><dd>A programme for your goal and schedule, updated every week, with a fallback plan for busy weeks.</dd></div>
+          <div><dt>Nutrition</dt><dd>Targets and meal plans built around South Asian food, so you can still eat with your family.</dd></div>
+          <div><dt>The app</dt><dd>Log food, training, weight and steps. Weekly check-ins, measurements and private progress photos.</dd></div>
+          <div><dt>Feedback</dt><dd>Fortnightly video check-ins and a weekly voice note from me.</dd></div>
+          <div><dt>Support</dt><dd>WhatsApp Monday to Friday, with replies within 12 business hours.</dd></div>
+          <div><dt>After week 12</dt><dd>A plan to keep the results, so you don’t slide back.</dd></div>
+        </dl>
       </div>
     </section>
 
     <section class="section soft" id="app" aria-labelledby="app-title">
-      <div class="wrap">
-        <div class="app-card reveal">
-          <div>
-            <p class="kicker">Your experience</p>
-            <h3 id="app-title">Your plan. In your pocket.</h3>
-            <p>Training, meals, habits and check-ins, connected in one calm space. Green when you hit a target, orange when you're close, red when it's time to talk.</p>
-            <a class="btn btn-dark" href="/app/">Client login ↗</a>
-            <p class="fine">Screens from the Rewired app with example client numbers.</p>
-          </div>
-          <div class="phone-stage" aria-label="Preview of the Rewired client app: home, meal plan and habits screens">
-            <div class="phone" id="phone">
-              <div class="ph-top"><span>9:41</span><span class="ph-logo"><img src="/assets/app-icon.png" alt="" width="18" height="18">Rewired</span><span>●●●</span></div>
-              <div class="ph-screens">
-                <section class="ph-screen on" aria-label="Home">
-                  <div class="ph-hero"><small>Thursday · Week 6 of 12</small><b>Good morning, Arjun</b>
-                    <div class="ph-score"><strong>86</strong><span>Weekly score</span></div></div>
-                  <div class="ph-card"><small>Up next</small><b>Upper A · Hotel gym</b><span>45 min · 5 exercises</span></div>
-                  <div class="ph-tiles"><div><small>Protein</small><b>150<i>/160 g</i></b><em style="--w:94%"></em></div><div><small>Steps</small><b>11,240</b><em style="--w:100%"></em></div></div>
-                </section>
-                <section class="ph-screen" aria-label="Meal plan">
-                  <div class="ph-head"><small>Meal plan</small><b>Lunch · 12:30</b></div>
-                  <ul class="ph-meal">
-                    <li><i style="--c:#e8892b"></i>Dal tadka<span>250 g</span></li>
-                    <li><i style="--c:#d9a352"></i>Roti<span>2 × 40 g</span></li>
-                    <li><i style="--c:#f4c77d"></i>Paneer tikka<span>120 g</span></li>
-                  </ul>
-                  <div class="ph-actions"><span class="on">Ate as planned</span><span>Something different</span></div>
-                  <div class="ph-macros"><div><small>Protein</small><b>41 g</b></div><div><small>Carbs</small><b>78 g</b></div><div><small>Fat</small><b>24 g</b></div></div>
-                </section>
-                <section class="ph-screen" aria-label="Habits">
-                  <div class="ph-head"><small>Habits</small><b>Today</b></div>
-                  <ul class="ph-habits">
-                    <li>Protein<span class="g">150 / 160 g</span></li>
-                    <li>Steps<span class="g">11,240</span></li>
-                    <li>Water<span class="o">2.4 / 3 L</span></li>
-                    <li>Sleep<span class="r">5.4 / 7.5 h</span></li>
-                  </ul>
-                  <p class="ph-tip">Green when you hit it. Orange when you're close. Red means we talk about it.</p>
-                </section>
-              </div>
-              <div class="ph-dots"><i class="on"></i><i></i><i></i></div>
+      <div class="wrap app-row">
+        <div class="app-copy reveal">
+          <h2 id="app-title">It all lives in one app.</h2>
+          <p>Your sessions, meals, habits and check-ins in one place. Each habit goes green when you hit it, orange when you’re close, and red when it’s worth a chat.</p>
+          <p><a class="text-link" href="/app/">Client login</a></p>
+          <p class="fine">Screens from the Rewired app, with example numbers.</p>
+        </div>
+        <div class="phone-stage" aria-label="Preview of the Rewired client app: home, meal plan and habits screens">
+          <div class="phone" id="phone">
+            <div class="ph-top"><span>9:41</span><span class="ph-logo"><img src="/assets/app-icon.png" alt="" width="18" height="18">Rewired</span><span>●●●</span></div>
+            <div class="ph-screens">
+              <section class="ph-screen on" aria-label="Home">
+                <div class="ph-hero"><small>Thursday · Week 6 of 12</small><b>Good morning, Arjun</b>
+                  <div class="ph-score"><strong>86</strong><span>Weekly score</span></div></div>
+                <div class="ph-card"><small>Up next</small><b>Upper A · Hotel gym</b><span>45 min · 5 exercises</span></div>
+                <div class="ph-tiles"><div><small>Protein</small><b>150<i>/160 g</i></b><em style="--w:94%"></em></div><div><small>Steps</small><b>11,240</b><em style="--w:100%"></em></div></div>
+              </section>
+              <section class="ph-screen" aria-label="Meal plan">
+                <div class="ph-head"><small>Meal plan</small><b>Lunch · 12:30</b></div>
+                <ul class="ph-meal">
+                  <li><i style="--c:#e8892b"></i>Dal tadka<span>250 g</span></li>
+                  <li><i style="--c:#d9a352"></i>Roti<span>2 × 40 g</span></li>
+                  <li><i style="--c:#f4c77d"></i>Paneer tikka<span>120 g</span></li>
+                </ul>
+                <div class="ph-actions"><span class="on">Ate as planned</span><span>Something different</span></div>
+                <div class="ph-macros"><div><small>Protein</small><b>41 g</b></div><div><small>Carbs</small><b>78 g</b></div><div><small>Fat</small><b>24 g</b></div></div>
+              </section>
+              <section class="ph-screen" aria-label="Habits">
+                <div class="ph-head"><small>Habits</small><b>Today</b></div>
+                <ul class="ph-habits">
+                  <li>Protein<span class="g">150 / 160 g</span></li>
+                  <li>Steps<span class="g">11,240</span></li>
+                  <li>Water<span class="o">2.4 / 3 L</span></li>
+                  <li>Sleep<span class="r">5.4 / 7.5 h</span></li>
+                </ul>
+                <p class="ph-tip">Green when you hit it. Orange when you’re close. Red means we talk about it.</p>
+              </section>
             </div>
+            <div class="ph-dots"><i class="on"></i><i></i><i></i></div>
           </div>
         </div>
       </div>
@@ -249,36 +216,26 @@
     <section class="section" aria-labelledby="promise-title">
       <div class="wrap">
         <div class="promise reveal">
-          <p class="kick"><b>✓</b>The Week 8 Progress Promise</p>
-          <h2 id="promise-title">Notice the difference by week 8. <span>Or I keep coaching you.</span></h2>
-          <p>If you haven't noticed a meaningful difference by the end of week 8, I'll keep refining your training and nutrition with you. If you still need support after the initial 12 weeks, coaching continues at no additional cost until you're happy with your progress.</p>
-          <small>Extra coaching, not a refund. See the <a href="terms.html#promise" style="color:inherit">Terms &amp; Conditions</a>.</small>
+          <p class="promise-label">The Week 8 Progress Promise</p>
+          <h2 id="promise-title">Notice the difference by week 8. <em>Or I keep coaching you.</em></h2>
+          <p>If you haven’t noticed a meaningful difference by the end of week 8, I’ll keep refining your training and nutrition with you. If you still need support after the initial 12 weeks, coaching continues at no additional cost until you’re happy with your progress.</p>
+          <small>This is extra coaching, not a refund. The details are in the <a href="terms.html#promise">Terms &amp; Conditions</a>.</small>
         </div>
       </div>
     </section>
 
-    <section class="section soft" aria-labelledby="price-title">
-      <div class="wrap">
-        <div class="head reveal">
-          <p class="kicker">One clear investment</p>
+    <section class="section start" aria-labelledby="price-title">
+      <div class="wrap start-row">
+        <div class="reveal">
           <h2 id="price-title">Start with a conversation.</h2>
+          <p>Book a free 30-minute call. We’ll talk through your goal, your week and what’s got in the way before. If we’re both happy it’s a fit, you start with a kickoff call and I set up your targets and the app.</p>
+          <a class="btn btn-dark" data-book href="https://calendly.com/coaching-abheyrewired/30min" target="_blank" rel="noopener noreferrer">Book a free 30-minute call</a>
         </div>
-        <div class="price">
-          <article class="card reveal">
-            <p class="kicker">The 12 Week Executive Recomp</p>
-            <p class="amount">AUD $2,249</p>
-            <p>Pay once, or split it into <strong>3 payments of AUD $750</strong>. Payment is arranged after your call, once you and Abhey agree it's the right fit.</p>
-            <div><a class="btn btn-ghost" href="pricing.html">See everything that's included</a></div>
-          </article>
-          <article class="card reveal">
-            <p class="kicker">How it starts</p>
-            <ol class="steps">
-              <li>Book a free 30-minute strategy session</li>
-              <li>Talk through your goals and your week</li>
-              <li>Begin with a kickoff call, targets and the app</li>
-            </ol>
-            <div><a class="btn btn-dark" data-book href="https://calendly.com/coaching-abheyrewired/30min" target="_blank" rel="noopener noreferrer">Book a Strategy Session ↗</a></div>
-          </article>
+        <div class="cost reveal">
+          <p class="cost-name">The 12 Week Executive Recomp</p>
+          <p class="amount">AUD $2,249</p>
+          <p>Pay once, or in 3 payments of AUD $750. Payment is arranged after the call, once we’ve agreed it’s right for you.</p>
+          <a class="text-link" href="pricing.html">See everything that’s included</a>
         </div>
       </div>
     </section>
@@ -297,6 +254,6 @@
     </div>
   </footer>
 
-  <script src="/home.js?rev=specify-1"></script>
+  <script src="/home.js?rev=human-1"></script>
 </body>
 </html>
