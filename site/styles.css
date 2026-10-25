@@ -9,14 +9,14 @@
   --sand: #f4c77d;
   --line: #c9d8f0;
   --good: #146c43;
-  --warn: #8a4b00;
+  --warn: #8a5f00;
   --bad: #b42318;
-  /* Habit tracker status fills: green / orange / red, tuned to sit with the
+  /* Habit tracker status fills: green / amber / red, tuned to sit with the
      Clear Sky blues. Brand blue stays the accent, never a status. */
   --hit: #1f9d63;
   --hit-soft: #e2f5eb;
-  --close: #e8892b;
-  --close-soft: #fdf0e1;
+  --close: #f2a900;
+  --close-soft: #fdf3d6;
   --off: #d64545;
   --off-soft: #fbe6e6;
   --ink-2: #5e6b7e;

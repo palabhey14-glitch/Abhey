@@ -15,7 +15,7 @@
   };
   // [icon, tile label, packet text, log line html, status class]
   const STEPS = [
-    ['meal', 'Meals', 'Dal tadka + 2 roti', '<b>Dal tadka + 2 roti</b> → <em>+22 g protein</em> · 150 / 160 g', 'warn'],
+    ['meal', 'Meals', '3-egg omelette', '<b>3-egg omelette</b> → <em>+19 g protein</em> · 150 / 160 g', 'warn'],
     ['train', 'Training', 'DB press 24 kg × 8', '<b>Upper A, hotel gym</b> → <em>+2.5 kg</em> on last week', 'ok'],
     ['habit', 'Habits', 'Steps 11,240', '<b>Steps 11,240</b> → <em>target met</em> · 5 days in a row', 'ok'],
     ['supp', 'Supps', 'Creatine 5 g', '<b>Supplements</b> → <em>3 of 3</em> today', 'ok'],
