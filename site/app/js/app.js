@@ -311,6 +311,7 @@
 
   function loginScreen(body) {
     root.innerHTML = `<div class="login-art${COACH_LOGIN ? ' coach' : ''}" aria-hidden="true">${COACH_LOGIN ? coachArt() : clientArt()}</div>
+      <a class="login-home" href="/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5.5h4V20"/></svg>Home</a>
       <main class="screen center login">${body}</main>`;
   }
 
