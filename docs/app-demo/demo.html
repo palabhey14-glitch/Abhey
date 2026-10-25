@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rewired app demo</title>
+<style>
+@font-face { font-family: 'Montserrat'; src: url('../../site/assets/fonts/montserrat-latin.woff2') format('woff2'); font-weight: 100 900; }
+:root {
+  --blue: #2444F9; --blue-2: #5B74FF; --ink: #0B2545; --ink-2: #5E6B7E; --line: #DCE6F7;
+  --sky: #E8F1FD; --bg: #F3F6FC; --sand: #F4C77D; --hit: #1F9D63; --close: #E8892B; --off: #D64545;
+  --display: 'Montserrat', -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --body: -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink); font-family: var(--body); -webkit-font-smoothing: antialiased; }
+#stage { position: absolute; inset: 0; transform-origin: 50% 50%; }
+.scene { position: absolute; left: 50%; top: 53%; transform: translate(-50%, -50%); opacity: 0; will-change: transform, opacity, filter; }
+.kick { position: absolute; left: 0; right: 0; top: 150px; text-align: center; font: 700 30px var(--display); letter-spacing: .16em; text-transform: uppercase; color: var(--blue); opacity: 0; }
+.kick b { display: inline-block; min-width: 64px; padding: 6px 14px; margin-right: 14px; border-radius: 99px; background: var(--blue); color: #fff; letter-spacing: .05em; }
+.title { position: absolute; left: 0; right: 0; top: 214px; text-align: center; font: 800 64px/1.1 var(--display); letter-spacing: -.02em; opacity: 0; }
+.cursor { position: absolute; left: 0; top: 0; width: 46px; height: 46px; z-index: 50; opacity: 0; pointer-events: none; }
+.cursor svg { width: 100%; height: 100%; filter: drop-shadow(0 4px 6px rgba(11,37,69,.3)); }
+
+.steps { position: absolute; left: 0; right: 0; bottom: 150px; display: flex; justify-content: center; gap: 14px; opacity: 0; }
+.steps i { width: 18px; height: 18px; border-radius: 9px; background: var(--line); transition: none; }
+.steps i.on { width: 54px; background: var(--blue); }
+.steps i.done { background: var(--blue-2); opacity: .45; }
+
+/* shared UI */
+.card { background: #fff; border-radius: 34px; box-shadow: 0 2px 4px rgba(11,37,69,.06), 0 30px 70px rgba(36,68,249,.14); padding: 44px; }
+.btn { display: flex; align-items: center; justify-content: center; height: 104px; border-radius: 52px; background: var(--blue); color: #fff; font: 700 36px var(--display); box-shadow: 0 14px 30px rgba(36,68,249,.32); }
+.field { display: flex; align-items: center; height: 108px; padding: 0 32px; border-radius: 22px; border: 3px solid var(--line); font-size: 36px; color: var(--ink); background: #fff; }
+.field label { width: 150px; color: var(--ink-2); font-size: 30px; }
+.caret { display: inline-block; width: 3px; height: 42px; margin-left: 4px; background: var(--blue); vertical-align: middle; }
+.row { display: flex; align-items: center; gap: 22px; }
+.tile { width: 76px; height: 76px; flex: none; border-radius: 22px; background: var(--sky); display: grid; place-items: center; font-size: 38px; }
+.dot { width: 58px; height: 58px; flex: none; border-radius: 50%; display: grid; place-items: center; color: #fff; font: 800 30px var(--display); border: 4px solid var(--line); background: #fff; transition: none; }
+.dot.g { background: var(--hit); border-color: var(--hit); } .dot.o { background: var(--close); border-color: var(--close); } .dot.r { background: var(--off); border-color: var(--off); }
+.bar { height: 16px; border-radius: 10px; background: var(--sky); overflow: hidden; }
+.bar i { display: block; height: 100%; border-radius: 10px; width: 0; }
+.muted { color: var(--ink-2); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* 0 logo */
+.logo { display: flex; flex-direction: column; align-items: center; gap: 34px; }
+.mark { width: 220px; height: 220px; border-radius: 60px; background: linear-gradient(160deg, var(--blue-2), var(--blue)); display: grid; place-items: center; color: #fff; font: 900 140px/1 var(--display); box-shadow: 0 30px 60px rgba(36,68,249,.35); }
+.mark i { font-style: normal; color: var(--sand); }
+.word { font: 900 92px var(--display); letter-spacing: -.03em; }
+.tag { font: 600 40px var(--body); color: var(--ink-2); min-height: 50px; }
+
+/* 1 sign in */
+.signin { width: 820px; display: grid; gap: 28px; }
+.signin h2 { margin: 0 0 8px; font: 800 52px var(--display); }
+.codes { display: flex; gap: 18px; justify-content: space-between; }
+.codes span { width: 112px; height: 132px; border-radius: 24px; border: 3px solid var(--line); display: grid; place-items: center; font: 800 60px var(--display); }
+.codes span.f { border-color: var(--blue); }
+
+/* 2 home */
+.home { width: 860px; display: grid; gap: 22px; }
+.hero-card { border-radius: 34px; padding: 44px; color: #fff; background: linear-gradient(160deg, var(--blue-2), var(--blue)); box-shadow: 0 30px 60px rgba(36,68,249,.3); }
+.hero-card small { font-size: 30px; opacity: .85; } .hero-card div { font: 800 58px var(--display); margin-top: 6px; }
+.mrow { display: grid; gap: 14px; }
+.mrow .row { justify-content: space-between; font: 700 36px var(--display); }
+.mrow .row span:last-child { font: 600 32px var(--body); color: var(--ink-2); }
+
+/* 3 meals */
+.meals { width: 860px; display: grid; gap: 22px; }
+.food { display: flex; align-items: center; gap: 22px; padding: 22px 26px; border-radius: 24px; background: var(--bg); font: 600 34px var(--body); }
+.food .k { margin-left: auto; font: 700 30px var(--display); color: var(--ink-2); }
+.food .plate { width: 70px; height: 70px; border-radius: 50%; flex: none; }
+.add { display: inline-flex; align-items: center; gap: 12px; height: 84px; padding: 0 34px; border-radius: 42px; background: var(--blue); color: #fff; font: 700 32px var(--display); box-shadow: 0 12px 24px rgba(36,68,249,.3); }
+.menu { position: absolute; left: 44px; top: 230px; width: 560px; padding: 18px; border-radius: 26px; background: #fff; box-shadow: 0 30px 60px rgba(11,37,69,.18); display: grid; gap: 6px; font: 600 32px var(--body); opacity: 0; }
+.menu div { padding: 18px 20px; border-radius: 16px; display: flex; gap: 14px; align-items: center; }
+.menu div::before { content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--blue); }
+.menu div.sel { background: var(--sky); color: var(--blue); }
+.macros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.macros div { padding: 24px; border-radius: 24px; background: var(--bg); }
+.macros small { display: block; font-size: 28px; color: var(--ink-2); }
+.macros b { display: block; font: 800 56px var(--display); margin: 4px 0 12px; }
+.diet { display: inline-flex; padding: 10px 20px; border-radius: 99px; background: var(--sky); color: var(--blue); font: 700 26px var(--display); letter-spacing: .06em; text-transform: uppercase; }
+
+/* 4 training */
+.train { width: 860px; display: grid; gap: 20px; }
+.train h3 { margin: 0; font: 800 46px var(--display); }
+.set { display: grid; grid-template-columns: 90px 1fr 1fr 70px; gap: 16px; align-items: center; font: 700 36px var(--display); }
+.set .box { height: 92px; border-radius: 20px; background: var(--bg); display: grid; place-items: center; }
+.set .n { color: var(--ink-2); font-size: 30px; }
+.pr { display: inline-flex; align-items: center; gap: 12px; padding: 16px 26px; border-radius: 99px; background: #E2F5EB; color: var(--hit); font: 800 32px var(--display); }
+
+/* 5 habits */
+.habits { width: 860px; display: grid; gap: 18px; }
+.habit { display: flex; align-items: center; gap: 24px; padding: 26px 30px; border-radius: 30px; background: #fff; box-shadow: 0 2px 4px rgba(11,37,69,.05), 0 16px 36px rgba(36,68,249,.08); }
+.habit .t { flex: 1; font: 700 38px var(--display); }
+.habit .t small { display: block; font: 500 28px var(--body); color: var(--ink-2); margin-top: 4px; }
+.habit .v { font: 700 36px var(--display); min-width: 160px; text-align: right; }
+.seg { display: flex; padding: 8px; border-radius: 22px; background: #fff; font: 700 30px var(--display); box-shadow: 0 2px 4px rgba(11,37,69,.05); }
+.seg span { flex: 1; text-align: center; padding: 18px; border-radius: 16px; color: var(--ink-2); }
+.seg span.on { background: var(--blue); color: #fff; }
+
+/* 6 supplements */
+.supps { width: 860px; display: grid; gap: 18px; }
+.supp { display: flex; align-items: center; gap: 24px; padding: 30px; border-radius: 30px; background: #fff; box-shadow: 0 2px 4px rgba(11,37,69,.05), 0 16px 36px rgba(36,68,249,.08); font: 700 38px var(--display); }
+.supp small { display: block; font: 500 28px var(--body); color: var(--ink-2); margin-top: 4px; }
+.supp .chk { margin-left: auto; width: 70px; height: 70px; border-radius: 22px; border: 4px solid var(--line); display: grid; place-items: center; color: #fff; font-size: 40px; }
+.supp .chk.on { background: var(--hit); border-color: var(--hit); }
+.count { text-align: center; font: 800 44px var(--display); color: var(--hit); }
+
+/* 7 check-in */
+.checkin { width: 860px; display: grid; gap: 22px; }
+.photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.photos div { aspect-ratio: 3 / 4; border-radius: 26px; background: linear-gradient(160deg, #E8F1FD, #D5E2FA); display: grid; place-items: center; font-size: 60px; position: relative; overflow: hidden; }
+.photos div span { position: absolute; bottom: 14px; left: 0; right: 0; text-align: center; font: 700 24px var(--display); color: var(--ink-2); }
+.meas { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.meas div { padding: 24px; border-radius: 24px; background: var(--bg); font: 600 30px var(--body); color: var(--ink-2); }
+.meas b { display: block; margin-top: 4px; font: 800 46px var(--display); color: var(--ink); }
+.meas em { font-style: normal; color: var(--hit); font: 700 30px var(--display); }
+.sent { display: flex; align-items: center; justify-content: center; gap: 16px; height: 104px; border-radius: 52px; background: #E2F5EB; color: var(--hit); font: 800 36px var(--display); }
+
+/* 8 progress */
+.prog { display: flex; flex-direction: column; align-items: center; gap: 18px; width: 860px; }
+.prog small { font: 600 36px var(--body); color: var(--ink-2); }
+.big { white-space: nowrap; font: 900 190px/1 var(--display); letter-spacing: -.04em; color: var(--blue); }
+.prog svg { width: 860px; height: 300px; overflow: visible; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="kick" id="kick"><b id="kick-n">01</b><span id="kick-t">Sign in</span></div>
+  <div class="title" id="title"></div>
+  <div class="steps" id="steps"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+
+  <!-- 0 / 9 logo -->
+  <div class="scene" id="s-logo"><div class="logo"><div class="mark">R<i>.</i></div><div class="word">Rewired</div><div class="tag" id="tag"></div></div></div>
+
+  <!-- 1 sign in -->
+  <div class="scene" id="s-signin">
+    <div class="card signin">
+      <h2>Sign in</h2>
+      <div class="field"><label>Email</label><span id="email"></span><i class="caret" id="caret1"></i></div>
+      <div class="btn" id="send">Email me a code</div>
+      <div class="muted" style="font-size:30px;text-align:center" id="code-label">Enter the 6-digit code</div>
+      <div class="codes" id="codes"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    </div>
+  </div>
+
+  <!-- 2 home -->
+  <div class="scene" id="s-home">
+    <div class="home">
+      <div class="hero-card"><small>Thursday · Week 6 of 12</small><div>Good morning</div></div>
+      <div class="card mrow">
+        <div class="row"><span>Protein</span><span class="num" id="h-p">0 / 160 g</span></div>
+        <div class="bar"><i id="hb-p" style="background:var(--close)"></i></div>
+        <div class="row" style="margin-top:14px"><span>Calories</span><span class="num" id="h-c">0 / 2,250</span></div>
+        <div class="bar"><i id="hb-c" style="background:var(--hit)"></i></div>
+        <div class="row" style="margin-top:14px"><span>Steps</span><span class="num" id="h-s">0 / 9,000</span></div>
+        <div class="bar"><i id="hb-s" style="background:var(--hit)"></i></div>
+      </div>
+      <div class="card row" style="padding:30px 36px"><span class="tile">🏋️</span><span style="font:700 36px var(--display);flex:1">Upper A · Hotel gym</span><span class="muted" style="font-size:30px">45 min</span></div>
+    </div>
+  </div>
+
+  <!-- 3 meals -->
+  <div class="scene" id="s-meals">
+    <div class="card meals" style="position:relative">
+      <div class="row" style="justify-content:space-between"><span style="font:800 46px var(--display)">Lunch</span><span class="diet">Halal</span></div>
+      <div id="foods" style="display:grid;gap:14px"></div>
+      <div><span class="add" id="addbtn">+ Add food</span></div>
+      <div class="menu" id="menu"><div>Chicken tikka · 150 g</div><div>Roti · 2</div><div>Dal tadka · 1 cup</div><div>Cucumber raita</div></div>
+      <div class="macros">
+        <div><small>Protein</small><b class="num" id="m-p">0 g</b><div class="bar"><i id="mb-p" style="background:var(--blue)"></i></div></div>
+        <div><small>Carbs</small><b class="num" id="m-c">0 g</b><div class="bar"><i id="mb-c" style="background:var(--sand)"></i></div></div>
+        <div><small>Fat</small><b class="num" id="m-f">0 g</b><div class="bar"><i id="mb-f" style="background:#7FB6FF"></i></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 training -->
+  <div class="scene" id="s-train">
+    <div class="card train">
+      <div class="row" style="justify-content:space-between"><h3>Incline DB press</h3><span class="muted" style="font-size:30px">3 × 8</span></div>
+      <div class="set n" style="font-size:26px;color:var(--ink-2)"><span>SET</span><span style="text-align:center">KG</span><span style="text-align:center">REPS</span><span></span></div>
+      <div id="sets" style="display:grid;gap:14px"></div>
+      <div style="text-align:center;margin-top:10px"><span class="pr" id="pr">▲ +2.5 kg vs last week</span></div>
+    </div>
+  </div>
+
+  <!-- 5 habits -->
+  <div class="scene" id="s-habits">
+    <div class="habits">
+      <div class="seg"><span class="on">Day view</span><span>All</span></div>
+      <div class="habit"><span class="tile">👣</span><span class="t">Steps<small>Target 9,000</small></span><span class="v num" id="hv0"></span><span class="dot" id="hd0"></span></div>
+      <div class="habit"><span class="tile">💧</span><span class="t">Water<small>Target 3 L</small></span><span class="v num" id="hv1"></span><span class="dot" id="hd1"></span></div>
+      <div class="habit"><span class="tile">🥩</span><span class="t">Protein<small>Target 160 g</small></span><span class="v num" id="hv2"></span><span class="dot" id="hd2"></span></div>
+      <div class="habit"><span class="tile">🌙</span><span class="t">Sleep<small>Target 7.5 h</small></span><span class="v num" id="hv3"></span><span class="dot" id="hd3"></span></div>
+    </div>
+  </div>
+
+  <!-- 6 supplements -->
+  <div class="scene" id="s-supps">
+    <div class="supps">
+      <div class="supp"><span class="tile">💊</span><span>Creatine<small>5 g · any time</small></span><span class="chk" id="c0">✓</span></div>
+      <div class="supp"><span class="tile">☀️</span><span>Vitamin D<small>1 capsule · with breakfast</small></span><span class="chk" id="c1">✓</span></div>
+      <div class="supp"><span class="tile">🐟</span><span>Omega-3<small>2 capsules · with dinner</small></span><span class="chk" id="c2">✓</span></div>
+      <div class="count num" id="sc">0 of 3 today</div>
+    </div>
+  </div>
+
+  <!-- 7 check-in -->
+  <div class="scene" id="s-check">
+    <div class="card checkin">
+      <div class="row" style="justify-content:space-between"><span style="font:800 46px var(--display)">Week 6 check-in</span><span class="muted" style="font-size:28px">Sunday</span></div>
+      <div class="photos"><div id="ph0">📷<span>Front</span></div><div id="ph1">📷<span>Side</span></div><div id="ph2">📷<span>Back</span></div></div>
+      <div class="meas">
+        <div>Waist<b class="num" id="ci-w">—</b><em id="ci-wd"></em></div>
+        <div>Bodyweight avg<b class="num" id="ci-b">—</b><em id="ci-bd" style="color:var(--ink-2)"></em></div>
+      </div>
+      <div class="btn" id="sendci">Send to Abhey</div>
+    </div>
+  </div>
+
+  <!-- 8 progress -->
+  <div class="scene" id="s-prog">
+    <div class="prog">
+      <small>Waist since week 1</small>
+      <div class="big num" id="pbig">0.0 cm</div>
+      <svg viewBox="0 0 860 300" aria-hidden="true">
+        <line x1="0" y1="280" x2="860" y2="280" stroke="#DCE6F7" stroke-width="3"/>
+        <path id="pline" d="M10,40 C120,52 200,70 290,96 S470,150 560,178 S760,226 850,240" fill="none" stroke="#2444F9" stroke-width="10" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        <circle id="pdot" cx="850" cy="240" r="18" fill="#2444F9" opacity="0"/>
+      </svg>
+      <small style="font-size:30px">Weeks 1 to 6</small>
+    </div>
+  </div>
+
+  <div class="cursor" id="cursor"><svg viewBox="0 0 24 24"><path d="M4 2l15 11-6.5 1.2L16 21l-3 1.4-3.4-6.8L4 19z" fill="#0B2545" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/></svg></div>
+</div>
+
+<script>
+// Every frame is drawn by render(t), t in seconds. Open demo.html#play to watch it live.
+const DURATION = 30;
+const $ = (s) => document.querySelector(s);
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const ease = (x) => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const out = (x) => 1 - Math.pow(1 - x, 3);
+const back = (x) => { const c = 1.6; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+const fmt = (n) => Math.round(n).toLocaleString('en-AU');
+
+// Scenes: [id, start, end, kicker number, kicker text, title]
+const SCENES = [
+  ['s-logo', 0, 2.4, '', '', ''],
+  ['s-signin', 2.4, 6.2, '01', 'Sign in', 'A code, not a password'],
+  ['s-home', 6.2, 9.4, '02', 'Your day', 'Everything for today'],
+  ['s-meals', 9.4, 13.4, '03', 'Meals & macros', 'Log the food you eat'],
+  ['s-train', 13.4, 16.8, '04', 'Training', 'Every set, tracked'],
+  ['s-habits', 16.8, 20.0, '05', 'Habits', 'Green, orange or red'],
+  ['s-supps', 20.0, 22.6, '06', 'Supplements', 'Tick them off'],
+  ['s-check', 22.6, 26.0, '07', 'Weekly check-in', 'Photos and numbers to Abhey'],
+  ['s-prog', 26.0, 28.4, '08', 'Progress', 'Watch it change'],
+];
+const END = ['s-logo', 28.4, DURATION];
+const IN = 0.45, OUTD = 0.35;
+
+function showScene(el, t, a, b, last) {
+  const i = seg(t, a, a + IN), o = last ? 0 : seg(t, b - OUTD, b);
+  const vis = t >= a && t < b + (last ? 1 : 0);
+  if (!vis) { el.style.opacity = 0; return 0; }
+  const life = seg(t, a, b);
+  const zoom = 1 + life * 0.05;                     // slow camera push-in
+  const sc = 1.1 * (0.94 + 0.06 * out(i)) * zoom * (1 + o * 0.06);
+  el.style.opacity = (out(i) * (1 - o)).toFixed(3);
+  el.style.filter = `blur(${((1 - out(i)) * 14 + o * 12).toFixed(2)}px)`;
+  el.style.transform = `translate(-50%, -50%) translateY(${((1 - out(i)) * 40 - o * 30).toFixed(1)}px) scale(${sc.toFixed(4)})`;
+  return 1;
+}
+
+function typed(text, p) { return text.slice(0, Math.round(text.length * clamp(p))); }
+
+let cursorState = null;
+function cursor(x, y, alpha, click) {
+  const c = $('#cursor');
+  c.style.opacity = alpha;
+  c.style.transform = `translate(${x}px, ${y}px) scale(${1 - click * 0.18})`;
+}
+// position of an element's centre in stage coordinates
+function centre(sel, dx = 0, dy = 0) {
+  const r = $(sel).getBoundingClientRect();
+  return [r.left + r.width / 2 + dx, r.top + r.height / 2 + dy];
+}
+function moveCursor(t, a, b, from, to, clickAt) {
+  const p = ease(seg(t, a, b));
+  const x = from[0] + (to[0] - from[0]) * p, y = from[1] + (to[1] - from[1]) * p;
+  const click = clickAt ? Math.max(0, 1 - Math.abs(t - clickAt) / 0.12) : 0;
+  cursor(x, y, 1, click);
+}
+
+const FOODS = [
+  ['Chicken tikka · 150 g', '#E06A35', 34, 6, 9],
+  ['Roti · 2', '#E2B676', 8, 36, 4],
+  ['Dal tadka · 1 cup', '#F0B530', 6, 4, 2],
+];
+
+function render(t) {
+  // kicker + title follow the active scene
+  let any = false, kickAlpha = 0;
+  SCENES.forEach(([id, a, b, n, k, title], idx) => {
+    const v = showScene($('#' + id), t, a, b, false);
+    if (v && n) {
+      $('#kick-n').textContent = n; $('#kick-t').textContent = k; $('#title').textContent = title;
+      kickAlpha = out(seg(t, a, a + 0.4)) * (1 - seg(t, b - 0.3, b));
+    }
+    any = any || v;
+  });
+  if (t >= END[1]) showScene($('#s-logo'), t, END[1], END[2], true);
+  $('#kick').style.opacity = kickAlpha; $('#title').style.opacity = kickAlpha;
+  const active = SCENES.findIndex(([, a, b, n]) => n && t >= a && t < b);
+  $('#steps').style.opacity = active > 0 ? 1 : 0;
+  [...$('#steps').children].forEach((d, i) => { d.className = i === active - 1 ? 'on' : i < active - 1 ? 'done' : ''; });
+  $('#title').style.transform = `translateY(${(1 - kickAlpha) * 14}px)`;
+  cursor(0, 0, 0, 0);
+
+  // logo: tagline types at the end
+  $('#tag').textContent = t >= END[1] ? typed('Every day, coached.', seg(t, END[1] + 0.6, END[1] + 1.6)) : '';
+
+  // 1 sign in
+  if (t > 2.3 && t < 6.3) {
+    $('#email').textContent = typed('you@email.com', seg(t, 2.9, 3.9));
+    $('#caret1').style.opacity = t < 4.1 ? (Math.floor(t * 3) % 2 ? 1 : 0.2) : 0;
+    const send = $('#send'); const press = Math.max(0, 1 - Math.abs(t - 4.35) / 0.12);
+    send.style.transform = `scale(${1 - press * 0.04})`;
+    const code = '482916', cp = seg(t, 4.7, 5.6);
+    [...$('#codes').children].forEach((s, i) => {
+      const filled = cp * 6 > i;
+      s.textContent = filled ? code[i] : '';
+      s.classList.toggle('f', filled);
+    });
+    $('#codes').style.opacity = 0.35 + 0.65 * out(seg(t, 4.4, 4.7));
+    $('#code-label').style.opacity = 0.35 + 0.65 * out(seg(t, 4.4, 4.7));
+    if (t > 3.9 && t < 4.6) moveCursor(t, 3.9, 4.25, [760, 1500], centre('#send', 60, 10), 4.35);
+  }
+
+  // 2 home: numbers roll up
+  if (t > 6.1 && t < 9.5) {
+    const p = out(seg(t, 6.7, 7.9));
+    $('#h-p').textContent = `${fmt(142 * p)} / 160 g`; $('#hb-p').style.width = 89 * p + '%';
+    const c = out(seg(t, 7.0, 8.2));
+    $('#h-c').textContent = `${fmt(1980 * c)} / 2,250`; $('#hb-c').style.width = 88 * c + '%';
+    const s = out(seg(t, 7.3, 8.5));
+    $('#h-s').textContent = `${fmt(9840 * s)} / 9,000`; $('#hb-s').style.width = 100 * s + '%';
+  }
+
+  // 3 meals: open menu, add three foods, totals rise
+  if (t > 9.3 && t < 13.5) {
+    const menuOpen = t > 10.35 && t < 12.25;
+    $('#menu').style.opacity = menuOpen ? out(seg(t, 10.35, 10.55)) * (1 - seg(t, 12.05, 12.25)) : 0;
+    $('#menu').style.transform = `translateY(${menuOpen ? (1 - out(seg(t, 10.35, 10.55))) * -14 : 0}px)`;
+    const added = t < 10.9 ? 0 : t < 11.4 ? 1 : t < 11.9 ? 2 : 3;
+    [...$('#menu').children].forEach((d, i) => d.classList.toggle('sel', i < added && i < 3));
+    $('#foods').innerHTML = FOODS.slice(0, added).map(([n, c, p, cb, f]) =>
+      `<div class="food"><span class="plate" style="background:radial-gradient(circle at 40% 35%, #fff 0 12%, ${c} 13%)"></span>${n}<span class="k">${p}P · ${cb}C · ${f}F</span></div>`).join('');
+    const tot = FOODS.slice(0, added).reduce((s, f) => [s[0] + f[2], s[1] + f[3], s[2] + f[4]], [0, 0, 0]);
+    const k = out(seg(t, 12.2, 12.9));
+    const shown = added < 3 ? tot.map((v) => v) : tot.map((v) => v);
+    $('#m-p').textContent = `${fmt(shown[0])} g`; $('#m-c').textContent = `${fmt(shown[1])} g`; $('#m-f').textContent = `${fmt(shown[2])} g`;
+    $('#mb-p').style.width = Math.min(100, shown[0] / 50 * 100) + '%';
+    $('#mb-c').style.width = Math.min(100, shown[1] / 50 * 100) + '%';
+    $('#mb-f').style.width = Math.min(100, shown[2] / 20 * 100) + '%';
+    if (t > 9.8 && t < 10.5) moveCursor(t, 9.8, 10.2, [900, 1600], centre('#addbtn', 40, 10), 10.3);
+    if (t >= 10.5 && t < 12.1) {
+      const rows = [...$('#menu').children];
+      const target = t < 10.9 ? 0 : t < 11.4 ? 1 : 2;
+      const prev = Math.max(0, target - 1);
+      const tA = [10.5, 10.95, 11.45][target];
+      const r0 = rows[prev].getBoundingClientRect(), r1 = rows[target].getBoundingClientRect();
+      const from = target === 0 ? centre('#addbtn', 40, 10) : [r0.left + 120, r0.top + r0.height / 2];
+      moveCursor(t, tA, tA + 0.3, from, [r1.left + 120, r1.top + r1.height / 2], tA + 0.38);
+    }
+  }
+
+  // 4 training: sets fill in, PR badge pops
+  if (t > 13.3 && t < 16.9) {
+    const SETS = [['24', '8'], ['24', '8'], ['24', '7']];
+    $('#sets').innerHTML = SETS.map(([kg, r], i) => {
+      const a = 13.9 + i * 0.6, kp = seg(t, a, a + 0.25), rp = seg(t, a + 0.25, a + 0.45), done = t > a + 0.5;
+      return `<div class="set"><span class="n">${i + 1}</span><span class="box">${typed(kg, kp)}</span><span class="box">${typed(r, rp)}</span><span class="dot ${done ? 'g' : ''}">${done ? '✓' : ''}</span></div>`;
+    }).join('');
+    const pp = seg(t, 15.8, 16.2);
+    $('#pr').style.opacity = pp > 0 ? 1 : 0;
+    $('#pr').style.transform = `scale(${pp > 0 ? back(pp) : .6})`;
+    $('#pr').style.display = 'inline-flex';
+  }
+
+  // 5 habits: values type in and status circles fill
+  if (t > 16.7 && t < 20.1) {
+    const H = [['9,840', 'g', '✓'], ['3.0 L', 'g', '✓'], ['142 g', 'o', '!'], ['5.4 h', 'r', '×']];
+    H.forEach(([v, cls, mark], i) => {
+      const a = 17.3 + i * 0.55, p = seg(t, a, a + 0.3), done = t > a + 0.36;
+      $('#hv' + i).textContent = typed(v, p);
+      const d = $('#hd' + i); d.className = 'dot' + (done ? ' ' + cls : ''); d.textContent = done ? mark : '';
+      d.style.transform = `scale(${done ? back(seg(t, a + 0.36, a + 0.6)) : 1})`;
+    });
+  }
+
+  // 6 supplements: tick one by one
+  if (t > 19.9 && t < 22.7) {
+    let n = 0;
+    [0, 1, 2].forEach((i) => {
+      const a = 20.6 + i * 0.5, on = t > a;
+      const c = $('#c' + i); c.classList.toggle('on', on); c.style.transform = `scale(${on ? back(seg(t, a, a + 0.25)) : 1})`;
+      if (on) n++;
+      if (t > a - 0.45 && t < a + 0.05) {
+        const from = i === 0 ? [700, 1500] : centre('#c' + (i - 1));
+        moveCursor(t, a - 0.45, a - 0.08, from, centre('#c' + i, 6, 8), a);
+      }
+    });
+    $('#sc').textContent = `${n} of 3 today`;
+    $('#sc').style.color = n === 3 ? 'var(--hit)' : 'var(--ink-2)';
+  }
+
+  // 7 check-in: photos fill, measurements, send
+  if (t > 22.5 && t < 26.1) {
+    [0, 1, 2].forEach((i) => {
+      const p = out(seg(t, 23.1 + i * 0.25, 23.4 + i * 0.25)), el = $('#ph' + i);
+      el.style.background = `linear-gradient(160deg, rgba(91,116,255,${0.18 + p * 0.5}), rgba(36,68,249,${0.12 + p * 0.55}))`;
+      el.firstChild.textContent = p > 0.5 ? '✓' : '📷';
+      el.style.color = p > 0.5 ? '#fff' : '';
+    });
+    const m = out(seg(t, 23.9, 24.6));
+    $('#ci-w').textContent = m > 0 ? `${(85.0 - 0.8 * m).toFixed(1)} cm` : '—';
+    $('#ci-wd').textContent = m > 0.95 ? '−0.8 cm' : '';
+    $('#ci-b').textContent = m > 0 ? `${(78.4 - 0.2 * m).toFixed(1)} kg` : '—';
+    $('#ci-bd').textContent = m > 0.95 ? '−0.2 kg' : '';
+    const sent = t > 25.3, btn = $('#sendci');
+    btn.className = sent ? 'sent' : 'btn';
+    btn.textContent = sent ? '✓ Sent. Abhey reviews it this week' : 'Send to Abhey';
+    btn.style.transform = `scale(${1 - Math.max(0, 1 - Math.abs(t - 25.2) / 0.12) * 0.04})`;
+    if (t > 24.6 && t < 25.4) moveCursor(t, 24.6, 25.05, [880, 1650], centre('#sendci', 80, 10), 25.2);
+  }
+
+  // 8 progress: counter + line
+  if (t > 25.9 && t < 28.5) {
+    const p = out(seg(t, 26.5, 27.7));
+    $('#pbig').textContent = `−${(4.2 * p).toFixed(1)} cm`;
+    $('#pline').style.strokeDashoffset = 1 - p;
+    $('#pdot').setAttribute('opacity', p > 0.98 ? 1 : 0);
+  }
+}
+
+// Live preview: demo.html#play
+if (location.hash === '#play') {
+  const t0 = performance.now();
+  const loop = () => { render(((performance.now() - t0) / 1000) % DURATION); requestAnimationFrame(loop); };
+  requestAnimationFrame(loop);
+} else render(0);
+window.DURATION = DURATION;
+</script>
+</body>
+</html>

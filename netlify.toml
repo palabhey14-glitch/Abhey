@@ -16,3 +16,9 @@
   [headers.values]
     Cache-Control = "no-cache"
     X-Robots-Tag = "noindex"
+
+# Server functions (barcode lookup, recipe import). They read SUPABASE_URL,
+# SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY from the Netlify environment.
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"

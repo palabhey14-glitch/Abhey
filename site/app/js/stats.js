@@ -193,6 +193,39 @@
     return ratio >= 1 ? 'On track' : 'Under';
   }
 
+  // Habit tracker colours. Change these to retune when a row turns
+  // green, orange or red. `off` is how far the logged number is from the
+  // target as a share of the target (0.1 = 10% short).
+  //   green:  target met (calories: within `onTarget` either side)
+  //   orange: up to `red` off ("close" when within `close`)
+  //   red:    more than `red` off
+  const HABIT_BANDS = {
+    default: { close: 0.1, red: 0.25 },
+    calories: { onTarget: 0.05, close: 0.1, red: 0.25, overCounts: true },
+  };
+
+  // Returns { level: 'good' | 'warn' | 'bad' | '', label } for one number
+  // against its target. Empty level means nothing logged yet.
+  function habitStatus(kind, value, target) {
+    const v = num(value);
+    const t = num(target);
+    if (v === null || !t) return { level: '', label: v === null ? 'Not logged' : '' };
+    const band = HABIT_BANDS[kind] || HABIT_BANDS.default;
+    const off = band.overCounts ? Math.abs(v - t) / t : Math.max(0, (t - v) / t);
+    if (off <= (band.onTarget || 0)) return { level: 'good', label: 'Target hit' };
+    if (off <= band.red) {
+      const over = band.overCounts && v > t;
+      return { level: 'warn', label: off <= band.close ? (over ? 'Slightly over' : 'Close') : over ? 'Over' : 'Behind' };
+    }
+    return { level: 'bad', label: band.overCounts && v > t ? 'Well over' : 'Well off' };
+  }
+
+  // Lower bound of a free-text water target such as '3-4 L' or '2.5L'.
+  function parseLitres(text) {
+    const m = String(text || '').match(/\d+(?:\.\d+)?/);
+    return m ? Number(m[0]) : null;
+  }
+
   const api = {
     WEEKS,
     toISO,
@@ -208,6 +241,9 @@
     firstWeight,
     dashboard,
     status,
+    HABIT_BANDS,
+    habitStatus,
+    parseLitres,
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

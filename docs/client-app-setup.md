@@ -16,9 +16,8 @@ Allow about 2 hours the first time. You only do this once.
 The app replaces the Google Sheets client workbook. It follows the same
 structure: Start Here → **Profile**, Weekly Tracker → **Today**, Check-In →
 **Check-in**, measurements and photos → **Check-in** and **Photos**,
-Dashboard → **Progress**. Training and Supplements are available. The Meal Plan
-tab remains off until the separate database migration and reviewed food library
-are ready.
+Dashboard → **Progress**. Training and Supplements are available. Meal plans
+and food logging need the nutrition update in step 2c.
 
 ---
 
@@ -38,6 +37,47 @@ are ready.
 3. You should see "Success. No rows returned". This creates every table, the
    rule that clients only ever see their own data, and the private
    `progress-photos` storage folder.
+
+### 2b. Already set up before 25 October 2026? Run the habit tracker update
+The habit tracker (water, sleep and clients' own habits) needs two new tables.
+If you ran `schema.sql` before this date, open **SQL Editor** → **New query**,
+paste [`supabase/migrations/2026-10-25-habits.sql`](../supabase/migrations/2026-10-25-habits.sql)
+and click **Run**. It is safe to run twice. Until you do, the app still works;
+water, sleep and own habits just stay hidden.
+
+Habit colours (green, orange, red) are set in one place, `HABIT_BANDS` at the
+bottom of `site/app/js/stats.js`.
+
+### 2c. Run the nutrition update (food database, meal plans, food logging)
+Open **SQL Editor** → **New query**, paste
+[`supabase/migrations/2026-10-25-nutrition.sql`](../supabase/migrations/2026-10-25-nutrition.sql)
+and click **Run**. It is safe to run twice. Until you do, the coach's Meal plan
+and Food log pages show a reminder and clients log totals in the check-in.
+
+Then load the food database. The food table starts empty; see
+[`tools/food-import/README.md`](../tools/food-import/README.md). The quickest
+start is the bundled sample (about 6,900 foods, not complete coverage):
+
+```sh
+SUPABASE_URL=https://<project>.supabase.co SUPABASE_SERVICE_ROLE_KEY=<service key> \
+  node tools/food-import/import.js sample
+```
+
+The service role key bypasses all security rules. Keep it on your computer and
+in Netlify's environment settings only; never put it in `site/` or in git.
+
+How it works:
+- **Coach → Foods & plans**: meal plan templates, recipes (typed in or imported
+  from one recipe link), the food database, and a queue of foods to check.
+- **Coach → a client → Meal plan**: assign a template or daily macro targets
+  from a start date. Every assignment is a new version; earlier versions and
+  everything logged against them stay in **History**, with a change log.
+- **Coach → a client → Food log**: planned vs eaten per meal, extras,
+  missing-value and self-reported flags, and the last 7 days.
+- **Client → Meal plan tab**: each meal has Ate as planned, Something
+  different, Different amount and Skipped, plus Change and Undo. Extras and
+  snacks are logged below. Clients on macro targets get a normal food log.
+  The day's totals fill the daily check-in automatically.
 
 ### 3. Only let people you invite sign in
 1. Open **Authentication** → **Sign In / Providers** (may be called "Providers").
@@ -108,6 +148,12 @@ testing. Before clients rely on it:
 6. **Application emails:** **Forms** → turn on form detection, then
    **Form notifications** → **Add notification** → **Email** → your email.
    Each application then lands in your inbox. The free plan covers 100 a month.
+7. **Server functions (barcode lookup, recipe import):** **Site configuration** →
+   **Environment variables** → add `SUPABASE_URL`, `SUPABASE_ANON_KEY` (the same
+   two values as `site/app/config.js`) and `SUPABASE_SERVICE_ROLE_KEY`
+   (Supabase → **Project Settings** → **API keys** → service_role). Then
+   **Deploys** → **Trigger deploy**. Without these, barcode lookup and recipe
+   links say they are not switched on; everything else works.
 
 ## Part 3: Before you launch
 
