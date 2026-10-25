@@ -8,83 +8,63 @@
   <meta name="theme-color" content="#2444f9">
   <meta property="og:title" content="Rewired 12 Week Executive Recomp">
   <meta property="og:description" content="Lose the belly, build visible muscle, keep the family food. Private coaching for busy South Asian men.">
-  <meta property="og:image" content="/app/icons/icon-512.png">
+  <meta property="og:image" content="/assets/hero-land.jpg">
   <link rel="icon" href="/app/icons/favicon-32.png" sizes="32x32">
   <link rel="apple-touch-icon" href="/app/icons/apple-touch-icon.png">
   <script>
     // Sign-in links from older emails land on this page; pass them to the app.
     if (/access_token=|error_description=/.test(location.hash)) location.replace('/app/' + location.hash);
   </script>
+  <link rel="preload" href="/assets/fonts/montserrat-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/styles.css">
-  <style>
-    .nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; }
-    .nav .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; color: var(--navy); text-decoration: none; }
-    .nav .brand img { width: 36px; height: 36px; border-radius: 9px; }
-    /* Matches the launch video's background (#2a40f1) so the video blends in. */
-    .hero { background: #2a40f1; color: var(--white); }
-    .hero .wrap { display: grid; gap: 24px; padding-top: 40px; padding-bottom: 48px; align-items: center; }
-    @media (min-width: 820px) { .hero .wrap { grid-template-columns: 1.2fr 0.8fr; padding-top: 64px; padding-bottom: 72px; } }
-    .hero h1 { font-size: clamp(34px, 7vw, 56px); letter-spacing: -0.02em; }
-    .hero p { font-size: 18px; max-width: 34em; }
-    .hero .kicker { color: var(--white); }
-    /* Browsers decode video colour slightly differently, so fade the edges
-       into the background instead of showing a hard edge that can mismatch. */
-    .hero video { width: 100%; max-width: 340px; margin: 0 auto; background: #2a40f1;
-      -webkit-mask-image: linear-gradient(to right, transparent, #000 7%, #000 93%, transparent), linear-gradient(transparent, #000 5%, #000 95%, transparent);
-      -webkit-mask-composite: source-in; mask-composite: intersect; }
-    .cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
-    .hero .btn-ghost { color: var(--white); border-color: var(--white); }
-    section.block { padding: 56px 0; }
-    section.block.alt { background: var(--sky); }
-    section.block h2 { font-size: clamp(26px, 5vw, 36px); }
-    .cards { display: grid; gap: 14px; margin-top: 20px; }
-    @media (min-width: 720px) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-    @media (min-width: 980px) { .cards.three { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-    .cards h3 { font-size: 19px; }
-    .cards p { margin: 0; }
-    .ticks { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
-    .ticks li { padding-left: 30px; position: relative; }
-    .ticks li::before { content: '✓'; position: absolute; left: 0; top: 0; width: 22px; height: 22px; border-radius: 50%; background: var(--brand-blue); color: var(--white); font-size: 13px; font-weight: 800; display: grid; place-items: center; }
-    .crosses li::before { content: '×'; background: var(--navy); font-size: 16px; }
-    .steps { counter-reset: step; list-style: none; padding: 0; display: grid; gap: 14px; }
-    .steps li { counter-increment: step; display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: start; }
-    .steps li::before { content: counter(step); width: 44px; height: 44px; border-radius: 50%; background: var(--brand-blue); color: var(--white); font-weight: 800; font-size: 18px; display: grid; place-items: center; }
-    .price { font-size: clamp(40px, 8vw, 56px); font-weight: 800; letter-spacing: -0.02em; margin: 0; }
-    details { border-bottom: 1px solid var(--line); padding: 14px 0; }
-    summary { font-weight: 700; cursor: pointer; }
-    .apply { max-width: 640px; }
-    footer { background: var(--navy); color: var(--white); padding: 32px 0; font-size: 14px; }
-    footer a { color: var(--white); }
-    .hp { position: absolute; left: -9999px; }
-  </style>
+  <link rel="stylesheet" href="/landing.css">
 </head>
-<body>
-  <header class="wrap nav">
-    <a class="brand" href="/"><img src="/app/icons/icon-192.png" alt="">Rewired Coaching</a>
-    <a class="btn btn-ghost btn-small" href="/app/">Client login</a>
+<body class="landing">
+  <header class="site-nav" id="top">
+    <div class="wrap">
+      <a class="brand" href="/" aria-label="Rewired Coaching home"><span class="brand-mark">R<i>.</i></span><span>Rewired</span></a>
+      <nav aria-label="Main">
+        <a href="#how">How it works</a>
+        <a href="#app">The app</a>
+        <a href="#pricing">Pricing</a>
+        <a href="/app/">Client login</a>
+      </nav>
+      <a class="btn btn-cta btn-small" href="#book" data-book>Book a Strategy Call</a>
+    </div>
   </header>
 
-  <section class="hero">
-    <div class="wrap">
-      <div>
-        <p class="kicker">Rewired 12 Week Executive Recomp</p>
-        <h1>Body Recomposition Coaching. The Rewired Method.</h1>
-        <p>Premium, designer coaching for busy South Asian men who truly want to transform their physique. Tailored to your specific goals and lifestyle. Are you up for the change?</p>
-        <div class="cta-row">
-          <a class="btn btn-cta" href="#apply">Apply for a spot</a>
-          <a class="btn btn-ghost" href="#how">How it works</a>
-        </div>
+  <section class="hero" aria-labelledby="hero-title">
+    <video class="hero-film" autoplay muted loop playsinline preload="auto" poster="/assets/hero-land.jpg" aria-hidden="true"
+      data-land="/assets/hero-land.mp4" data-port="/assets/hero-port.mp4" data-land-poster="/assets/hero-land.jpg" data-port-poster="/assets/hero-port.jpg"></video>
+    <div class="hero-scrim"></div>
+    <div class="wrap hero-copy">
+      <p class="eyebrow">Rewired 12 Week Executive Recomp</p>
+      <h1 id="hero-title">Lose the belly. Build the muscle. Keep the family food.</h1>
+      <p class="lede">Premium one-to-one body recomposition coaching for busy South Asian men. Training, nutrition and a coaching app built around your work, your schedule and your culture.</p>
+      <div class="cta-row">
+        <a class="btn btn-cta btn-lg" href="#book" data-book>Book a Strategy Call</a>
+        <a class="btn btn-glass btn-lg" href="#app">See the app</a>
       </div>
-      <video src="/assets/launch.mp4" autoplay muted loop playsinline preload="metadata" aria-label="Rewired launch video"></video>
+      <p class="hero-note">Free 30-minute call · No pressure, no hard sell</p>
     </div>
+    <button class="film-toggle" type="button" aria-label="Pause background video" aria-pressed="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+    </button>
   </section>
 
-  <section class="block">
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track">
+      <span>12-week body recomposition</span><span>3–4 training sessions a week</span><span>Nutrition built around your meals</span><span>Weekly check-ins</span><span>WhatsApp support Monday to Friday</span><span>Your own coaching app</span>
+      <span>12-week body recomposition</span><span>3–4 training sessions a week</span><span>Nutrition built around your meals</span><span>Weekly check-ins</span><span>WhatsApp support Monday to Friday</span><span>Your own coaching app</span>
+    </div>
+  </div>
+
+  <section class="block" id="fit">
     <div class="wrap">
       <p class="kicker">Who it's for</p>
       <h2>Are you the right fit?</h2>
-      <div class="cards">
-        <div class="card">
+      <div class="fit-grid">
+        <div class="fit yes">
           <h3>This is for you if</h3>
           <ul class="ticks">
             <li>You work long hours and your training keeps slipping down the list.</li>
@@ -93,7 +73,7 @@
             <li>You have a wedding, holiday or milestone ahead and want a clear plan to meet it.</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="fit no">
           <h3>It's not for you if</h3>
           <ul class="ticks crosses">
             <li>You're looking for the cheapest option available.</li>
@@ -106,17 +86,80 @@
     </div>
   </section>
 
+  <section class="sneak" id="app" aria-labelledby="app-title">
+    <div class="clouds" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+    <div class="wrap sneak-grid">
+      <div class="sneak-copy">
+        <p class="kicker">Sneak peek · The Rewired app</p>
+        <h2 id="app-title">Your whole plan, in your pocket.</h2>
+        <p>Log your day in under a minute. Every habit turns green when you hit your target, orange when you're close and red when you're off, so you always know where you stand. Your coach sees the same numbers and adjusts your plan every week.</p>
+        <ul class="ticks">
+          <li>Daily targets for steps, protein, calories, water and sleep</li>
+          <li>Your training plan, session by session</li>
+          <li>Weekly check-ins, measurements and private progress photos</li>
+        </ul>
+        <a class="btn btn-cta btn-lg" href="#book" data-book>Book a Strategy Call</a>
+      </div>
+
+      <div class="phone-scene" aria-hidden="true">
+        <div class="float-card fc1"><span class="fi">☀️</span><span><b>Morning walk outside</b><small>Daily</small></span><span class="fc-state good"></span></div>
+        <div class="float-card fc2"><span class="fi">🍗</span><span><b>Protein</b><small>182 / 180 g</small></span><span class="fc-state good"></span></div>
+        <div class="float-card fc3"><span class="fi">💧</span><span><b>Water</b><small>2.6 / 3 L</small></span><span class="fc-state warn"></span></div>
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="ps-top"><span class="ps-logo">R.</span><span><b>Habit tracker</b><small>6 of 8 on target</small></span></div>
+            <div class="ps-screens">
+              <div class="ps-screen s-habits">
+                <div class="ps-seg"><span class="on">Day view</span><span>All</span></div>
+                <div class="ps-date">‹ <b>Today</b> ›</div>
+                <ul class="ps-list">
+                  <li><i>👟</i><span><b>Daily steps</b><small>10,240 / 10,000</small></span><em class="good"></em></li>
+                  <li><i>🏋️</i><span><b>Training session</b><small>Push day</small></span><em class="good"></em></li>
+                  <li><i>🍗</i><span><b>Protein</b><small>182 / 180 g</small></span><em class="good"></em></li>
+                  <li><i>🔥</i><span><b>Calories</b><small>2,310 / 2,270 kcal</small></span><em class="good"></em></li>
+                  <li><i>🥦</i><span><b>Fibre</b><small>26 / 30 g</small></span><em class="warn"></em></li>
+                  <li><i>💧</i><span><b>Water</b><small>2.6 / 3 L</small></span><em class="warn"></em></li>
+                  <li><i>😴</i><span><b>Sleep</b><small>7.5 / 7 hrs</small></span><em class="good"></em></li>
+                </ul>
+              </div>
+              <div class="ps-screen s-home">
+                <div class="ps-panel"><div class="ps-banner">Exercise<small>What to do today</small></div>
+                  <div class="ps-row"><i>🏋️</i><span><b>Push</b><small>Day 1 of your cycle</small></span><span class="ps-btn">Start</span></div>
+                  <div class="ps-row"><i>👟</i><span><b>Steps</b><small>10,240 / 10,000</small></span><span class="ps-bar good"><s style="width:100%"></s></span></div>
+                </div>
+                <div class="ps-panel"><div class="ps-banner n">Nutrition<small>Intake against target</small></div>
+                  <div class="ps-row"><i>🔥</i><span><b>Calories</b><small>2,310 / 2,270</small></span><span class="ps-bar good"><s style="width:100%"></s></span></div>
+                  <div class="ps-row"><i>🍗</i><span><b>Protein</b><small>182 / 180 g</small></span><span class="ps-bar good"><s style="width:100%"></s></span></div>
+                  <div class="ps-row"><i>🥦</i><span><b>Fibre</b><small>26 / 30 g</small></span><span class="ps-bar warn"><s style="width:86%"></s></span></div>
+                </div>
+              </div>
+              <div class="ps-screen s-progress">
+                <div class="ps-card"><small>Bodyweight · weekly average</small>
+                  <svg viewBox="0 0 220 110"><path d="M10 25 L40 32 L70 38 L100 46 L130 55 L160 60 L190 70 L210 74" fill="none" stroke="#2444f9" stroke-width="3" stroke-linecap="round"/><path d="M10 88 H210" stroke="#0b2545" stroke-dasharray="5 4" stroke-width="2"/></svg>
+                </div>
+                <div class="ps-tiles"><div><small>Weeks logged</small><b>6 / 12</b></div><div><small>Avg adherence</small><b>91%</b></div><div><small>Waist</small><b>−4.5 cm</b></div><div><small>Avg steps</small><b>10,480</b></div></div>
+              </div>
+            </div>
+            <div class="ps-tabs"><span class="on">Home</span><span>Habits</span><span>Training</span><span>Progress</span><span>Hub</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="wrap sneak-note">App screens show sample data.</p>
+  </section>
+
   <section class="block alt" id="included">
     <div class="wrap">
       <p class="kicker">What you get</p>
       <h2>Everything for 12 weeks, in one place</h2>
-      <div class="cards three">
-        <div class="card"><h3>Training that fits your week</h3><p>3 to 4 sessions a week, 45 to 60 minutes, updated every week, plus a fallback plan for busy weeks.</p></div>
-        <div class="card"><h3>Nutrition with your food</h3><p>Targets built around South Asian meals, with protein swaps so you can eat with your family.</p></div>
-        <div class="card"><h3>The Rewired app</h3><p>Log weight, steps, food and training in under a minute a day. Weekly check-ins, measurements and private progress photos, all on your phone.</p></div>
-        <div class="card"><h3>Real feedback</h3><p>A fortnightly video check-in and weekly voice-message feedback on how your week actually went.</p></div>
-        <div class="card"><h3>Support when you need it</h3><p>WhatsApp support Monday to Friday, with replies within 12 business hours.</p></div>
-        <div class="card"><h3>A plan for after week 12</h3><p>Leave with a plan to keep the results, not a rebound.</p></div>
+      <div class="features">
+        <div class="feature"><span class="f-ic">🏋️</span><h3>Training that fits your week</h3><p>3 to 4 sessions a week, 45 to 60 minutes, updated every week, plus a fallback plan for busy weeks.</p></div>
+        <div class="feature"><span class="f-ic">🍛</span><h3>Nutrition with your food</h3><p>Targets built around South Asian meals, with protein swaps so you can eat with your family.</p></div>
+        <div class="feature"><span class="f-ic">📱</span><h3>The Rewired app</h3><p>Log weight, steps, food and training in under a minute a day. Weekly check-ins, measurements and private progress photos, all on your phone.</p></div>
+        <div class="feature"><span class="f-ic">🎥</span><h3>Real feedback</h3><p>A fortnightly video check-in and weekly voice-message feedback on how your week actually went.</p></div>
+        <div class="feature"><span class="f-ic">💬</span><h3>Support when you need it</h3><p>WhatsApp support Monday to Friday, with replies within 12 business hours.</p></div>
+        <div class="feature"><span class="f-ic">🧭</span><h3>A plan for after week 12</h3><p>Leave with a plan to keep the results, not a rebound.</p></div>
       </div>
     </div>
   </section>
@@ -126,71 +169,107 @@
       <p class="kicker">How it works</p>
       <h2>Three steps to start</h2>
       <ol class="steps">
-        <li><div><h3>Apply</h3><p>Two minutes. Tell me about your goal, your schedule and what's stopped you before.</p></div></li>
-        <li><div><h3>Book a call</h3><p>A free call to see if we're a fit. If we're not, I'll tell you and point you somewhere better.</p></div></li>
-        <li><div><h3>Start your 12 weeks</h3><p>Kickoff call, your targets and plan, and access to the Rewired app.</p></div></li>
+        <li><div><h3>Book a Strategy Call</h3><p>A free 30-minute call to talk through your goal, your schedule and what's stopped you before. If we're not a fit, I'll tell you and point you somewhere better.</p></div></li>
+        <li><div><h3>Get your plan</h3><p>Your targets, your training and your nutrition, built around your week and the food you actually eat.</p></div></li>
+        <li><div><h3>Start your 12 weeks</h3><p>Kickoff call, access to the Rewired app and weekly check-ins with me from day one.</p></div></li>
       </ol>
     </div>
   </section>
 
-  <section class="block alt" id="price">
+  <section class="block alt" id="pricing">
     <div class="wrap">
-      <div class="grid-2" style="align-items:start;gap:24px">
+      <div class="price-card">
         <div>
           <p class="kicker">Pricing</p>
+          <h2>One programme. Everything included.</h2>
           <p class="price">AUD $2,249</p>
-          <p>For the full 12 weeks of coaching. Pay once upfront, or split it into 3 payments of AUD $750. Payment is arranged after your call, so you only pay once we both agree it's the right fit.</p>
-          <a class="btn btn-cta" href="#apply">Apply for a spot</a>
+          <p>For the full 12 weeks of coaching. Pay once upfront, or split it into 3 payments of AUD $750. The split is not a subscription and never renews on its own. Payment is arranged after your call, so you only pay once we both agree it's the right fit.</p>
+          <a class="btn btn-cta btn-lg" href="#book" data-book>Book a Strategy Call</a>
         </div>
-        <div class="card">
-          <p class="kicker">The Rewired Progress Promise</p>
-          <p>Complete the program (12 check-ins, 3+ sessions a week and 5+ tracking days a week) and if your body composition hasn't improved by week 12, coaching continues free in 4-week blocks for up to 12 more weeks.</p>
-        </div>
+        <ul class="ticks price-list">
+          <li>Personalised training, updated weekly</li>
+          <li>Nutrition targets around your meals</li>
+          <li>The Rewired coaching app</li>
+          <li>Weekly check-ins and voice feedback</li>
+          <li>Fortnightly video calls</li>
+          <li>WhatsApp support, Monday to Friday</li>
+        </ul>
       </div>
     </div>
   </section>
 
-  <section class="block" id="apply">
-    <div class="wrap apply">
-      <p class="kicker">Apply</p>
-      <h2>Apply for the 12 Week Executive Recomp</h2>
-      <p>Spots are limited so every client gets proper attention. I read every application myself.</p>
-      <form class="card" name="application" method="POST" action="/thanks.html" data-netlify="true" netlify-honeypot="company">
-        <input type="hidden" name="form-name" value="application">
-        <p class="hp"><label>Leave this empty <input name="company" tabindex="-1" autocomplete="off"></label></p>
-        <div class="grid-2">
-          <div class="field"><label for="a-name">Full name</label><input id="a-name" name="name" autocomplete="name" required></div>
-          <div class="field"><label for="a-age">Age</label><input id="a-age" name="age" type="number" inputmode="numeric" min="18" max="90" required></div>
-        </div>
-        <div class="grid-2">
-          <div class="field"><label for="a-email">Email</label><input id="a-email" name="email" type="email" autocomplete="email" required></div>
-          <div class="field"><label for="a-phone">Mobile</label><input id="a-phone" name="phone" type="tel" autocomplete="tel" required></div>
-        </div>
-        <div class="field"><label for="a-job">What do you do for work, and how many hours a week?</label><input id="a-job" name="work" required></div>
-        <div class="field"><label for="a-goal">What's the main goal?</label>
-          <select id="a-goal" name="goal" required>
-            <option value="">Pick one</option>
-            <option>Fat loss</option><option>Muscle gain</option><option>Improve body recomposition</option><option>Get ready for an event</option>
-          </select></div>
-        <div class="field"><label for="a-event">Any event or deadline? (wedding, holiday, date)</label><input id="a-event" name="deadline"></div>
-        <div class="field"><label for="a-before">What's stopped you getting results before?</label><textarea id="a-before" name="blockers" required></textarea></div>
-        <div class="field"><label for="a-ready">The program is AUD $2,249 for 12 weeks. If we're a fit, are you ready to invest in it now?</label>
-          <select id="a-ready" name="ready" required>
-            <option value="">Pick one</option>
-            <option>Yes, ready to start</option><option>Yes, but I'd need a payment plan</option><option>Not right now</option>
-          </select></div>
-        <p class="hint">By applying you agree to the <a href="/privacy.html">privacy policy</a>.</p>
-        <button class="btn btn-cta" type="submit" style="width:100%">Send my application</button>
-      </form>
+  <section class="final" id="book">
+    <div class="wrap final-inner">
+      <p class="eyebrow">Spots are limited</p>
+      <h2>Ready to rewire the next 12 weeks?</h2>
+      <p>Book a free 30-minute Strategy Call. We'll look at your goal, your week and whether coaching is the right move for you right now.</p>
+      <a class="btn btn-cta btn-lg" href="https://calendly.com/coaching-abheyrewired/30min" data-book>Book a Strategy Call</a>
     </div>
   </section>
 
-  <footer>
+  <section class="promise" aria-labelledby="promise-title">
+    <div class="wrap promise-inner">
+      <span class="promise-badge" aria-hidden="true">8</span>
+      <div>
+        <p class="kicker">The Week 8 Progress Promise</p>
+        <h2 id="promise-title">Notice the difference by week 8. Or the coaching is on me.</h2>
+        <p>If you have not noticed a meaningful difference by the end of week 8, tell Abhey. He will continue coaching you beyond week 8 at no additional coaching cost, refining your training and nutrition with you until you are happy with your progress. <a href="/legal.html#promise">How the promise works</a></p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site-footer">
     <div class="wrap">
-      <p><b>Rewired Coaching</b> with Abhey Pal · Australia</p>
-      <p>Coaching is general fitness and nutrition guidance, not medical advice. Check with your GP before starting a new training or nutrition program.</p>
-      <p><a href="/privacy.html">Privacy policy</a> · <a href="/app/">Client login</a></p>
+      <div class="foot-top">
+        <a class="brand" href="#top"><span class="brand-mark">R<i>.</i></span><span>Rewired Coaching</span></a>
+        <nav aria-label="Footer">
+          <a href="/legal.html">Privacy &amp; Terms</a>
+          <a href="/app/">Client login</a>
+          <a href="mailto:coaching@abheyrewired.com">coaching@abheyrewired.com</a>
+        </nav>
+      </div>
+      <p class="foot-note">Coaching is general fitness and nutrition guidance, not medical advice. Check with your GP before starting a new training or nutrition program.</p>
+      <p class="foot-legal">© Rewired Coaching with Abhey Pal · ABN 73 322 472 368</p>
     </div>
   </footer>
+
+  <script src="/booking.js"></script>
+  <script>
+    // Hero film: landscape on wide screens, portrait on phones. Respect
+    // reduced motion and let visitors pause it.
+    (function () {
+      const v = document.querySelector('.hero-film');
+      const btn = document.querySelector('.film-toggle');
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+      const portrait = window.matchMedia('(max-aspect-ratio: 4/5)');
+      const pick = () => {
+        const mode = portrait.matches ? 'port' : 'land';
+        if (v.dataset.mode === mode) return;
+        v.dataset.mode = mode;
+        v.poster = v.dataset[mode + 'Poster'];
+        if (!reduce.matches) {
+          v.src = v.dataset[mode];
+          v.play().catch(() => {});
+        }
+      };
+      pick();
+      portrait.addEventListener('change', pick);
+      if (reduce.matches) btn.hidden = true;
+      btn.addEventListener('click', () => {
+        const paused = !v.paused;
+        if (paused) v.pause(); else v.play();
+        btn.setAttribute('aria-pressed', String(paused));
+        btn.setAttribute('aria-label', paused ? 'Play background video' : 'Pause background video');
+        btn.innerHTML = paused
+          ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z" fill="currentColor"/></svg>'
+          : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>';
+      });
+      // Solid nav once the hero scrolls away.
+      const nav = document.querySelector('.site-nav');
+      const onScroll = () => nav.classList.toggle('solid', window.scrollY > 40);
+      onScroll();
+      window.addEventListener('scroll', onScroll, { passive: true });
+    })();
+  </script>
 </body>
 </html>

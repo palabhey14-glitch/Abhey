@@ -120,9 +120,9 @@ testing. Before clients rely on it:
 
 ## Part 3: Before you launch
 
-- [ ] **Booking link:** create a free Calendly (or Cal.com) event and replace
-      `BOOKING_LINK` in [`site/thanks.html`](../site/thanks.html).
-- [ ] **Privacy policy:** details are filled in [`site/privacy.html`](../site/privacy.html)
+- [x] **Booking link:** every "Book a Strategy Call" button reads it from
+      [`site/booking.js`](../site/booking.js). Change it there only.
+- [ ] **Privacy policy:** details are filled in [`site/legal.html`](../site/legal.html#privacy)
       (data kept 7 years after coaching ends). Have it checked (see below).
 - [ ] **Test as a client:** add a second email of yours (Gmail lets you use
       `you+test@gmail.com`) as a user. On your phone, open `/app/`, sign in with
