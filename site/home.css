@@ -266,6 +266,29 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px soli
 .foot-note { margin-top: 20px; max-width: 640px; }
 .foot-legal { margin-top: 10px; }
 
+/* See it in action: client demo video with synced steps */
+.demo { background: linear-gradient(180deg, var(--sky-2), #fff); }
+.demo-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 56px; align-items: center; }
+.demo-copy h2 { margin-top: 12px; font-size: clamp(30px, 4.2vw, 50px); font-weight: 800; line-height: 1.08; }
+.demo-copy > p:not(.kicker) { margin-top: 14px; font-size: 17px; color: var(--ink-2); max-width: 520px; }
+.demo-steps { list-style: none; margin: 26px 0 0; padding: 0; display: grid; gap: 6px; }
+.demo-steps button { width: 100%; display: flex; align-items: center; gap: 14px; padding: 11px 14px; border: 1px solid transparent; border-radius: 14px; background: none; color: var(--ink-2); font: 600 15px/1.35 var(--body); text-align: left; cursor: pointer; transition: background .3s, color .3s, box-shadow .3s, border-color .3s; }
+.demo-steps b { flex: none; width: 34px; height: 26px; display: grid; place-items: center; border-radius: 99px; background: var(--sky); color: var(--blue); font: 700 12px var(--display); letter-spacing: .04em; transition: background .3s, color .3s; }
+.demo-steps button:hover { color: var(--ink); }
+.demo-steps button.on { background: #fff; border-color: var(--line); box-shadow: var(--shadow); color: var(--ink); }
+.demo-steps button.on b { background: var(--blue); color: #fff; }
+.demo-media { display: grid; justify-items: center; gap: 12px; }
+.demo-frame { position: relative; width: min(100%, 380px); aspect-ratio: 9 / 16; border-radius: 34px; overflow: hidden; background: #F3F6FC url(/assets/app-demo-poster.jpg) center / cover; box-shadow: 0 2px 4px rgba(11, 37, 69, .06), 0 40px 90px rgba(36, 68, 249, .18); border: 1px solid var(--line); }
+.demo-frame video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.demo-play { position: absolute; left: 50%; top: 50%; width: 76px; height: 76px; margin: -38px 0 0 -38px; border: 0; border-radius: 50%; background: var(--blue); color: #fff; font-size: 26px; padding-left: 5px; cursor: pointer; box-shadow: 0 14px 34px rgba(36, 68, 249, .4); }
+@media (max-width: 860px) {
+  .demo-grid { grid-template-columns: 1fr; gap: 28px; }
+  .demo-media { order: -1; }
+  .demo-frame { width: min(100%, 300px); }
+  .demo-steps { grid-template-columns: 1fr 1fr; }
+  .demo-steps button { padding: 9px 10px; font-size: 13px; gap: 10px; }
+}
+
 /* Entrance for blocks below the fold (blocks already in view get .in straight away) */
 .js .rv { transition: opacity .7s ease, transform .7s cubic-bezier(.2, .8, .2, 1); }
 .js .rv:not(.in) { opacity: 0; transform: translateY(26px); }

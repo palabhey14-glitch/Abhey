@@ -201,6 +201,36 @@
     };
     requestAnimationFrame(step);
   };
+  // ---------- See it in action: demo video plays in view, steps follow it ----------
+  const video = $('#demo-video');
+  if (video) {
+    const btns = $$('#demo-steps button'), play = $('#demo-play');
+    const times = btns.map((b) => +b.dataset.at);
+    const mark = () => {
+      const t = video.currentTime;
+      let on = -1;
+      times.forEach((a, i) => { if (t >= a) on = i; });
+      if (t >= 28.4) on = -1;
+      btns.forEach((b, i) => b.classList.toggle('on', i === on));
+    };
+    video.addEventListener('timeupdate', mark);
+    const start = () => { video.play().then(() => { play.hidden = true; }).catch(() => { play.hidden = false; }); };
+    btns.forEach((b) => b.addEventListener('click', () => {
+      if (video.preload === 'none') video.preload = 'auto';
+      video.currentTime = +b.dataset.at + 0.05; mark(); start();
+    }));
+    play.addEventListener('click', start);
+    if (reduce) {
+      // no autoplay: show the poster with a play button
+      play.hidden = false;
+      video.addEventListener('pause', () => { play.hidden = false; });
+    } else {
+      new IntersectionObserver(([e]) => {
+        if (e.isIntersecting) { video.preload = 'auto'; start(); } else video.pause();
+      }, { threshold: 0.35 }).observe(video);
+    }
+  }
+
   const io = new IntersectionObserver((entries) => entries.forEach((e) => {
     if (!e.isIntersecting) return;
     e.target.classList.add('in');
