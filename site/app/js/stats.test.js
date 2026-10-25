@@ -67,7 +67,7 @@ assert.equal(S.status('goal', 0.3, 2 / 12), 'On track');
 assert.equal(S.status('goal', 0.1, 2 / 12), 'Behind');
 assert.equal(S.status('steps', null), '');
 
-// Habit tracker colours: met = green, within 25% = orange, beyond = red.
+// Habit tracker colours: met = green, within 25% = amber, beyond = red.
 assert.equal(S.habitStatus('steps', 10000, 10000).level, 'good');
 assert.equal(S.habitStatus('steps', 12000, 10000).level, 'good');
 assert.deepEqual(S.habitStatus('steps', 9200, 10000), { level: 'warn', label: 'Close' });

@@ -194,10 +194,10 @@
   }
 
   // Habit tracker colours. Change these to retune when a row turns
-  // green, orange or red. `off` is how far the logged number is from the
+  // green, amber or red. `off` is how far the logged number is from the
   // target as a share of the target (0.1 = 10% short).
   //   green:  target met (calories: within `onTarget` either side)
-  //   orange: up to `red` off ("close" when within `close`)
+  //   amber:  up to `red` off ("close" when within `close`)
   //   red:    more than `red` off
   const HABIT_BANDS = {
     default: { close: 0.1, red: 0.25 },

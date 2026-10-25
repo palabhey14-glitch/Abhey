@@ -305,6 +305,54 @@
     root.innerHTML = `<main class="screen center">${body}</main>`;
   }
 
+  // Sign-in screens sit over an embossed preview of the app: the client app
+  // by default, the coach dashboard when the link carries ?coach.
+  const COACH_LOGIN = new URLSearchParams(location.search).has('coach');
+
+  function loginScreen(body) {
+    root.innerHTML = `<div class="login-art${COACH_LOGIN ? ' coach' : ''}" aria-hidden="true">${COACH_LOGIN ? coachArt() : clientArt()}</div>
+      <main class="screen center login">${body}</main>`;
+  }
+
+  function clientArt() {
+    const rows = (items) => items.map(([a, b]) => `<div class="e-in la-row"><b>${a}</b><span>${b}</span></div>`).join('');
+    return `<div class="la-stage">
+      <div class="e-up la-phone">
+        <div class="la-hero"><small>Thursday · Week 6 of 12</small><b>Good morning</b><strong>86</strong><small>Weekly score</small></div>
+        <div class="e-in la-row tall"><b>Upper A · Hotel gym</b><span>45 min</span></div>
+        <div class="la-two"><div class="e-up"><small>Protein</small><b>150 g</b></div><div class="e-up"><small>Steps</small><b>11,240</b></div></div>
+        <div class="e-in la-chart"><svg viewBox="0 0 200 70" preserveAspectRatio="none"><polyline points="0,20 30,24 60,22 90,34 120,38 150,46 180,52 200,56"/></svg></div>
+      </div>
+      <div class="e-up la-phone mid">
+        <div class="la-head"><small>Meal plan</small><b>Today</b></div>
+        ${rows([['Breakfast', '420 kcal'], ['Lunch', '610 kcal'], ['Snack', '180 kcal'], ['Dinner', '640 kcal']])}
+        <div class="la-three"><div class="e-up"><small>Protein</small><b>41 g</b></div><div class="e-up"><small>Carbs</small><b>78 g</b></div><div class="e-up"><small>Fat</small><b>24 g</b></div></div>
+      </div>
+      <div class="e-up la-phone">
+        <div class="la-head"><small>Habits</small><b>This week</b></div>
+        ${rows([['Protein', '●'], ['Steps', '●'], ['Water', '●'], ['Sleep', '●'], ['Training', '●']])}
+        <div class="e-in la-bar"><i></i></div>
+      </div>
+    </div>`;
+  }
+
+  function coachArt() {
+    const names = ['Arjun', 'Rohan', 'Imran', 'Vikram', 'Sameer', 'Kabir', 'Dev'];
+    return `<div class="la-desk e-up">
+      <div class="la-side">
+        <div class="la-logo e-up">R.</div>
+        ${names.map((n, i) => `<div class="${i === 0 ? 'e-in' : ''} la-name"><i class="e-up"></i>${n}</div>`).join('')}
+      </div>
+      <div class="la-main">
+        <div class="la-head"><small>Coach</small><b>Clients</b></div>
+        <div class="la-stats">${[['Check-ins due', '3'], ['Weekly score', '82'], ['Messages', '5'], ['On track', '9']]
+          .map(([a, b]) => `<div class="e-up"><small>${a}</small><b>${b}</b></div>`).join('')}</div>
+        <div class="e-in la-chart wide"><svg viewBox="0 0 400 90" preserveAspectRatio="none"><polyline points="0,70 50,64 100,66 150,50 200,46 250,38 300,30 350,26 400,18"/></svg></div>
+        ${names.slice(0, 5).map((n, i) => `<div class="e-in la-row"><b>${n}</b><span>Week ${3 + i}</span><span>${88 - i * 4}</span></div>`).join('')}
+      </div>
+    </div>`;
+  }
+
   // ---------------------------------------------------------------- charts
 
   // Small dependency-free SVG line chart. series: [{name, color, dash, values}]
@@ -528,10 +576,11 @@
   }
 
   function renderLogin(email) {
-    bare(`
+    loginScreen(`
       <img class="login-logo" src="icons/icon-192.png" alt="Rewired">
+      <p class="login-kicker">${COACH_LOGIN ? 'Coach login' : 'Client login'}</p>
       <h1>Rewired Coaching</h1>
-      <p>Sign in with the email you gave ${esc(COACH)}. We'll email you a code, no password needed.</p>
+      <p>${COACH_LOGIN ? 'Sign in with your coach email.' : `Sign in with the email you gave ${esc(COACH)}.`} We'll email you a code, no password needed.</p>
       <form id="email-form" class="card" novalidate>
         <div class="field">
           <label for="email">Email</label>
@@ -557,7 +606,7 @@
   }
 
   function renderCode(email) {
-    bare(`
+    loginScreen(`
       <img class="login-logo" src="icons/icon-192.png" alt="Rewired">
       <h1>Check your email</h1>
       <p>We sent a code to <b>${esc(email)}</b>. It can take a minute, and check your junk folder.</p>
@@ -898,7 +947,7 @@
           </li>`,
         )
         .join('')}</ul>
-      <p class="hint">Tap a habit to log it. Green means you hit the target, orange means you're within 25%, red means more than 25% off.</p>`;
+      <p class="hint">Tap a habit to log it. Green means you hit the target, amber means you're within 25%, red means more than 25% off.</p>`;
     } else {
       body = `<section class="card">${habitWeekHTML(ctx, day)}</section>
       ${ctx.habits.length ? `<section class="card"><p class="kicker">Your own habits</p><ul class="own-habits">${ctx.habits
