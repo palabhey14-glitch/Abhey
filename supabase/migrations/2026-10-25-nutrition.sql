@@ -18,6 +18,22 @@
 
 create extension if not exists pg_trgm with schema extensions;
 
+-- An earlier, simpler meal planner (migrations/20261025_meal_plan.sql, now
+-- removed) also used the names recipes and recipe_ingredients. If it was run,
+-- move its tables aside so nothing is lost and the tables below can be made.
+do $$
+begin
+  if exists (select 1 from information_schema.columns
+             where table_schema = 'public' and table_name = 'recipes' and column_name = 'approved')
+     and not exists (select 1 from information_schema.columns
+             where table_schema = 'public' and table_name = 'recipes' and column_name = 'owner_id') then
+    alter table public.recipes rename to old_planner_recipes;
+    if to_regclass('public.recipe_ingredients') is not null then
+      alter table public.recipe_ingredients rename to old_planner_recipe_ingredients;
+    end if;
+  end if;
+end $$;
+
 -- ---------------------------------------------------------------------------
 -- 1. Client country (used to rank local foods first) and daily-log flags
 -- ---------------------------------------------------------------------------

@@ -606,7 +606,7 @@
           <li>You can ask to see, correct or delete your data at any time by messaging ${esc(COACH)}.</li>
           <li>Coaching isn't medical advice. Tell ${esc(COACH)} about any injury or condition, and check with your GP before big changes.</li>
         </ul>
-        <p><a href="/legal.html#privacy" target="_blank" rel="noopener">Read the full privacy policy</a></p>
+        <p><a href="/privacy.html" target="_blank" rel="noopener">Read the full privacy policy</a></p>
         <form id="consent-form">
           <div class="field" style="display:flex;gap:10px;align-items:flex-start">
             <input id="agree" name="agree" type="checkbox" required style="width:24px;min-height:24px;margin-top:2px">
@@ -1547,7 +1547,8 @@
         <p><b>iPhone:</b> open this page in Safari, tap Share, then "Add to Home Screen".<br><b>Android:</b> open in Chrome, tap ⋮, then "Install app" or "Add to Home screen".</p>
       </section>
       <section class="card row-actions">
-        <a href="/legal.html#privacy" target="_blank" rel="noopener">Privacy policy</a>
+        <a href="/privacy.html" target="_blank" rel="noopener">Privacy policy</a>
+        <a href="/terms.html" target="_blank" rel="noopener">Terms &amp; Conditions</a>
         <button class="btn btn-ghost btn-small" type="button" data-signout>Sign out</button>
       </section>`,
       'profile',

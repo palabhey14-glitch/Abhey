@@ -1,0 +1,8 @@
+.production-application{max-width:760px;margin:55px auto 0}
+.production-application>h3{font-size:30px;margin-bottom:24px}
+.production-application .card{background:#fff;color:#0b2545;border:1px solid #dbe4f2;border-radius:17px;padding:30px}
+.production-application .field label{color:#0b2545}
+.production-application input,.production-application select,.production-application textarea{background:#fff;color:#0b2545;border:1px solid #c9d8f0}
+.production-application .btn{background:#2444f9;color:#fff}
+.production-application .hint{color:#53677f}
+.production-application .hp{position:absolute;left:-9999px}

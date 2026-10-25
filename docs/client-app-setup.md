@@ -16,8 +16,8 @@ Allow about 2 hours the first time. You only do this once.
 The app replaces the Google Sheets client workbook. It follows the same
 structure: Start Here → **Profile**, Weekly Tracker → **Today**, Check-In →
 **Check-in**, measurements and photos → **Check-in** and **Photos**,
-Dashboard → **Progress**. The Training, Meal Plan and Supplements tabs aren't in
-the app yet (see "Not included yet" below).
+Dashboard → **Progress**. Training and Supplements are available. Meal plans
+and food logging need the nutrition update in step 2c.
 
 ---
 
@@ -157,10 +157,12 @@ testing. Before clients rely on it:
 
 ## Part 3: Before you launch
 
-- [x] **Booking link:** every "Book a Strategy Call" button reads it from
-      [`site/booking.js`](../site/booking.js). Change it there only.
-- [ ] **Privacy policy:** details are filled in [`site/legal.html`](../site/legal.html#privacy)
-      (data kept 7 years after coaching ends). Have it checked (see below).
+- [x] **Booking link:** the landing page and [`site/thanks.html`](../site/thanks.html)
+      point to `https://calendly.com/coaching-abheyrewired/30min`. Before launch,
+      rename the event to Rewired Strategy Session, confirm Google Meet as the
+      location, and book a test slot to check the invitation.
+- [ ] **Legal pages:** review [`site/privacy.html`](../site/privacy.html) and
+      [`site/terms.html`](../site/terms.html) against actual business practices.
 - [ ] **Test as a client:** add a second email of yours (Gmail lets you use
       `you+test@gmail.com`) as a user. On your phone, open `/app/`, sign in with
       the code, agree to the privacy notice, fill in the profile, log a day, send
