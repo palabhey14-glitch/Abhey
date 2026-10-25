@@ -1,6 +1,7 @@
 // Rewired home page: the hero "R engine" motion graphic and scroll reveals.
-// What a client logs flows from the glowing input cubes, through a tile, into
-// the R, and comes out as a line in the progress log. Example data only.
+// What a client logs flows from the week-1 "before" body, through a tile, into
+// the R, and comes out as change on the body: waist in, muscle definition up.
+// Example data only.
 (function () {
   'use strict';
 
@@ -19,14 +20,15 @@
     ['habit', 'Habits', 'Steps 11,240', '<b>Steps 11,240</b> → <em>target met</em> · 5 days in a row', 'ok'],
     ['supp', 'Supps', 'Creatine 5 g', '<b>Supplements</b> → <em>3 of 3</em> today', 'ok'],
     ['check', 'Check-in', '3 photos · 84.2 cm', '<b>Check-in sent</b> → <em>Abhey reviews it this week</em>', 'ok'],
-    ['prog', 'Progress', 'Week 1 → 6', '<b>Waist since week 1</b> → <em>−4.2 cm</em>', 'ok'],
+    ['prog', 'Progress', 'Week 1 → 6', '<b>Waist since week 1</b> → <em>−9.6 cm</em>', 'ok'],
   ];
-  const N = STEPS.length, STEP = 3.2, MAX_LINES = 6;
+  const N = STEPS.length, STEP = 3.2;
 
   const $ = (id) => document.getElementById(id);
   const engine = $('engine');
   if (engine) startEngine();
   startReveal();
+  startPhone();
 
   function startEngine() {
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -39,8 +41,8 @@
 
     // Two layouts in stage units: a left-to-right line on wide screens, stacked on phones.
     const L = {
-      wide: { w: 1100, h: 440, cubes: [70, 220], cols: 2, tile0: [230, 70], gap: [130, 140], hub: [640, 220], con: [760, 120] },
-      tall: { w: 380, h: 900, cubes: [190, 70], cols: 3, tile0: [70, 200], gap: [120, 130], hub: [190, 520], con: [20, 660] },
+      wide: { w: 1100, h: 510, cubes: [70, 240], cols: 2, tile0: [230, 90], gap: [130, 140], hub: [640, 240], con: [760, 30] },
+      tall: { w: 380, h: 1280, cubes: [190, 160], cols: 3, tile0: [70, 350], gap: [120, 130], hub: [190, 670], con: [20, 810] },
     };
     let lay = L.wide, scale = 1;
     const tilePos = (i) => [lay.tile0[0] + (i % lay.cols) * lay.gap[0], lay.tile0[1] + Math.floor(i / lay.cols) * lay.gap[1]];
@@ -64,7 +66,7 @@
       const [hx, hy] = lay.hub, [cx, cy] = lay.cubes;
       let d;
       if (lay === L.wide) {
-        // cubes → each tile row → hub → console
+        // before body → each tile row → hub → body panel
         const rows = [0, 1, 2].map((r) => tilePos(r * 2)[1]);
         const colX = tilePos(1)[0];
         d = `M${cx + 50},${cy} L${tilePos(0)[0] - 70},${cy} ` +
@@ -75,26 +77,127 @@
         lay.outFrom = [hx + 92, hy]; lay.outTo = [lay.con[0] + 10, hy];
       } else {
         const bottom = tilePos(N - 1)[1];
-        d = `M${cx},${cy + 50} L${cx},${lay.tile0[1] - 60} M${cx},${bottom + 60} L${hx},${hy - 92} M${hx},${hy + 92} L${hx},${lay.con[1]}`;
-        lay.inPath = (i) => { const [x, y] = tilePos(i); return [[cx, cy + 40], [x, lay.tile0[1] - 60], [x, y]]; };
+        d = `M${cx},${cy + 150} L${cx},${lay.tile0[1] - 60} M${cx},${bottom + 60} L${hx},${hy - 92} M${hx},${hy + 92} L${hx},${lay.con[1]}`;
+        lay.inPath = (i) => { const [x, y] = tilePos(i); return [[cx, cy + 140], [x, lay.tile0[1] - 60], [x, y]]; };
         lay.outFrom = [hx, hy + 92]; lay.outTo = [hx, lay.con[1] + 10];
       }
       $('tube').setAttribute('d', d); $('core').setAttribute('d', d);
-      // Pulses run straight segments: tile → hub, then hub → console.
+      // Pulses run straight segments: tile → hub, then hub → body panel.
       lay.pulseIn = (i) => { const [x, y] = tilePos(i); return `M${x},${y} L${hx},${hy}`; };
       $('pulse-out').setAttribute('d', `M${lay.outFrom[0]},${lay.outFrom[1]} L${lay.outTo[0]},${lay.outTo[1]}`);
       void cw; void ch;
     }
     function place(el, [x, y]) { el.style.left = x + 'px'; el.style.top = y + 'px'; }
 
-    const log = $('log');
+    // ---- body figure: "week 1" (soft) to "week 12" (lean, defined) ----
+    // Left-half outline points [soft, toned]; the right half mirrors them.
+    const OUT = [
+      [[-15, 70], [-16, 70]],    // neck
+      [[-20, 82], [-24, 80]],    // neck base
+      [[-46, 90], [-54, 86]],    // trapezius
+      [[-58, 104], [-72, 100]],  // shoulder
+      [[-50, 128], [-54, 124]],  // armpit
+      [[-50, 152], [-52, 148]],  // chest side
+      [[-56, 190], [-42, 188]],  // lower ribs
+      [[-64, 222], [-37, 218]],  // waist
+      [[-58, 248], [-42, 246]],  // hip
+      [[-52, 280], [-46, 280]],  // upper thigh
+      [[-44, 330], [-40, 330]],  // lower thigh
+      [[-32, 362], [-30, 362]],  // knee
+      [[-34, 398], [-34, 392]],  // calf
+      [[-22, 436], [-21, 436]],  // ankle
+      [[-10, 440], [-10, 440]],  // foot inside
+      [[-12, 400], [-12, 398]],  // inner calf
+      [[-12, 362], [-12, 362]],  // inner knee
+      [[-8, 300], [-6, 300]],    // inner thigh
+      [[0, 276], [0, 276]],      // crotch
+    ];
+    // Left arm: from the shoulder, down the outside and back up the inside.
+    const ARM = [
+      [[-58, 104], [-72, 100]],
+      [[-68, 122], [-86, 120]],  // deltoid
+      [[-70, 160], [-86, 160]],  // biceps outer
+      [[-68, 196], [-80, 196]],  // elbow
+      [[-66, 236], [-76, 234]],  // forearm
+      [[-62, 268], [-68, 268]],  // wrist
+      [[-58, 286], [-64, 286]],  // hand
+      [[-50, 272], [-56, 270]],
+      [[-52, 236], [-60, 234]],
+      [[-54, 196], [-62, 196]],
+      [[-54, 156], [-62, 156]],
+      [[-50, 128], [-54, 124]],
+    ];
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const pts = (list, t) => list.map(([a, b]) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t)]);
+    // Closed Catmull-Rom spline through the points, as cubic Beziers.
+    function smooth(p) {
+      const n = p.length; let d = `M${p[0][0].toFixed(1)},${p[0][1].toFixed(1)}`;
+      for (let i = 0; i < n; i++) {
+        const p0 = p[(i - 1 + n) % n], p1 = p[i], p2 = p[(i + 1) % n], p3 = p[(i + 2) % n];
+        const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+        const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+        d += ` C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+      }
+      return d + 'Z';
+    }
+    const mirror = (p) => p.map(([x, y]) => [-x, y]);
+    function bodyPath(t) {
+      const left = pts(OUT, t);
+      const right = mirror(left.slice(0, -1)).reverse();
+      return smooth([...left, ...right]);
+    }
+    // Muscle definition lines, drawn on the left and mirrored; they fade in as t rises.
+    function defLines(t) {
+      const sx = lerp(1, 1.12, t);
+      const L = [
+        `M-3,104 Q-26,100 ${-46 * sx},120`,                       // collarbone to delt
+        `M${-46 * sx},126 Q-26,146 -3,140`,                        // lower pec
+        `M${-60 * sx},106 Q${-62 * sx},118 ${-56 * sx},130`,      // deltoid split
+        'M-14,156 Q-8,158 -2,156', 'M-14,178 Q-8,180 -2,178', 'M-13,200 Q-8,202 -2,200', // abs
+        'M-34,206 Q-24,236 -8,262',                                // oblique / V line
+        'M-36,292 Q-26,320 -24,352',                               // quad sweep
+        `M${-64 * sx},150 Q${-60 * sx},166 ${-62 * sx},182`,      // biceps
+      ];
+      const one = L.join(' ');
+      const flip = one.replace(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g, (m, x, y) => `${-x},${y}`);
+      return `${one} ${flip} M0,140 L0,236`;
+    }
+    const fig = $('figure');
+    fig.innerHTML = `<defs>
+        <linearGradient id="bodyFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a4c86"/><stop offset="1" stop-color="#132c55"/></linearGradient>
+        <linearGradient id="scanFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(244,199,125,0)"/><stop offset=".5" stop-color="rgba(244,199,125,.35)"/><stop offset="1" stop-color="rgba(244,199,125,0)"/></linearGradient>
+        <clipPath id="bodyClip"><path id="clip-body"/><path id="clip-arm-l"/><path id="clip-arm-r"/><ellipse cx="0" cy="38" rx="21" ry="26"/></clipPath>
+      </defs>
+      <path class="skin" id="arm-l"/><path class="skin" id="arm-r"/>
+      <path class="skin" id="torso"/>
+      <ellipse class="head" cx="0" cy="38" rx="21" ry="26"/>
+      <path class="def" id="defs"/>
+      <rect class="scan" id="scan" x="-110" y="-40" width="220" height="40" clip-path="url(#bodyClip)"/>`;
+    // The "before" body on the left is the week-1 shape, drawn once.
+    $('figure-before').innerHTML = `<path class="skin" d="${smooth(pts(ARM, 0))}"/><path class="skin" d="${smooth(mirror(pts(ARM, 0)))}"/><path class="skin" d="${bodyPath(0)}"/><ellipse class="head" cx="0" cy="38" rx="21" ry="26"/>`;
+    let lastT = -1;
+    function drawBody(t, scanY) {
+      if (Math.abs(t - lastT) > 0.002) {
+        lastT = t;
+        const b = bodyPath(t), al = smooth(pts(ARM, t)), ar = smooth(mirror(pts(ARM, t)));
+        $('torso').setAttribute('d', b); $('clip-body').setAttribute('d', b);
+        $('arm-l').setAttribute('d', al); $('clip-arm-l').setAttribute('d', al);
+        $('arm-r').setAttribute('d', ar); $('clip-arm-r').setAttribute('d', ar);
+        $('defs').setAttribute('d', defLines(t));
+        $('defs').style.opacity = (0.15 + 0.85 * t).toFixed(2);
+        $('bp-week').textContent = 'Week ' + Math.round(1 + 11 * t);
+        $('bp-waist').textContent = (92 - 9.6 * t).toFixed(1) + ' cm';
+        $('bp-fat').textContent = Math.round(24 - 9 * t) + '%';
+        $('bp-muscle').textContent = '+' + (2.4 * t).toFixed(1) + ' kg';
+        ['bp-waist', 'bp-fat', 'bp-muscle'].forEach((id) => $(id).classList.toggle('down', t > 0.02));
+      }
+      $('scan').setAttribute('y', scanY == null ? -60 : (scanY * 490 - 40).toFixed(1));
+    }
     let shown = -1;
-    function addLine(k) {
-      const s = STEPS[k];
-      const li = document.createElement('li');
-      li.innerHTML = `<span class="${s[4]}">${s[4] === 'ok' ? '✓' : '●'}</span><span>${s[3]}</span>`;
-      log.appendChild(li);
-      while (log.children.length > MAX_LINES) log.removeChild(log.firstChild);
+    function showLast(k) {
+      const el = $('bp-last');
+      el.textContent = '✓ ' + STEPS[k][3].replace(/<[^>]+>/g, '');
+      el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
     }
 
     let t0 = performance.now(), paused = reduce, pausedAt = 0, visible = true;
@@ -104,7 +207,7 @@
       const total = N * STEP, T = ((time % total) + total) % total;
       const k = Math.floor(T / STEP), lt = T - k * STEP, s = STEPS[k];
       tiles.forEach((el, i) => el.classList.toggle('on', i === k && lt < 2.6));
-      // packet: cubes → tile (0–0.9 s), then tile → hub (0.9–1.6 s)
+      // packet: before body → tile (0–0.9 s), then tile → hub (0.9–1.6 s)
       const pk = $('packet');
       const [a, b, c] = lay.inPath(k);
       let x, y;
@@ -120,8 +223,13 @@
       const pout = seg(lt, 2.1, 2.6);
       $('pulse-out').setAttribute('stroke-dasharray', pout > 0 && pout < 1 ? '160 1000' : '0 1000');
       $('pulse-out').setAttribute('stroke-dashoffset', (-pout * 840).toFixed(1));
-      const step = Math.floor(time / STEP) + (lt >= 2.6 ? 1 : 0);
-      if (step !== shown && lt >= 2.6) { shown = step; addLine(k); }
+      // Each log moves the body one step from week 1 towards week 12; the loop resets after the last.
+      const grow = ease(seg(lt, 2.6, 3.1));
+      const reset = k === 0 ? 1 - ease(seg(lt, 0, 0.6)) : 0;
+      const tBody = k === 0 && lt < 0.6 ? reset : (k + grow) / N;
+      drawBody(Math.min(1, tBody), lt >= 2.4 && lt < 3.2 ? seg(lt, 2.4, 3.2) : null);
+      const step = Math.floor(time / STEP);
+      if (step !== shown && lt >= 2.6) { shown = step; showLast(k); }
     }
 
     function frame() { if (!paused && visible) render(now()); if (!paused) requestAnimationFrame(frame); }
@@ -136,13 +244,24 @@
     addEventListener('resize', () => { layout(); render(now()); });
     layout();
     if (reduce) {
-      // Still frame: a full log and the R mid-conversion.
-      STEPS.forEach((_, i) => addLine(i)); shown = Infinity; pausedAt = 1.2; render(pausedAt);
+      // Still frame: the finished week-12 body and the R mid-conversion.
+      pausedAt = (N - 1) * STEP + 3.15; render(pausedAt); showLast(N - 1);
     } else {
-      addLine(N - 1); shown = 0;
       requestAnimationFrame(frame);
     }
     document.fonts && document.fonts.ready.then(() => { layout(); render(now()); });
+  }
+
+  // App preview: rotate the three phone screens; a still first screen with reduced motion.
+  function startPhone() {
+    const screens = document.querySelectorAll('.ph-screen'), dots = document.querySelectorAll('.ph-dots i');
+    if (!screens.length || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let i = 0;
+    setInterval(() => {
+      screens[i].classList.remove('on'); dots[i].classList.remove('on');
+      i = (i + 1) % screens.length;
+      screens[i].classList.add('on'); dots[i].classList.add('on');
+    }, 3600);
   }
 
   function startReveal() {
