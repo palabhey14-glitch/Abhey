@@ -164,6 +164,12 @@
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9v6m3-9v12m12-12v12m3-9v6M6 12h12"/></svg>',
     supps:
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 4a5 5 0 0 1 7 0l6 6a5 5 0 0 1-7 7l-6-6a5 5 0 0 1 0-7Z"/><path d="m9 13 6-6"/></svg>',
+    meals:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 11h18a9 9 0 0 1-18 0Z"/><path d="M8 7c0-1.6 1-1.6 1-3.2M12 7c0-1.6 1-1.6 1-3.2M16 7c0-1.6 1-1.6 1-3.2"/></svg>',
+    log:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
+    sun:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
   };
 
   // ------------------------------------------------------------------ data
@@ -218,13 +224,12 @@
 
   const CLIENT_TABS = [
     ['home', 'Home'],
-    ['habits', 'Habits'],
+    ['meals', 'Meal plan'],
     ['training', 'Training'],
-    ['progress', 'Progress'],
-    ['hub', 'Coach hub'],
+    ['habits', 'Habits'],
   ];
-  // Screens reached from the Coach hub keep that tab lit.
-  const TAB_OF = { checkin: 'hub', photos: 'hub', supps: 'hub', profile: 'hub', log: 'home' };
+  // Screens without their own tab (reached from Home) keep Home lit.
+  const TAB_OF = { checkin: 'home', photos: 'home', supps: 'home', profile: 'home', log: 'home', today: 'home', progress: 'home', hub: 'home' };
 
   const COACH_SECTIONS = [
     ['overview', 'Overview'],
@@ -240,16 +245,19 @@
     ['checkins', 'Check-ins'],
   ];
 
-  function shell(title, sub, body, tab) {
+  // opts.center replaces the title with other markup (Home puts its day picker there).
+  function shell(title, sub, body, tab, opts) {
     const isCoach = state.me && state.me.role === 'coach';
     if (isCoach) return coachShell(title, sub, body);
     const active = TAB_OF[tab] || tab;
+    document.body.dataset.tab = tab === 'home' ? 'home' : 'page';
     const initial = ((state.me && state.me.full_name) || '?').trim()[0].toUpperCase();
+    const center = opts && opts.center ? opts.center : `<div class="title">${esc(title)}${sub ? `<div class="sub">${esc(sub)}</div>` : ''}</div>`;
     root.innerHTML = `
       <header class="topbar">
-        <img src="icons/icon-192.png" alt="">
-        <div class="title">${esc(title)}${sub ? `<div class="sub">${esc(sub)}</div>` : ''}</div>
-        <a class="avatar" href="#profile" aria-label="Profile">${esc(initial)}</a>
+        <a class="icon-btn brand" href="#home" aria-label="Home"><img src="icons/icon-192.png" alt=""></a>
+        ${center}
+        <a class="icon-btn avatar" href="#profile" aria-label="Profile">${esc(initial)}</a>
       </header>
       <main class="screen">${body}</main>
       <nav class="tabs" aria-label="Main">${CLIENT_TABS.map(
@@ -977,6 +985,58 @@
     return sessions.find((r) => r.cycle_day === (S.daysBetween(start, day) % len) + 1) || null;
   }
 
+  // The week's check-in is flagged on Home from Saturday until it is sent.
+  // On Monday it is still shown (as overdue) for the week that ended Sunday.
+  function checkinDue(ctx) {
+    const now = S.today();
+    const dow = new Date(`${now}T12:00:00`).getDay();
+    if (dow !== 6 && dow !== 0 && dow !== 1) return null;
+    const week = S.weekOf(ctx.profile.start_date, dow === 1 ? S.addDays(now, -1) : now);
+    if (!week || ctx.checkins.some((c) => c.week_number === week)) return null;
+    return { week, overdue: dow === 1 };
+  }
+
+  // Smooth weekly-average bodyweight line with the latest week highlighted.
+  function trendChart(d) {
+    const pts = d.weeks.filter((w) => w.week <= Math.max(d.thisWeek, 1));
+    const vals = pts.map((w) => w.avgWeight);
+    const known = vals.filter((v) => v !== null);
+    if (known.length < 2) return '<p class="hint">Your trend line appears after two weeks of weigh-ins.</p>';
+    const W = 340, H = 150, top = 18, bottom = 124;
+    const n = Math.max(pts.length, 6);
+    const x = (i) => 14 + (i * (W - 28)) / (n - 1);
+    let min = Math.min(...known), max = Math.max(...known);
+    if (max - min < 1) { min -= 0.5; max += 0.5; }
+    const y = (v) => top + ((max - v) * (bottom - top)) / (max - min);
+    const p = [];
+    vals.forEach((v, i) => { if (v !== null) p.push([x(i), y(v)]); });
+    let line = `M${p[0][0].toFixed(1)},${p[0][1].toFixed(1)}`;
+    for (let i = 1; i < p.length; i++) {
+      const [a, b] = [p[i - 1], p[i]], c = (b[0] - a[0]) / 2;
+      line += ` C${(a[0] + c).toFixed(1)},${a[1].toFixed(1)} ${(b[0] - c).toFixed(1)},${b[1].toFixed(1)} ${b[0].toFixed(1)},${b[1].toFixed(1)}`;
+    }
+    const last = p[p.length - 1];
+    const lastIdx = vals.map((v, i) => (v !== null ? i : -1)).filter((i) => i >= 0).pop();
+    const area = `${line} L${last[0].toFixed(1)},${bottom} L${p[0][0].toFixed(1)},${bottom} Z`;
+    const labels = Array.from({ length: n }, (_, i) => `<text x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="middle"${i === lastIdx ? ' class="on"' : ''}>W${i + 1}</text>`).join('');
+    return `<svg class="trend" viewBox="0 0 ${W} ${H}" role="img" aria-label="Weekly average bodyweight, latest ${fmt(vals[lastIdx], 1)} kg in week ${lastIdx + 1}">
+      <defs><linearGradient id="tr-a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2444f9" stop-opacity=".18"/><stop offset="1" stop-color="#2444f9" stop-opacity="0"/></linearGradient>
+      <linearGradient id="tr-b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5b74ff" stop-opacity=".05"/><stop offset="1" stop-color="#5b74ff" stop-opacity=".35"/></linearGradient></defs>
+      <rect x="${(last[0] - 13).toFixed(1)}" y="${top - 8}" width="26" height="${bottom - top + 8}" rx="8" fill="url(#tr-b)"/>
+      <path d="${area}" fill="url(#tr-a)"/>
+      <path d="${line}" fill="none" stroke="#2444f9" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="7" fill="#fff" stroke="#2444f9" stroke-width="3.5"/>
+      <text x="${last[0].toFixed(1)}" y="${(last[1] - 14).toFixed(1)}" text-anchor="middle" class="tip">${fmt(vals[lastIdx], 1)} kg</text>
+      ${labels}</svg>`;
+  }
+
+  // One dark stat pill for the scrolling row on Home.
+  function statPill(label, value, target, unit, st, dp) {
+    const has = value !== null && value !== undefined;
+    return `<div class="stat-pill"><span class="sp-k">${esc(label)}<i class="sp-dot ${st.level || 'empty'}" title="${esc(st.label || 'Not logged')}"></i></span>
+      <b>${has ? fmt(value, dp) : '–'}<small> / ${fmt(target, dp)} ${esc(unit)}</small></b></div>`;
+  }
+
   async function renderHome(day) {
     const now = S.today();
     if (!day || day > now) day = now;
@@ -988,59 +1048,146 @@
     const log = ctx.logs.find((l) => l.day === day) || {};
     const session = todaysSession(ctx, day);
     const rows = habitRows(ctx, day);
-    const custom = rows.filter((r) => r.custom);
+    const hit = rows.filter((r) => r.status.level === 'good').length;
     const st = (key) => (rows.find((r) => r.key === key) || { status: {} }).status;
-    const macroSt = (v, target) => S.habitStatus('default', v, target);
-    const label = day === now ? 'Today' : day === S.addDays(now, -1) ? 'Yesterday' : niceDate(day);
+    const label = day === now ? 'Today' : day === S.addDays(now, -1) ? 'Yesterday' : niceDate(day, { weekday: 'short' });
+    const first = p.full_name ? esc(p.full_name.split(' ')[0]) : 'there';
+    const d = S.dashboard(ctx);
+    const due = day === now ? checkinDue(ctx) : null;
+    const exercises = session && Array.isArray(session.exercises) ? session.exercises.length : 0;
+    const greet = !session ? `Good to see you,<br>${first}.` : session.is_rest_day ? `Recovery day,<br>${first}.` : `Ready to train,<br>${first}?`;
 
-    shell(
-      `Hi ${p.full_name ? p.full_name.split(' ')[0] : 'there'}`,
-      week ? `Week ${week} of 12` : p.start_date && day < p.start_date ? `Starts ${niceDate(p.start_date)}` : '',
-      `
-      <div class="date-stepper">
+    const pills = [
+      t.steps_target ? statPill('Steps', log.steps, t.steps_target, '', st('steps')) : '',
+      m ? statPill('Calories', log.calories, m.calories, 'kcal', st('calories')) : '',
+      m ? statPill('Protein', log.protein_g, m.protein_g, 'g', st('protein')) : '',
+      ctx.habitsReady && t.sleep_target_h ? statPill('Sleep', log.sleep_h, t.sleep_target_h, 'h', st('sleep'), 1) : '',
+      ctx.habitsReady && t.water_target ? statPill('Water', log.water_l, S.parseLitres(t.water_target), 'L', st('water'), 1) : '',
+    ].join('');
+    const quick = [
+      ['#supps', ICONS.supps, 'Supplements', ctx.supplements.length ? `${ctx.supplements.length} from ${COACH}` : 'Plan and guide'],
+      ['#progress', ICONS.progress, 'Progress', 'Every week so far'],
+      ['#photos', ICONS.photos, 'Progress photos', 'Front, side, back'],
+      ['#hub', ICONS.hub, `${COACH}'s feedback`, 'Notes on your weeks'],
+    ];
+    const center = `<div class="day-pill-nav">
         <a href="#home/${S.addDays(day, -1)}" aria-label="Previous day">‹</a>
         <b>${esc(label)} · ${niceDate(day, { day: 'numeric', month: 'short' })}</b>
         ${day < now ? `<a href="#home/${S.addDays(day, 1)}" aria-label="Next day">›</a>` : '<span></span>'}
-      </div>
-      <a class="checkin-row card" href="#log/${day}">
-        <span class="state ${log.id ? 'good' : 'empty'}" aria-hidden="true">${log.id ? STATE_ICONS.good : ''}</span>
-        <span><b>Daily check-in</b><small>${log.id ? 'Logged. Tap to update' : 'Weight, steps, food and how the day went'}</small></span><span class="chev" aria-hidden="true">›</span>
-      </a>
-      ${t.coach_note ? `<div class="card coach-note"><p class="kicker">From ${esc(COACH)} · biggest lever this week</p><div>${esc(t.coach_note)}</div></div>` : ''}
-      <section class="panel">
-        <div class="panel-banner exercise"><h2>Exercise</h2><p>What to do ${day === now ? 'today' : 'on this day'}</p></div>
-        <div class="panel-body">
-          <div class="prow">
-            <span class="habit-icon" aria-hidden="true">🏋️</span>
-            <div class="prow-text"><b>${esc(session ? session.session_name : 'No session set')}</b><small>${session ? (session.is_rest_day ? 'Recovery day' : `Day ${session.cycle_day} of your cycle`) : `${esc(COACH)} adds your program`}</small></div>
-            ${session && !session.is_rest_day ? '<a class="btn btn-small" href="#training">Start workout</a>' : stateBadge(st('training'))}
-          </div>
-          ${t.steps_target ? progressRow('👟', 'Steps', '', log.steps, t.steps_target, 'steps', st('steps')) : ''}
-          <div class="prow"><span class="habit-icon" aria-hidden="true">🏃</span><div class="prow-text"><b>Cardio</b><small>Extra conditioning</small></div><div class="prow-val"><span>${fmt(log.cardio_min)} <i>mins</i></span></div></div>
+      </div>`;
+
+    shell(
+      `Hi ${first}`,
+      '',
+      `
+      <section class="hero">
+        <p class="hero-meta">${ICONS.sun}<span>${niceDate(day, { weekday: 'long' })}${week ? ` · Week ${week} of 12` : ''}</span></p>
+        <h1>${greet}</h1>
+        <div class="hero-card">
+          <span class="hero-mark" aria-hidden="true">${ICONS.training}</span>
+          <small>${day === now ? "Today's session" : 'Session'}</small>
+          <b>${esc(session ? session.session_name : 'No session yet')}</b>
+          <small>${session ? (session.is_rest_day ? 'Walk, stretch and recover' : `Day ${session.cycle_day} of your cycle${exercises ? ` · ${exercises} exercises` : ''}`) : `${esc(COACH)} adds your program after kickoff`}</small>
+          ${session && !session.is_rest_day ? '<a class="btn-dark" href="#training">Workout details</a>' : ''}
         </div>
+        <a class="log-btn${log.id ? ' done' : ''}" href="#log/${day}"><span aria-hidden="true">${log.id ? STATE_ICONS.good : ICONS.log}</span>${log.id ? 'Logged · update' : `Log ${day === now ? 'today' : 'this day'}`}</a>
       </section>
-      <section class="panel">
-        <div class="panel-banner nutrition"><h2>Nutrition</h2><p>Your daily intake against target</p></div>
-        <div class="panel-body">
-          ${m ? `${progressRow('🔥', 'Calories', '', log.calories, m.calories, 'kcal', st('calories'))}
-          ${progressRow('🍗', 'Protein', '', log.protein_g, m.protein_g, 'g', st('protein'))}
-          ${progressRow('🍚', 'Carbs', '', log.carbs_g, m.carbs_g, 'g', macroSt(log.carbs_g, m.carbs_g))}
-          ${progressRow('🥑', 'Fats', '', log.fats_g, m.fats_g, 'g', macroSt(log.fats_g, m.fats_g))}
-          ${progressRow('🥦', 'Fibre', '', log.fibre_g, m.fibre_g || t.fibre_target_g, 'g', st('fibre'))}` : `<p class="hint" style="padding:12px 14px">${esc(COACH)} will add your macros after your kickoff call.</p>`}
-        </div>
+
+      <section class="score">
+        <p class="label">${day === now ? "Today's score" : 'Day score'}</p>
+        <a class="big-num" href="#habits/${day}">${hit}<span>/${rows.length}</span></a>
+        <p class="label">habits on target${due ? ' · <button type="button" class="due-chip" data-goto="checkin-due">Check-in due</button>' : ''}</p>
       </section>
-      ${ctx.habitsReady ? `<section class="panel">
-        <div class="panel-banner recovery"><h2>Recovery</h2><p>Sleep and water</p></div>
-        <div class="panel-body">
-          ${progressRow('😴', 'Sleep', '', log.sleep_h, t.sleep_target_h, 'hrs', st('sleep'), 1)}
-          ${progressRow('💧', 'Water', '', log.water_l, S.parseLitres(t.water_target), 'L', st('water'), 1)}
+      ${pills ? `<div class="pill-row" role="list">${pills}</div>` : ''}
+
+      ${t.coach_note ? `<div class="note-card"><span class="note-mark" aria-hidden="true">R<i>.</i></span><div><p class="kicker">From ${esc(COACH)} · biggest lever this week</p><p>${esc(t.coach_note)}</p></div></div>` : ''}
+
+      <section>
+        <h2 class="sec-title">Quick access</h2>
+        <p class="sec-sub">Everything else in your plan</p>
+        <div class="quick-row">${quick.map(([href, icon, title, sub]) => `<a class="quick-tile" href="${href}"><span class="qt-ic" aria-hidden="true">${icon}</span><b>${esc(title)}</b><small>${esc(sub)}</small></a>`).join('')}</div>
+      </section>
+
+      ${d ? `<section class="trend-card">
+        <div class="trend-head">
+          <div><b>${d.totalChange !== null ? `${signed(d.totalChange, 1)} kg` : '–'}</b><small>Since your start</small></div>
+          <span class="trend-badge" aria-hidden="true">${ICONS.progress}</span>
+          <div class="r"><b>${pct(d.avgAdherence)}</b><small>Adherence</small></div>
         </div>
+        <p class="trend-title">Bodyweight trend<small>Weekly average</small></p>
+        ${trendChart(d)}
+        <a class="trend-link" href="#progress">See all progress <span aria-hidden="true">›</span></a>
       </section>` : ''}
-      <a class="card checkin-row" href="#habits/${day}">
-        <span class="habit-icon" aria-hidden="true">✅</span>
-        <span><b>Habit tracker</b><small>${rows.filter((r) => r.status.level === 'good').length} of ${rows.length} on target${custom.length ? ` · ${custom.length} of your own` : ''}</small></span><span class="chev" aria-hidden="true">›</span>
-      </a>`,
+
+      ${due ? `<section class="due-card" id="checkin-due">
+        <span class="due-ic" aria-hidden="true">${ICONS.checkin}</span>
+        <div><p class="kicker">${due.overdue ? 'Overdue' : 'Due tonight'}</p><h2>Week ${due.week} check-in</h2>
+        <p>Photos, measurements and how the week went. About 5 minutes, then ${esc(COACH)} reviews it.</p></div>
+        <a class="btn-dark" href="#checkin/${due.week}">Start check-in</a>
+      </section>` : ''}`,
       'home',
+      { center },
+    );
+    const chip = root.querySelector('[data-goto]');
+    if (chip) chip.addEventListener('click', () => document.getElementById(chip.dataset.goto).scrollIntoView({ behavior: 'smooth', block: 'center' }));
+  }
+
+  // ---------------------------------------------------------------- client: meal plan
+
+  async function renderMeals(day) {
+    const now = S.today();
+    if (!day || day > now) day = now;
+    const ctx = await loadCtx(state.me.id);
+    const p = ctx.profile;
+    const week = S.weekOf(p.start_date, day) || Math.max(S.currentWeek(p.start_date), 1);
+    const m = S.macrosForWeek(ctx.macros, week);
+    const log = ctx.logs.find((l) => l.day === day) || {};
+    const ws = S.weekStats(ctx, week);
+    const assigned = p.nutrition_tracking === 'Assigned meal plan';
+    const rows = habitRows(ctx, day);
+    const st = (key) => (rows.find((r) => r.key === key) || { status: {} }).status;
+    const kcal = st('calories');
+    const macro = (label, value, target, key) => {
+      const s2 = key ? st(key) : S.habitStatus('default', value, target);
+      const ratio = value !== null && value !== undefined && target ? Math.min(1, value / target) : 0;
+      return `<div class="macro"><span class="mk">${label}</span><b>${value === null || value === undefined ? '–' : fmt(value)}<small> / ${fmt(target)} g</small></b>
+        <div class="pbar ${s2.level || 'empty'}" aria-hidden="true"><span style="width:${Math.round(ratio * 100)}%"></span></div><span class="ms ${s2.level || ''}">${esc(s2.label || 'Not logged')}</span></div>`;
+    };
+    const plan = assigned
+      ? `<div class="plan-empty"><span class="qt-ic" aria-hidden="true">${ICONS.meals}</span><div><b>${esc(COACH)} is writing your meal plan</b><p>It's built around the food you already eat, from dal and roti to your weekend dinners. Each meal will show here with its macros, and you'll be able to swap items.</p></div></div>`
+      : `<div class="plan-empty"><span class="qt-ic" aria-hidden="true">${ICONS.meals}</span><div><b>You're on flexible macros</b><p>Eat the food you like and land close to the numbers above. If you'd rather follow set meals, ask ${esc(COACH)} at your next check-in.</p></div></div>`;
+
+    shell(
+      'Meal plan',
+      `Week ${week} of 12`,
+      m
+        ? `<section class="score left">
+          <p class="label">${day === now ? 'Eaten today' : `Eaten · ${niceDate(day, { day: 'numeric', month: 'short' })}`}</p>
+          <div class="big-num">${log.calories ? fmt(log.calories) : '0'}<span> kcal</span></div>
+          <p class="label">of ${fmt(m.calories)} kcal target${kcal.label ? ` · <b class="ms ${kcal.level}">${esc(kcal.label)}</b>` : ''}</p>
+        </section>
+        <div class="macro-grid">
+          ${macro('Protein', log.protein_g, m.protein_g, 'protein')}
+          ${macro('Carbs', log.carbs_g, m.carbs_g)}
+          ${macro('Fats', log.fats_g, m.fats_g)}
+          ${macro('Fibre', log.fibre_g, m.fibre_g || ctx.targets.fibre_target_g, 'fibre')}
+        </div>
+        <a class="btn-dark wide" href="#log/${day}">${log.calories ? 'Update today\'s food' : 'Log today\'s food'}</a>
+        <section>
+          <h2 class="sec-title">Your meal plan</h2>
+          <p class="sec-sub">${assigned ? 'Set meals from ' + esc(COACH) : 'Flexible macros'}</p>
+          ${plan}
+        </section>
+        <section class="week-food">
+          <h2 class="sec-title">This week so far</h2>
+          <div class="wf-grid">
+            <div><small>Food days</small><b>${ws.foodDays}<span> / 7</span></b></div>
+            <div><small>Avg kcal</small><b>${fmt(ws.avgCalories)}</b></div>
+            <div><small>Avg protein</small><b>${fmt(ws.avgProtein)}<span> g</span></b></div>
+          </div>
+        </section>`
+        : `<section class="plan-empty"><span class="qt-ic" aria-hidden="true">${ICONS.meals}</span><div><b>Your targets are on the way</b><p>${esc(COACH)} sets your calories and macros after your kickoff call. Your meal plan will show here too.</p></div></section>`,
+      'meals',
     );
   }
 
@@ -2248,6 +2395,8 @@
           return await renderLog(parts[1]);
         case 'habits':
           return await renderHabits(parts[1], parts[2]);
+        case 'meals':
+          return await renderMeals(parts[1]);
         case 'hub':
           return await renderHub();
         case 'training':
