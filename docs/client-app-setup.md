@@ -55,8 +55,11 @@ and click **Run**. It is safe to run twice. Until you do, the coach's Meal plan
 page shows a reminder and clients see only their targets.
 
 The food list for the builder is `site/app/js/foods.js` (numbers per 100 g).
-Plain foods use typical USDA FoodData Central values; home-style dishes are
-estimates you can override per item in the builder.
+Plain foods use the Australian Food Composition Database, Release 3
+(https://www.foodstandards.gov.au/science-data/food-nutrient-databases/afcd/data-files),
+with the AFCD food key kept beside each one. A few with no close AFCD match use
+USDA FoodData Central. Home-style dishes are estimates (AFCD has no South Asian
+dishes); you can override any item in the builder.
 
 ### 3. Only let people you invite sign in
 1. Open **Authentication** → **Sign In / Providers** (may be called "Providers").

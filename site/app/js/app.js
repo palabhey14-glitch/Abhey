@@ -1159,7 +1159,8 @@
     };
     const built = mealPlanHTML(ctx.mealPlan);
     const plan = built
-      ? `${built}<div class="mv-total"><span>Plan total</span><b>${macroLine(planMacros(ctx.mealPlan.meals))}</b></div>`
+      ? `${built}<div class="mv-total"><span>Plan total</span><b>${macroLine(planMacros(ctx.mealPlan.meals))}</b></div>
+        <p class="mv-credit">Plain foods: Australian Food Composition Database, Food Standards Australia New Zealand. Home-style dishes are estimates.</p>`
       : assigned
       ? `<div class="plan-empty"><span class="qt-ic" aria-hidden="true">${ICONS.meals}</span><div><b>${esc(COACH)} is writing your meal plan</b><p>It's built around the food you already eat, from dal and roti to your weekend dinners. Each meal will show here with its macros, and you'll be able to swap items.</p></div></div>`
       : `<div class="plan-empty"><span class="qt-ic" aria-hidden="true">${ICONS.meals}</span><div><b>You're on flexible macros</b><p>Eat the food you like and land close to the numbers above. If you'd rather follow set meals, ask ${esc(COACH)} at your next check-in.</p></div></div>`;
@@ -2269,7 +2270,7 @@
       <button type="button" class="btn-dark" id="mp-add-meal">+ Add a meal</button>
       <section class="card"><label for="mp-note">Note for ${esc(ctx.profile.full_name || 'the client')} <span class="hint">(shown above their plan)</span></label>
         <textarea id="mp-note" rows="2" maxlength="1000" placeholder="e.g. Swap roti for rice on training days if you prefer.">${esc(plan.coach_note)}</textarea></section>
-      <p class="hint">Food numbers are typical values: USDA FoodData Central for plain foods, and estimates for home-style dishes. Use Edit on any item to put in your own numbers; Reset brings back the list's.</p>`);
+      <p class="hint">Plain foods use the Australian Food Composition Database (FSANZ); home-style dishes, which it doesn't cover, are estimates, marked "est." in search. Use Edit on any item to put in your own numbers; Reset brings back the list's.</p>`);
 
     const saveEl = root.querySelector('#mp-save');
     let timer = null;
@@ -2373,9 +2374,13 @@
       if (e.target.type === 'search') {
         const q = e.target.value.trim().toLowerCase();
         const list = card.querySelector('.af-results');
-        const hits = q ? F.FOODS.filter((f) => allowed(f) && (f.name.toLowerCase().includes(q) || f.cat.toLowerCase().includes(q))).slice(0, 8) : [];
+        // Foods whose name matches come before ones that only match by category.
+        const named = (f) => f.name.toLowerCase().includes(q);
+        const hits = q
+          ? F.FOODS.filter((f) => allowed(f) && named(f)).concat(F.FOODS.filter((f) => allowed(f) && !named(f) && f.cat.toLowerCase().includes(q))).slice(0, 8)
+          : [];
         list.innerHTML = hits.length
-          ? hits.map((f) => `<li role="option" tabindex="-1" data-food="${f.id}">${plate(f.cat)}<span><b>${esc(f.name)}</b><small>${esc(f.serving)} · ${fmt(f.per100.kcal * f.g / 100)} kcal · ${fmt(f.per100.p * f.g / 100)} g protein</small></span></li>`).join('')
+          ? hits.map((f) => `<li role="option" tabindex="-1" data-food="${f.id}">${plate(f.cat)}<span><b>${esc(f.name)}</b><small>${esc(f.serving)} · ${fmt(f.per100.kcal * f.g / 100)} kcal · ${fmt(f.per100.p * f.g / 100)} g protein${f.src === 'est' ? ' · est.' : ''}</small></span></li>`).join('')
           : q ? `<li class="af-none">No match${diet !== 'all' ? ' in this filter' : ''}. Try another word.</li>` : '';
         list.hidden = !q;
       }

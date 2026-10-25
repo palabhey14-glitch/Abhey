@@ -1,7 +1,12 @@
 // Starter food list for the meal plan builder. Numbers are per 100 g.
-// src 'usda': plain foods, typical values from USDA FoodData Central.
-// src 'est':  home-style South Asian dishes. Recipes vary a lot, so these are
-//             estimates from typical recipes; the coach edits them per item.
+// src 'afcd:<key>': Australian Food Composition Database, Release 3 (FSANZ,
+//             Dec 2025), by Public Food Key. kcal = AFCD energy with dietary
+//             fibre (kJ) / 4.184; carbs = available carbohydrate, as on
+//             Australian labels.
+// src 'usda': plain foods AFCD has no close match for (USDA FoodData Central).
+// src 'est':  home-style South Asian dishes. AFCD has none, and recipes vary a
+//             lot, so these are estimates from typical recipes; the coach
+//             edits them per item.
 // diet: 'vegan', 'veg' (vegetarian), 'fish' or 'meat'. Meat is halal only if
 // it is bought halal, so the list never claims it.
 (function (root) {
@@ -31,53 +36,53 @@
     ['chana-masala', 'Chana masala', 'Dal & legumes', 'vegan', '1 cup', 240, 150, 7, 20, 5, 6, 'est'],
     ['rajma', 'Rajma (kidney bean curry)', 'Dal & legumes', 'vegan', '1 cup', 240, 120, 6, 17, 3, 6, 'est'],
     ['sambar', 'Sambar', 'Dal & legumes', 'vegan', '1 cup', 240, 65, 3, 9, 2, 2.5, 'est'],
-    ['lentils', 'Lentils, boiled', 'Dal & legumes', 'vegan', '1 cup', 200, 116, 9, 20, 0.4, 7.9, 'usda'],
+    ['lentils', 'Lentils, boiled', 'Dal & legumes', 'vegan', '1 cup', 200, 92, 7.3, 11.9, 0.5, 4.1, 'afcd:F005177'],
     ['moong', 'Mung beans, boiled', 'Dal & legumes', 'vegan', '1 cup', 200, 105, 7, 19.2, 0.4, 7.6, 'usda'],
-    ['chickpeas', 'Chickpeas, boiled', 'Dal & legumes', 'vegan', '1 cup', 160, 164, 8.9, 27.4, 2.6, 7.6, 'usda'],
-    ['kidney-beans', 'Kidney beans, boiled', 'Dal & legumes', 'vegan', '1 cup', 180, 127, 8.7, 22.8, 0.5, 6.4, 'usda'],
+    ['chickpeas', 'Chickpeas, boiled', 'Dal & legumes', 'vegan', '1 cup', 160, 119, 7.2, 14, 2, 7.6, 'afcd:F002882'],
+    ['kidney-beans', 'Kidney beans, boiled', 'Dal & legumes', 'vegan', '1 cup', 180, 91, 7.9, 9.1, 0.5, 7.2, 'afcd:F000451'],
 
     // Rice and breads
-    ['basmati', 'Basmati rice, cooked', 'Rice & breads', 'vegan', '1 cup', 160, 130, 2.7, 28.2, 0.3, 0.4, 'usda'],
-    ['brown-rice', 'Brown rice, cooked', 'Rice & breads', 'vegan', '1 cup', 160, 123, 2.7, 25.6, 1, 1.6, 'usda'],
-    ['jeera-rice', 'Jeera rice', 'Rice & breads', 'vegan', '1 cup', 160, 150, 3, 28, 3, 0.5, 'est'],
+    ['basmati', 'White or basmati rice, cooked', 'Rice & breads', 'vegan', '1 cup', 160, 158, 3.1, 34.7, 0.2, 0.8, 'afcd:F007661'],
+    ['brown-rice', 'Brown rice, cooked', 'Rice & breads', 'vegan', '1 cup', 160, 166, 4.1, 33.5, 1.1, 1.7, 'afcd:F007641'],
+    ['jeera-rice', 'Jeera rice', 'Rice & breads', 'vegan', '1 cup', 160, 180, 3, 33.5, 3.2, 0.8, 'est'],
     ['veg-pulao', 'Veg pulao', 'Rice & breads', 'vegan', '1 cup', 180, 140, 3, 24, 3.5, 1.5, 'est'],
     ['roti', 'Roti / chapati (no ghee)', 'Rice & breads', 'vegan', '1 roti', 40, 300, 10, 48, 7, 6, 'est'],
-    ['naan', 'Naan, plain', 'Rice & breads', 'veg', '1 naan', 90, 262, 8.7, 45.4, 5.1, 2.2, 'usda'],
+    ['naan', 'Naan, plain', 'Rice & breads', 'veg', '1 naan', 90, 293, 8, 47.8, 7.1, 2.6, 'afcd:F001647'],
     ['paratha', 'Paratha, plain', 'Rice & breads', 'veg', '1 paratha', 80, 320, 7, 45, 13, 5, 'est'],
     ['aloo-paratha', 'Aloo paratha', 'Rice & breads', 'veg', '1 paratha', 120, 260, 6, 36, 10, 4, 'est'],
-    ['quinoa', 'Quinoa, cooked', 'Rice & breads', 'vegan', '1 cup', 185, 120, 4.4, 21.3, 1.9, 2.8, 'usda'],
-    ['wholemeal-bread', 'Wholemeal bread', 'Rice & breads', 'vegan', '1 slice', 35, 252, 12.4, 42.7, 3.5, 6, 'usda'],
-    ['potato', 'Potato, boiled', 'Rice & breads', 'vegan', '1 medium', 170, 87, 1.9, 20.1, 0.1, 1.8, 'usda'],
-    ['sweet-potato', 'Sweet potato, baked', 'Rice & breads', 'vegan', '1 medium', 150, 90, 2, 20.7, 0.2, 3.3, 'usda'],
+    ['quinoa', 'Quinoa, cooked', 'Rice & breads', 'vegan', '1 cup', 185, 103, 3.6, 16.3, 1.8, 3.4, 'afcd:F007596'],
+    ['wholemeal-bread', 'Wholemeal bread', 'Rice & breads', 'vegan', '1 slice', 35, 237, 10.4, 39.2, 2.5, 6.9, 'afcd:F001553'],
+    ['potato', 'Potato, boiled', 'Rice & breads', 'vegan', '1 medium', 170, 62, 1.5, 12.1, 0.1, 2, 'afcd:F007320'],
+    ['sweet-potato', 'Sweet potato, baked', 'Rice & breads', 'vegan', '1 medium', 150, 80, 1.8, 16.1, 0.2, 3.2, 'afcd:F009033'],
 
     // Breakfast
-    ['oats', 'Rolled oats, dry', 'Breakfast', 'vegan', '1/2 cup', 40, 379, 13.2, 67.7, 6.5, 10.1, 'usda'],
+    ['oats', 'Rolled oats, dry', 'Breakfast', 'vegan', '1/2 cup', 40, 374, 12.2, 54.5, 9.5, 9.5, 'afcd:F006143'],
     ['poha', 'Poha', 'Breakfast', 'vegan', '1 plate', 200, 130, 2.5, 23, 3.5, 1.5, 'est'],
     ['upma', 'Upma', 'Breakfast', 'vegan', '1 plate', 200, 120, 3, 18, 4, 1.5, 'est'],
     ['idli', 'Idli', 'Breakfast', 'vegan', '1 idli', 40, 100, 3.5, 21, 0.4, 1.2, 'est'],
     ['dosa', 'Dosa, plain', 'Breakfast', 'vegan', '1 dosa', 80, 165, 4, 27, 4, 1, 'est'],
     ['besan-chilla', 'Besan chilla', 'Breakfast', 'vegan', '1 chilla', 80, 190, 9, 22, 7, 4, 'est'],
-    ['eggs', 'Eggs, boiled', 'Breakfast', 'veg', '2 large eggs', 100, 155, 12.6, 1.1, 10.6, 0, 'usda'],
-    ['egg-whites', 'Egg whites', 'Breakfast', 'veg', '4 whites', 130, 52, 10.9, 0.7, 0.2, 0, 'usda'],
+    ['eggs', 'Eggs, boiled', 'Breakfast', 'veg', '2 large eggs', 100, 136, 12.4, 0.7, 9.4, 0, 'afcd:F003721'],
+    ['egg-whites', 'Egg whites', 'Breakfast', 'veg', '4 whites', 130, 47, 11.2, 0.4, 0, 0, 'afcd:F003706'],
     ['masala-omelette', 'Masala omelette (2 eggs)', 'Breakfast', 'veg', '1 omelette', 130, 170, 11, 3, 13, 0.7, 'est'],
 
     // Protein foods
-    ['chicken-breast', 'Chicken breast, cooked', 'Protein', 'meat', '1 fillet', 150, 165, 31, 0, 3.6, 0, 'usda'],
-    ['chicken-thigh', 'Chicken thigh, cooked, skinless', 'Protein', 'meat', '2 thighs', 150, 179, 24.8, 0, 8.2, 0, 'usda'],
-    ['salmon', 'Salmon, cooked', 'Protein', 'fish', '1 fillet', 150, 206, 22.1, 0, 12.4, 0, 'usda'],
-    ['prawns', 'Prawns, cooked', 'Protein', 'fish', '1 serve', 120, 99, 24, 0.2, 0.3, 0, 'usda'],
+    ['chicken-breast', 'Chicken breast, grilled', 'Protein', 'meat', '1 fillet', 150, 143, 29.8, 0, 2.5, 0, 'afcd:F002593'],
+    ['chicken-thigh', 'Chicken thigh, baked, skinless', 'Protein', 'meat', '2 thighs', 150, 175, 24.2, 0, 8.7, 0, 'afcd:F002804'],
+    ['salmon', 'Salmon, grilled', 'Protein', 'fish', '1 fillet', 150, 258, 22.9, 0, 18.6, 0, 'afcd:F007826'],
+    ['prawns', 'Prawns, cooked', 'Protein', 'fish', '1 serve', 120, 121, 27.1, 0, 1.2, 0, 'afcd:F007432'],
     ['paneer', 'Paneer', 'Protein', 'veg', '100 g', 100, 265, 18, 3, 20, 0, 'est'],
-    ['tofu', 'Tofu, firm', 'Protein', 'vegan', '1/2 block', 150, 144, 17.3, 2.8, 8.7, 2.3, 'usda'],
+    ['tofu', 'Tofu, firm', 'Protein', 'vegan', '1/2 block', 150, 130, 12.8, 0, 8.3, 1, 'afcd:F009176'],
     ['soya-chunks', 'Soya chunks, dry', 'Protein', 'vegan', '1/3 cup', 30, 345, 52, 33, 0.5, 13, 'est'],
-    ['whey', 'Whey protein powder', 'Protein', 'veg', '1 scoop', 30, 400, 80, 8, 6, 0, 'est'],
+    ['whey', 'Whey protein powder', 'Protein', 'veg', '1 scoop', 30, 375, 85, 1.6, 2.2, 1.8, 'afcd:F007493'],
     ['pea-protein', 'Plant protein powder', 'Protein', 'vegan', '1 scoop', 30, 380, 75, 6, 7, 3, 'est'],
 
     // Veg and sides
     ['aloo-gobi', 'Aloo gobi', 'Veg & sides', 'vegan', '1 cup', 200, 95, 2.5, 11, 5, 3, 'est'],
     ['bhindi', 'Bhindi masala', 'Veg & sides', 'vegan', '1 cup', 150, 100, 2.5, 9, 6.5, 3.5, 'est'],
     ['baingan-bharta', 'Baingan bharta', 'Veg & sides', 'vegan', '1 cup', 200, 90, 2, 9, 5.5, 3.5, 'est'],
-    ['saag', 'Spinach, cooked', 'Veg & sides', 'vegan', '1 cup', 180, 23, 3, 3.8, 0.3, 2.4, 'usda'],
-    ['broccoli', 'Broccoli, steamed', 'Veg & sides', 'vegan', '1 cup', 150, 35, 2.4, 7.2, 0.4, 3.3, 'usda'],
+    ['saag', 'Spinach, cooked', 'Veg & sides', 'vegan', '1 cup', 180, 23, 2.8, 0.7, 0.4, 2.9, 'afcd:F008760'],
+    ['broccoli', 'Broccoli, boiled', 'Veg & sides', 'vegan', '1 cup', 150, 24, 2.9, 1.2, 0.3, 2.5, 'afcd:F001900'],
     ['kachumber', 'Kachumber salad', 'Veg & sides', 'vegan', '1 bowl', 100, 25, 1, 5, 0.2, 1.5, 'est'],
     ['raita', 'Cucumber raita', 'Veg & sides', 'veg', '1/2 cup', 100, 60, 3, 5, 3, 0.5, 'est'],
     ['mint-chutney', 'Mint chutney', 'Veg & sides', 'vegan', '2 tbsp', 30, 40, 2, 7, 0.5, 2, 'est'],
@@ -85,23 +90,23 @@
 
     // Dairy
     ['greek-yogurt', 'Greek yogurt, plain, low fat', 'Dairy', 'veg', '1 tub', 170, 59, 10.2, 3.6, 0.4, 0, 'usda'],
-    ['dahi', 'Dahi / plain yogurt', 'Dairy', 'veg', '1 bowl', 150, 61, 3.5, 4.7, 3.3, 0, 'usda'],
-    ['milk', 'Milk, full cream', 'Dairy', 'veg', '1 glass', 250, 61, 3.2, 4.8, 3.3, 0, 'usda'],
-    ['skim-milk', 'Milk, skim', 'Dairy', 'veg', '1 glass', 250, 34, 3.4, 5, 0.1, 0, 'usda'],
+    ['dahi', 'Dahi / plain yogurt', 'Dairy', 'veg', '1 bowl', 150, 76, 5.3, 5.2, 3.3, 0.1, 'afcd:F009694'],
+    ['milk', 'Milk, full cream', 'Dairy', 'veg', '1 glass', 250, 66, 3.4, 5.5, 3.5, 0, 'afcd:F005634'],
+    ['skim-milk', 'Milk, skim', 'Dairy', 'veg', '1 glass', 250, 36, 3.7, 5.5, 0, 0, 'afcd:F005637'],
     ['soy-milk', 'Soy milk, unsweetened', 'Dairy', 'vegan', '1 glass', 250, 33, 2.9, 1.7, 1.6, 0.5, 'usda'],
 
     // Fruit
-    ['banana', 'Banana', 'Fruit', 'vegan', '1 medium', 120, 89, 1.1, 22.8, 0.3, 2.6, 'usda'],
-    ['apple', 'Apple', 'Fruit', 'vegan', '1 medium', 180, 52, 0.3, 13.8, 0.2, 2.4, 'usda'],
-    ['mango', 'Mango', 'Fruit', 'vegan', '1 cup', 165, 60, 0.8, 15, 0.4, 1.6, 'usda'],
-    ['berries', 'Mixed berries', 'Fruit', 'vegan', '1 cup', 150, 50, 0.8, 12, 0.3, 3, 'usda'],
+    ['banana', 'Banana', 'Fruit', 'vegan', '1 medium', 120, 95, 1.4, 19.9, 0.2, 2.2, 'afcd:F000262'],
+    ['apple', 'Apple', 'Fruit', 'vegan', '1 medium', 180, 58, 0.2, 12.7, 0, 2.5, 'afcd:F000110'],
+    ['mango', 'Mango', 'Fruit', 'vegan', '1 cup', 165, 54, 0.4, 12.6, 0, 1.3, 'afcd:F005299'],
+    ['berries', 'Mixed berries, frozen', 'Fruit', 'vegan', '1 cup', 150, 48, 0.6, 9.6, 0.1, 3.3, 'afcd:F009881'],
 
     // Fats and nuts
-    ['ghee', 'Ghee', 'Fats & nuts', 'veg', '1 tsp', 5, 900, 0, 0, 100, 0, 'usda'],
-    ['oil', 'Cooking oil', 'Fats & nuts', 'vegan', '1 tsp', 5, 884, 0, 0, 100, 0, 'usda'],
-    ['almonds', 'Almonds', 'Fats & nuts', 'vegan', '15 almonds', 20, 579, 21.2, 21.6, 49.9, 12.5, 'usda'],
-    ['peanuts', 'Peanuts, roasted', 'Fats & nuts', 'vegan', '1 handful', 30, 567, 25.8, 16.1, 49.2, 8.5, 'usda'],
-    ['peanut-butter', 'Peanut butter', 'Fats & nuts', 'vegan', '1 tbsp', 16, 588, 25, 20, 50, 6, 'usda'],
+    ['ghee', 'Ghee', 'Fats & nuts', 'veg', '1 tsp', 5, 885, 0.3, 0, 99.9, 0, 'afcd:F004205'],
+    ['oil', 'Cooking oil', 'Fats & nuts', 'vegan', '1 tsp', 5, 814, 0, 0, 92, 0, 'afcd:F006191'],
+    ['almonds', 'Almonds', 'Fats & nuts', 'vegan', '15 almonds', 20, 570, 19.7, 5.4, 50.5, 11, 'afcd:F006081'],
+    ['peanuts', 'Peanuts, roasted', 'Fats & nuts', 'vegan', '1 handful', 30, 637, 25.1, 14.1, 52.8, 6.2, 'afcd:F006110'],
+    ['peanut-butter', 'Peanut butter', 'Fats & nuts', 'vegan', '1 tbsp', 16, 596, 22.2, 14.3, 49.6, 5.8, 'afcd:F006577'],
 
     // Snacks and sweets
     ['roasted-chana', 'Roasted chana', 'Snacks & sweets', 'vegan', '1 handful', 30, 370, 22, 58, 5, 17, 'est'],
@@ -117,7 +122,8 @@
   ];
 
   const FOODS = ROWS.map(([id, name, cat, diet, serving, g, kcal, p, c, f, fibre, src]) => ({
-    id, name, cat, diet, serving, g, src, per100: { kcal, p, c, f, fibre },
+    id, name, cat, diet, serving, g, src: src.split(':')[0], afcd: src.split(':')[1] || null,
+    per100: { kcal, p, c, f, fibre },
   }));
   const CATEGORIES = [...new Set(FOODS.map((x) => x.cat))];
 
