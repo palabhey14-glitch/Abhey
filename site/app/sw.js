@@ -1,15 +1,17 @@
 // Service worker: lets the app install to the home screen and open
 // instantly. Only the app's own files are cached; client data always comes
 // fresh from Supabase and is never stored here.
-const CACHE = 'rewired-app-v1';
+const CACHE = 'rewired-app-v2';
 const SHELL = [
   './',
   'index.html',
   'app.css',
+  'brand-redesign.css',
   '../styles.css',
   'config.js',
   'vendor/supabase-2.117.2.js',
   'js/stats.js',
+  'js/meal-plan.js',
   'js/app.js',
   'manifest.webmanifest',
   'icons/icon-192.png',

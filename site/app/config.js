@@ -9,4 +9,6 @@ window.REWIRED_CONFIG = {
   supabaseUrl: 'https://njdqwhawdiloghoxajag.supabase.co',
   supabaseAnonKey: 'sb_publishable_XKeg_EnCYosKhF0tIORJ1g_9cAhTtTY',
   coachName: 'Abhey',
+  // Enable only after the meal-plan migration and reviewed food library are live.
+  mealPlannerEnabled: false,
 };

@@ -15,6 +15,7 @@
       })
     : null;
   const COACH = cfg.coachName || 'your coach';
+  const MEALS_ENABLED = cfg.mealPlannerEnabled === true;
   const BUCKET = 'progress-photos';
   const POSES = ['front', 'side', 'back'];
   // General guide transcribed from the client workbook's Supplements sheet.
@@ -158,6 +159,8 @@
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9v6m3-9v12m12-12v12m3-9v6M6 12h12"/></svg>',
     supps:
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 4a5 5 0 0 1 7 0l6 6a5 5 0 0 1-7 7l-6-6a5 5 0 0 1 0-7Z"/><path d="m9 13 6-6"/></svg>',
+    meals:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 3v7c0 3 6 3 6 0V3M7 3v18M19 3c-5 2-5 10 0 10V3v18"/></svg>',
   };
 
   // ------------------------------------------------------------------ data
@@ -208,12 +211,13 @@
           ${[
             ['today', 'Today'],
             ['training', 'Training'],
+            ['meals', 'Meals'],
             ['supps', 'Supps'],
             ['checkin', 'Check-in'],
             ['photos', 'Photos'],
             ['progress', 'Progress'],
             ['profile', 'Profile'],
-          ]
+          ].filter(([id]) => MEALS_ENABLED || id !== 'meals')
             .map(
               ([id, label]) =>
                 `<a href="#${id}"${tab === id ? ' aria-current="page"' : ''}>${ICONS[id]}<span>${label}</span></a>`,
@@ -718,6 +722,17 @@
     return `${header}<div class="training-days">${cards}</div>`;
   }
 
+  async function renderMealPlan(clientId, coach, nav, title, sub) {
+    if (!MEALS_ENABLED) {
+      return shell(coach ? title : 'Your meals', coach ? sub : 'Nutrition plan', `${nav || ''}<section class="card meal-builder"><p class="kicker">Nutrition</p><h2>Personal meal plans are being prepared.</h2><p>Your coach will let you know when this section is available. Your existing nutrition targets and daily logs continue to work as usual.</p></section>`, coach ? undefined : 'meals');
+    }
+    const library = await window.RewiredMeals.load(sb, clientId);
+    shell(coach ? title : 'Your meals', coach ? sub : 'Assigned nutrition plan', `${nav || ''}${window.RewiredMeals.html(library, coach)}`, coach ? undefined : 'meals');
+    window.RewiredMeals.bind(root, library, sb, clientId, coach,
+      () => renderMealPlan(clientId, coach, nav, title, sub),
+      err => toast(friendlyError(err), true));
+  }
+
   async function renderTraining() {
     const ctx = await loadCtx(state.me.id, true);
     shell('Training', 'Your program', trainingHTML(ctx), 'training');
@@ -1046,6 +1061,7 @@
       </section>
       <section class="card row-actions">
         <a href="/privacy.html" target="_blank" rel="noopener">Privacy policy</a>
+        <a href="/terms.html" target="_blank" rel="noopener">Terms &amp; Conditions</a>
         <button class="btn btn-ghost btn-small" type="button" data-signout>Sign out</button>
       </section>`,
       'profile',
@@ -1084,11 +1100,20 @@
       return { c, flags, week, st, prevSt, last, daysSince };
     });
     cards.sort((a, b) => b.flags.length - a.flags.length);
+    const pendingFeedback = checkins.filter((c) => !c.coach_feedback).length;
+    const needsAttention = cards.filter((card) => card.flags.length > 0).length;
+    const onTrack = Math.max(0, clients.length - needsAttention);
+    const completion = clients.length ? Math.round(onTrack / clients.length * 100) : 0;
 
     shell(
       'Your clients',
       `${clients.length} client${clients.length === 1 ? '' : 's'}`,
       `
+      <section class="coach-summary" aria-label="Coaching overview">
+        <div class="card coach-summary-main"><div><p class="kicker">Your coaching week</p><h2>${clients.length} active client${clients.length === 1 ? '' : 's'}</h2><p>See who needs a response or a plan adjustment.</p></div><div class="coach-ring" role="img" aria-label="${completion}% of clients have no attention flags"><svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="48" fill="none" stroke="#e8efff" stroke-width="12"/><circle class="coach-ring-progress" cx="60" cy="60" r="48" fill="none" stroke="#2444f9" stroke-width="12" stroke-linecap="round" stroke-dasharray="${(completion / 100 * 301.6).toFixed(1)} 301.6"/></svg><strong>${completion}%</strong></div></div>
+        <div class="card coach-count"><p class="kicker">Check-ins to review</p><strong>${pendingFeedback}</strong><span>Waiting for coach feedback</span></div>
+        <div class="card coach-count"><p class="kicker">Needs attention</p><strong>${needsAttention}</strong><span>Clients with open flags</span></div>
+      </section>
       <div class="client-list">
         ${
           cards
@@ -1128,9 +1153,10 @@
     ['photos', 'Photos'],
     ['targets', 'Targets'],
     ['training', 'Training'],
+    ['meals', 'Meals'],
     ['supps', 'Supps'],
     ['profile', 'Profile'],
-  ];
+  ].filter(([id]) => MEALS_ENABLED || id !== 'meals');
 
   async function renderClient(id, tab, arg) {
     tab = tab || 'dashboard';
@@ -1146,6 +1172,7 @@
 
     if (tab === 'dashboard') return shell(title, sub, `${nav}<div class="coach-shortcuts">
       <a class="card" href="#client/${id}/training"><b>Training</b><span>Edit this client's exercises and sessions →</span></a>
+      ${MEALS_ENABLED ? `<a class="card" href="#client/${id}/meals"><b>Meals</b><span>Assign recipes and foods by portion →</span></a>` : ''}
       <a class="card" href="#client/${id}/supps"><b>Supps</b><span>Assign and update supplements →</span></a>
     </div>${dashboardHTML(ctx)}`);
     if (tab === 'logs') return renderCoachLogs(ctx, nav, title, sub, Number(arg) || Math.max(week, 1));
@@ -1153,6 +1180,7 @@
     if (tab === 'photos') return renderCoachPhotos(ctx, nav, title, sub, arg);
     if (tab === 'targets') return renderCoachTargets(ctx, nav, title, sub);
     if (tab === 'training') return renderCoachTraining(ctx, nav, title, sub);
+    if (tab === 'meals') return renderMealPlan(id, true, nav, title, sub);
     if (tab === 'supps') return renderCoachSupps(ctx, nav, title, sub);
     if (tab === 'profile') {
       const rows = [
@@ -1618,6 +1646,8 @@
       switch (parts[0]) {
         case 'training':
           return await renderTraining();
+        case 'meals':
+          return await renderMealPlan(state.me.id, false);
         case 'supps':
           return await renderSupps();
         case 'checkin':
