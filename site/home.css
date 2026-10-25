@@ -311,3 +311,8 @@ p { margin: 0; }
   .footer .contact .ig { gap: 6px; white-space: nowrap; }
   .footer .contact svg { width: 16px; height: 16px; }
 }
+
+/* ------------------------------------------------------------ resources page */
+.ways.soon li { gap: 12px; }
+.soon-tag { justify-self: start; padding: 4px 10px; border-radius: 6px; background: var(--sand-wash); color: var(--sand-ink); font: 600 14px var(--sans); }
+.soon-note { margin-top: 56px; color: var(--ink-2); }
