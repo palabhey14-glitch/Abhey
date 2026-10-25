@@ -67,4 +67,20 @@ assert.equal(S.status('goal', 0.3, 2 / 12), 'On track');
 assert.equal(S.status('goal', 0.1, 2 / 12), 'Behind');
 assert.equal(S.status('steps', null), '');
 
+// Habit tracker colours: met = green, within 25% = orange, beyond = red.
+assert.equal(S.habitStatus('steps', 10000, 10000).level, 'good');
+assert.equal(S.habitStatus('steps', 12000, 10000).level, 'good');
+assert.deepEqual(S.habitStatus('steps', 9200, 10000), { level: 'warn', label: 'Close' });
+assert.deepEqual(S.habitStatus('steps', 8000, 10000), { level: 'warn', label: 'Behind' });
+assert.equal(S.habitStatus('steps', 7400, 10000).level, 'bad');
+assert.equal(S.habitStatus('steps', null, 10000).level, '');
+assert.equal(S.habitStatus('steps', 5000, null).level, '');
+assert.equal(S.habitStatus('calories', 2240, 2200).level, 'good');
+assert.deepEqual(S.habitStatus('calories', 2400, 2200), { level: 'warn', label: 'Slightly over' });
+assert.equal(S.habitStatus('calories', 2900, 2200).level, 'bad');
+assert.equal(S.habitStatus('calories', 1500, 2200).level, 'bad');
+assert.equal(S.parseLitres('3-4 L'), 3);
+assert.equal(S.parseLitres('2.5L'), 2.5);
+assert.equal(S.parseLitres('lots'), null);
+
 console.log('stats.js: all checks passed');

@@ -38,6 +38,16 @@ the app yet (see "Not included yet" below).
    rule that clients only ever see their own data, and the private
    `progress-photos` storage folder.
 
+### 2b. Already set up before 25 October 2026? Run the habit tracker update
+The habit tracker (water, sleep and clients' own habits) needs two new tables.
+If you ran `schema.sql` before this date, open **SQL Editor** → **New query**,
+paste [`supabase/migrations/2026-10-25-habits.sql`](../supabase/migrations/2026-10-25-habits.sql)
+and click **Run**. It is safe to run twice. Until you do, the app still works;
+water, sleep and own habits just stay hidden.
+
+Habit colours (green, orange, red) are set in one place, `HABIT_BANDS` at the
+bottom of `site/app/js/stats.js`.
+
 ### 3. Only let people you invite sign in
 1. Open **Authentication** → **Sign In / Providers** (may be called "Providers").
 2. Under **Email**: keep it **enabled**, and turn **Allow new users to sign up** **off**.

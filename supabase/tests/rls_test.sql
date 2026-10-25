@@ -42,3 +42,17 @@ select energy as e9, coach_feedback as fb_great_week from weekly_checkins;
 select calories from macro_targets;
 reset role;
 set role anon; select count(*) from daily_logs; -- expect permission denied
+-- habit tracker
+set role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-0000000000a1',false);
+update daily_logs set water_l=2.5, sleep_h=7.5 where day='2026-11-03';
+insert into client_habits(name, category, unit, target) values ('Read 10 pages','Mindset','pages',10);
+insert into client_habits(user_id, name, category) values ('00000000-0000-0000-0000-0000000000b2','Sneaky','Mindset'); -- expect RLS error
+insert into habit_entries(habit_id, day, value) select id, '2026-11-03', 8 from client_habits;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-0000000000b2',false);
+select count(*) as b_sees_a_habits from client_habits;
+insert into habit_entries(habit_id, day, value) select id, '2026-11-04', 1 from client_habits; -- 0 rows (B can't see A's habit)
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000c',false);
+select count(*) as coach_sees_habit_entries from habit_entries;
+update client_habits set name='coach edit'; select 'coach habit update above should be 0 rows';
+reset role;

@@ -11,6 +11,15 @@
   --good: #146c43;
   --warn: #8a4b00;
   --bad: #b42318;
+  /* Habit tracker status fills: green / orange / red, tuned to sit with the
+     Clear Sky blues. Brand blue stays the accent, never a status. */
+  --hit: #1f9d63;
+  --hit-soft: #e2f5eb;
+  --close: #e8892b;
+  --close-soft: #fdf0e1;
+  --off: #d64545;
+  --off-soft: #fbe6e6;
+  --ink-2: #5e6b7e;
   --radius: 14px;
   --shadow: 0 1px 2px rgba(11, 37, 69, 0.06), 0 4px 16px rgba(11, 37, 69, 0.06);
   --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;

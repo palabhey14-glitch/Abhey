@@ -144,6 +144,12 @@
   }
 
   const ICONS = {
+    home:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>',
+    habits:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.7 2.7L16 10"/></svg>',
+    hub:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg>',
     today:
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18M8 15l2.5 2.5L16 13"/></svg>',
     checkin:
@@ -181,7 +187,17 @@
       sb.from('measurements').select('*').eq('user_id', id).order('week_number'),
       sb.from('progress_photos').select('*').eq('user_id', id).order('week_number'),
     ]).then((rs) => rs.map(must));
-    const ctx = { profile, targets: targets || {}, macros, training, supplements, logs, checkins, measurements, photos };
+    // Habit tables arrive with migrations/2026-10-25-habits.sql. Until that
+    // has been run, the rest of the app keeps working without them.
+    const [habits, habitEntries] = await Promise.all([
+      sb.from('client_habits').select('*').eq('user_id', id).order('sort_order').order('created_at'),
+      sb.from('habit_entries').select('*').eq('user_id', id).order('day'),
+    ]);
+    const habitsReady = !habits.error && !habitEntries.error;
+    const ctx = {
+      profile, targets: targets || {}, macros, training, supplements, logs, checkins, measurements, photos,
+      habits: habitsReady ? habits.data : [], habitEntries: habitsReady ? habitEntries.data : [], habitsReady,
+    };
     state.ctx[id] = ctx;
     return ctx;
   }
@@ -200,37 +216,70 @@
 
   // --------------------------------------------------------------- layout
 
+  const CLIENT_TABS = [
+    ['home', 'Home'],
+    ['habits', 'Habits'],
+    ['training', 'Training'],
+    ['progress', 'Progress'],
+    ['hub', 'Coach hub'],
+  ];
+  // Screens reached from the Coach hub keep that tab lit.
+  const TAB_OF = { checkin: 'hub', photos: 'hub', supps: 'hub', profile: 'hub', log: 'home' };
+
+  const COACH_SECTIONS = [
+    ['overview', 'Overview'],
+    ['physique', 'Physique'],
+    ['nutrition', 'Nutrition'],
+    ['activity', 'Activity'],
+    ['recovery', 'Recovery'],
+    ['habits', 'Habits'],
+    ['training', 'Training'],
+    ['supps', 'Supplements'],
+    ['logs', 'Daily logs'],
+    ['photos', 'Gallery'],
+    ['checkins', 'Check-ins'],
+  ];
+
   function shell(title, sub, body, tab) {
     const isCoach = state.me && state.me.role === 'coach';
-    const tabs = isCoach
-      ? ''
-      : `<nav class="tabs" aria-label="Main">
-          ${[
-            ['today', 'Today'],
-            ['training', 'Training'],
-            ['supps', 'Supps'],
-            ['checkin', 'Check-in'],
-            ['photos', 'Photos'],
-            ['progress', 'Progress'],
-            ['profile', 'Profile'],
-          ]
-            .map(
-              ([id, label]) =>
-                `<a href="#${id}"${tab === id ? ' aria-current="page"' : ''}>${ICONS[id]}<span>${label}</span></a>`,
-            )
-            .join('')}
-        </nav>`;
+    if (isCoach) return coachShell(title, sub, body);
+    const active = TAB_OF[tab] || tab;
+    const initial = ((state.me && state.me.full_name) || '?').trim()[0].toUpperCase();
     root.innerHTML = `
       <header class="topbar">
         <img src="icons/icon-192.png" alt="">
         <div class="title">${esc(title)}${sub ? `<div class="sub">${esc(sub)}</div>` : ''}</div>
-        ${isCoach ? '<button type="button" data-signout>Sign out</button>' : ''}
+        <a class="avatar" href="#profile" aria-label="Profile">${esc(initial)}</a>
       </header>
       <main class="screen">${body}</main>
-      ${tabs}`;
-    if (isCoach) document.body.style.paddingBottom = '24px';
-    const out = root.querySelector('[data-signout]');
-    if (out) out.addEventListener('click', signOut);
+      <nav class="tabs" aria-label="Main">${CLIENT_TABS.map(
+        ([id, label]) => `<a href="#${id}"${active === id ? ' aria-current="page"' : ''}>${ICONS[id]}<span>${label}</span></a>`,
+      ).join('')}</nav>`;
+    window.scrollTo(0, 0);
+  }
+
+  // Coach CRM: app rail, the client's section menu, then the main pane.
+  function coachShell(title, sub, body) {
+    const v = state.coachView || {};
+    document.body.classList.add('crm-body');
+    const rail = `<aside class="crm-rail">
+        <a class="crm-brand" href="#clients"><img src="icons/icon-192.png" alt=""><span>Rewired<small>Coach</small></span></a>
+        <a href="#clients"${v.section !== 'inbox' ? ' aria-current="page"' : ''}>${ICONS.profile}<span>Clients</span></a>
+        <a href="#inbox"${v.section === 'inbox' ? ' aria-current="page"' : ''}>${ICONS.checkin}<span>Check-ins</span></a>
+        <button type="button" class="crm-signout" data-signout>Sign out</button>
+      </aside>`;
+    const sections = v.clientId
+      ? `<nav class="crm-sections" aria-label="Client sections">
+          <a class="crm-back" href="#clients">‹ ${esc(v.clientName)}</a>
+          ${COACH_SECTIONS.map(([id, label]) => `<a href="#client/${v.clientId}/${id}"${v.section === id ? ' aria-current="page"' : ''}>${label}</a>`).join('')}
+          <a class="crm-settings" href="#client/${v.clientId}/settings"${v.section === 'settings' ? ' aria-current="page"' : ''}>⚙ Client settings</a>
+        </nav>`
+      : '';
+    root.innerHTML = `<div class="crm${v.clientId ? ' with-sections' : ''}">${rail}${sections}
+      <main class="crm-main"><header class="crm-head"><h1>${esc(title)}</h1>${sub ? `<p>${esc(sub)}</p>` : ''}</header>${body}</main></div>`;
+    root.querySelector('[data-signout]').addEventListener('click', signOut);
+    const current = root.querySelector('.crm-sections [aria-current]');
+    if (current) current.scrollIntoView({ block: 'nearest', inline: 'center' });
     window.scrollTo(0, 0);
   }
 
@@ -607,7 +656,7 @@
     return bits.length ? `<div class="targets">${bits.join('')}</div>` : `<p class="hint">${esc(COACH)} will add your targets after your kickoff call.</p>`;
   }
 
-  async function renderToday(day) {
+  async function renderLog(day) {
     const now = S.today();
     if (!day || day > now) day = now;
     const ctx = await loadCtx(state.me.id);
@@ -621,7 +670,7 @@
       strip = `<div class="week-strip">${S.weekDates(p.start_date, week)
         .map(
           (d) =>
-            `<a href="#today/${d}" class="${loggedDays.has(d) ? 'done' : ''}${d > now ? ' future' : ''}"${d === day ? ' aria-current="date"' : ''}>${niceDate(d, { weekday: 'narrow' })}<span>${niceDate(d, { day: 'numeric' })}</span><span class="dot" aria-label="${loggedDays.has(d) ? 'logged' : 'not logged'}"></span></a>`,
+            `<a href="#log/${d}" class="${loggedDays.has(d) ? 'done' : ''}${d > now ? ' future' : ''}"${d === day ? ' aria-current="date"' : ''}>${niceDate(d, { weekday: 'narrow' })}<span>${niceDate(d, { day: 'numeric' })}</span><span class="dot" aria-label="${loggedDays.has(d) ? 'logged' : 'not logged'}"></span></a>`,
         )
         .join('')}</div>`;
     }
@@ -629,13 +678,13 @@
     const mealPlan = p.nutrition_tracking === 'Assigned meal plan';
     const title = day === now ? 'Today' : day === S.addDays(now, -1) ? 'Yesterday' : niceDate(day);
     shell(
-      `Hi ${p.full_name ? p.full_name.split(' ')[0] : 'there'}`,
+      'Daily check-in',
       week ? `Week ${week} of 12` : p.start_date && day < p.start_date ? `Starts ${niceDate(p.start_date)}` : '',
       `
       <div class="daybar">
-        <a class="btn btn-ghost" href="#today/${S.addDays(day, -1)}" aria-label="Previous day">‹</a>
+        <a class="btn btn-ghost" href="#log/${S.addDays(day, -1)}" aria-label="Previous day">‹</a>
         <h2>${esc(title)}<div class="hint">${niceDate(day, { weekday: 'long', day: 'numeric', month: 'long' })}</div></h2>
-        ${day < now ? `<a class="btn btn-ghost" href="#today/${S.addDays(day, 1)}" aria-label="Next day">›</a>` : '<span style="width:48px"></span>'}
+        ${day < now ? `<a class="btn btn-ghost" href="#log/${S.addDays(day, 1)}" aria-label="Next day">›</a>` : '<span style="width:48px"></span>'}
       </div>
       ${strip}
       <div class="card"><p class="kicker">This week's targets</p>${targetsLine(ctx, week)}</div>
@@ -648,6 +697,10 @@
         <p class="hint" style="margin-top:-6px;margin-bottom:12px">Weigh in every morning after the toilet, before food.</p>
         ${numberField('cardio_min', 'Cardio (minutes)', log.cardio_min, { max: 600 })}
         ${choiceField('trained', 'Trained today?', ['Yes', 'Rest day', 'Missed'], log.trained)}
+        ${ctx.habitsReady ? `<p class="kicker" style="margin-top:8px">Recovery</p><div class="grid-2">
+          ${numberField('sleep_h', 'Sleep last night (hrs)', log.sleep_h, { decimal: true, max: 16 })}
+          ${numberField('water_l', 'Water (litres)', log.water_l, { decimal: true, max: 15 })}
+        </div>` : ''}
         <p class="kicker" style="margin-top:8px">Food</p>
         <p class="hint" style="margin:-4px 0 12px">Copy your daily totals from MyFitnessPal. Logging yesterday's food? Tap ‹ to go back a day.</p>
         <div class="grid-2">
@@ -676,9 +729,343 @@
         must(await sb.from('daily_logs').upsert({ ...data, user_id: state.me.id, day }, { onConflict: 'user_id,day' }));
         invalidate(state.me.id);
         toast('Saved. Nice work.');
-        renderToday(day);
+        location.hash = `#home/${day}`;
       });
     });
+  }
+
+  // ---------------------------------------------------------------- habits
+
+  const HABIT_CATEGORIES = {
+    Activity: '👟',
+    Nutrition: '🥗',
+    Hydration: '💧',
+    Recovery: '😴',
+    Mindset: '🧠',
+    Lifestyle: '☀️',
+  };
+
+  const STATE_ICONS = {
+    good: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 12.5 3.2 3.2L17 9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    warn: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 12h9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>',
+    bad: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8.5 8.5 7 7m0-7-7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>',
+  };
+
+  function stateBadge(st) {
+    return `<span class="state ${st.level || 'empty'}" role="img" aria-label="${esc(st.label || 'Not logged')}">${STATE_ICONS[st.level] || ''}</span>`;
+  }
+
+  function trainedStatus(v) {
+    if (!v) return { level: '', label: 'Not logged' };
+    return v === 'Missed' ? { level: 'bad', label: 'Missed' } : { level: 'good', label: v === 'Yes' ? 'Trained' : 'Planned rest' };
+  }
+
+  // Every row on the habit tracker for one day: the targets the coach set
+  // (stored on daily_logs) followed by the client's own habits.
+  function habitRows(ctx, day) {
+    const t = ctx.targets;
+    const week = S.weekOf(ctx.profile.start_date, day) || Math.max(S.currentWeek(ctx.profile.start_date), 1);
+    const m = S.macrosForWeek(ctx.macros, week);
+    const log = ctx.logs.find((l) => l.day === day) || {};
+    const builtIn = [
+      { key: 'steps', field: 'steps', name: 'Daily steps', cat: 'Activity', icon: '👟', unit: 'steps', target: t.steps_target },
+      { key: 'training', field: 'trained', name: 'Training session', cat: 'Activity', icon: '🏋️', choice: ['Yes', 'Rest day', 'Missed'] },
+      { key: 'protein', field: 'protein_g', name: 'Protein', cat: 'Nutrition', icon: '🍗', unit: 'g', target: m && m.protein_g },
+      { key: 'calories', field: 'calories', name: 'Calories', cat: 'Nutrition', icon: '🔥', unit: 'kcal', target: m && m.calories },
+      { key: 'fibre', field: 'fibre_g', name: 'Fibre', cat: 'Nutrition', icon: '🥦', unit: 'g', target: (m && m.fibre_g) || t.fibre_target_g },
+    ];
+    if (ctx.habitsReady) {
+      builtIn.push(
+        { key: 'water', field: 'water_l', name: 'Water', cat: 'Hydration', icon: '💧', unit: 'L', target: S.parseLitres(t.water_target), decimal: true },
+        { key: 'sleep', field: 'sleep_h', name: 'Sleep', cat: 'Recovery', icon: '😴', unit: 'hrs', target: t.sleep_target_h, decimal: true },
+      );
+    }
+    const rows = builtIn
+      .filter((r) => r.choice || r.target)
+      .map((r) => ({ ...r, value: log[r.field], status: r.choice ? trainedStatus(log.trained) : S.habitStatus(r.key, log[r.field], r.target) }));
+    for (const h of ctx.habits) {
+      const entry = ctx.habitEntries.find((e) => e.habit_id === h.id && e.day === day);
+      const value = entry ? Number(entry.value) : null;
+      rows.push({
+        key: `h-${h.id}`, id: h.id, custom: true, name: h.name, cat: h.category, icon: h.icon || HABIT_CATEGORIES[h.category],
+        unit: h.unit, target: Number(h.target), decimal: true, value, status: S.habitStatus('default', value, h.target),
+      });
+    }
+    return rows;
+  }
+
+  function unitLabel(r) {
+    return r.unit === 'times' && Number(r.target) === 1 ? 'time' : r.unit;
+  }
+
+  function habitValueText(r) {
+    if (r.choice) return r.value ? esc(r.value) : 'Not logged';
+    const v = r.value === null || r.value === undefined ? '–' : fmt(r.value, r.decimal && r.value % 1 ? 1 : 0);
+    return `${v} / ${fmt(r.target, r.decimal && r.target % 1 ? 1 : 0)} ${esc(unitLabel(r))}`;
+  }
+
+  function weekOfDay(ctx, day) {
+    const start = ctx.profile.start_date;
+    const w = S.weekOf(start, day);
+    return w ? S.weekDates(start, w) : Array.from({ length: 7 }, (_, i) => S.addDays(day, i - 6));
+  }
+
+  // Habit x day grid of status dots. Used by the client's "All" view and
+  // by the coach.
+  function habitWeekHTML(ctx, day) {
+    const days = weekOfDay(ctx, day);
+    const now = S.today();
+    const perDay = days.map((d) => habitRows(ctx, d));
+    const rows = perDay[0].map((r, i) => {
+      const hits = perDay.filter((rs) => rs[i] && rs[i].status.level === 'good').length;
+      const cells = perDay
+        .map((rs, j) => {
+          const st = rs[i] ? rs[i].status : {};
+          return `<td><span class="dot-s ${days[j] > now ? 'future' : st.level || 'empty'}" title="${esc(niceDate(days[j]))}: ${esc(st.label || '')}"></span></td>`;
+        })
+        .join('');
+      return `<tr><th scope="row"><span class="habit-icon sm" aria-hidden="true">${r.icon}</span>${esc(r.name)}<small>${r.choice ? 'Daily' : `Daily · ${fmt(r.target, r.decimal && r.target % 1 ? 1 : 0)} ${esc(unitLabel(r))}`}</small></th>${cells}<td class="hits">${hits}/7</td></tr>`;
+    });
+    return `<div class="table-wrap"><table class="habit-week">
+      <thead><tr><th>Habit</th>${days.map((d) => `<th>${niceDate(d, { weekday: 'narrow' })}<br>${niceDate(d, { day: 'numeric' })}</th>`).join('')}<th>Hit</th></tr></thead>
+      <tbody>${rows.join('')}</tbody></table></div>
+      <p class="legend"><span class="dot-s good"></span> Target hit <span class="dot-s warn"></span> Within 25% <span class="dot-s bad"></span> More than 25% off</p>`;
+  }
+
+  async function renderHabits(day, view) {
+    const now = S.today();
+    if (!day || day > now) day = now;
+    view = view === 'all' ? 'all' : 'day';
+    const ctx = await loadCtx(state.me.id);
+    const rows = habitRows(ctx, day);
+    const done = rows.filter((r) => r.status.level === 'good').length;
+    const toggle = `<div class="segmented" role="tablist">
+      <a role="tab" href="#habits/${day}" aria-selected="${view === 'day'}">Day view</a>
+      <a role="tab" href="#habits/${day}/all" aria-selected="${view === 'all'}">All</a></div>`;
+    const stepper = `<div class="date-stepper">
+      <a href="#habits/${S.addDays(day, -1)}${view === 'all' ? '/all' : ''}" aria-label="Previous day">‹</a>
+      <b>${niceDate(day, { day: 'numeric', month: 'long', year: 'numeric' })}</b>
+      ${day < now ? `<a href="#habits/${S.addDays(day, 1)}${view === 'all' ? '/all' : ''}" aria-label="Next day">›</a>` : '<span></span>'}</div>`;
+    const missing = ctx.habitsReady ? '' : `<div class="card muted-box">Water, sleep and your own habits switch on once ${esc(COACH)} finishes the habit tracker update.</div>`;
+
+    let body;
+    if (view === 'day') {
+      body = `<p class="section-label">Today's habits · ${done} of ${rows.length} on target</p>
+      <ul class="habit-list">${rows
+        .map(
+          (r) => `<li class="habit" data-key="${esc(r.key)}">
+            <button type="button" class="habit-row" aria-expanded="false">
+              <span class="habit-icon" aria-hidden="true">${r.icon}</span>
+              <span class="habit-text"><b>${esc(r.name)}</b><small>${esc(r.cat)} · ${habitValueText(r)}</small></span>
+              ${stateBadge(r.status)}<span class="chev" aria-hidden="true">›</span>
+            </button>
+            <form class="habit-entry" hidden novalidate>${
+              r.choice
+                ? choiceField(`hv-${r.key}`, 'Trained today?', r.choice, r.value)
+                : `<label for="hv-${esc(r.key)}">${esc(r.name)} (${esc(r.unit)})</label>
+                   <div class="entry-row"><input id="hv-${esc(r.key)}" name="value" type="number" inputmode="${r.decimal ? 'decimal' : 'numeric'}" step="${r.decimal ? '0.1' : '1'}" min="0" value="${r.value === null || r.value === undefined ? '' : esc(r.value)}" placeholder="Target ${fmt(r.target, r.decimal && r.target % 1 ? 1 : 0)}"><button class="btn btn-small" type="submit">Save</button></div>`
+            }${r.choice ? '<button class="btn btn-small" type="submit">Save</button>' : ''}</form>
+          </li>`,
+        )
+        .join('')}</ul>
+      <p class="hint">Tap a habit to log it. Green means you hit the target, orange means you're within 25%, red means more than 25% off.</p>`;
+    } else {
+      body = `<section class="card">${habitWeekHTML(ctx, day)}</section>
+      ${ctx.habits.length ? `<section class="card"><p class="kicker">Your own habits</p><ul class="own-habits">${ctx.habits
+        .map((h) => `<li><span class="habit-icon sm" aria-hidden="true">${h.icon || HABIT_CATEGORIES[h.category]}</span><span>${esc(h.name)}<small>${esc(h.category)} · ${fmt(h.target, h.target % 1 ? 1 : 0)} ${esc(h.unit)} a day</small></span><button class="btn btn-ghost btn-small" type="button" data-del-habit="${esc(h.id)}">Remove</button></li>`)
+        .join('')}</ul></section>` : ''}
+      ${ctx.habitsReady ? `<form id="add-habit" class="card" novalidate><p class="kicker">Add your own habit</p>
+        <div class="field"><label for="nh-name">Habit</label><input id="nh-name" name="name" maxlength="60" placeholder="e.g. Morning walk outside" required></div>
+        <div class="grid-2">
+          <div class="field"><label for="nh-cat">Category</label><select id="nh-cat" name="category">${Object.keys(HABIT_CATEGORIES).map((c) => `<option>${c}</option>`).join('')}</select></div>
+          <div class="field"><label for="nh-target">Daily target</label><input id="nh-target" name="target" type="number" inputmode="decimal" step="any" min="0.1" value="1"></div>
+        </div>
+        <div class="field"><label for="nh-unit">Unit</label><input id="nh-unit" name="unit" maxlength="20" value="times" list="nh-units"><datalist id="nh-units"><option>times</option><option>minutes</option><option>pages</option><option>serves</option><option>L</option></datalist>
+        <p class="hint">Yes/no habit? Leave it as 1 time a day.</p></div>
+        <button class="btn" type="submit" style="width:100%">Add habit</button></form>` : ''}`;
+    }
+    shell('Habit tracker', `${done} of ${rows.length} on target`, `${toggle}${stepper}${missing}${body}`, 'habits');
+
+    root.querySelectorAll('.habit').forEach((li) => {
+      const row = rows.find((r) => r.key === li.dataset.key);
+      const btn = li.querySelector('.habit-row');
+      const form = li.querySelector('form');
+      btn.addEventListener('click', () => {
+        // Yes/no habits (target 1 time) tick straight from the row.
+        if (row.custom && row.target === 1 && row.unit === 'times') return saveHabit(row, row.value >= 1 ? null : 1, day, btn);
+        const open = form.hidden;
+        form.hidden = !open;
+        btn.setAttribute('aria-expanded', String(open));
+        if (open) {
+          const input = form.querySelector('input[type=number]');
+          if (input) input.focus();
+        }
+      });
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        let value;
+        if (row.choice) {
+          const picked = form.querySelector('input[type=radio]:checked');
+          value = picked ? picked.value : null;
+        } else {
+          const raw = form.elements.value.value.trim();
+          value = raw === '' ? null : Number(raw);
+          if (value !== null && (Number.isNaN(value) || value < 0)) return toast('Enter a number of 0 or more.', true);
+        }
+        saveHabit(row, value, day, form.querySelector('[type=submit]'));
+      });
+    });
+    root.querySelectorAll('[data-del-habit]').forEach((b) =>
+      b.addEventListener('click', () => {
+        if (!window.confirm('Remove this habit and its history?')) return;
+        withBusy(b, async () => {
+          must(await sb.from('client_habits').delete().eq('id', b.dataset.delHabit).eq('user_id', state.me.id));
+          invalidate(state.me.id);
+          renderHabits(day, 'all');
+        });
+      }),
+    );
+    const add = document.getElementById('add-habit');
+    if (add)
+      add.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const d = readForm(add);
+        if (!d.name) return toast('Name the habit.', true);
+        if (!d.target || d.target <= 0) return toast('Set a daily target above 0.', true);
+        withBusy(add.querySelector('[type=submit]'), async () => {
+          must(await sb.from('client_habits').insert({ ...d, unit: d.unit || 'times', user_id: state.me.id, icon: HABIT_CATEGORIES[d.category], sort_order: ctx.habits.length }));
+          invalidate(state.me.id);
+          toast('Habit added.');
+          renderHabits(day, 'all');
+        });
+      });
+  }
+
+  async function saveHabit(row, value, day, button) {
+    await withBusy(button, async () => {
+      const uid = state.me.id;
+      if (row.custom) {
+        if (value === null) must(await sb.from('habit_entries').delete().eq('habit_id', row.id).eq('day', day));
+        else must(await sb.from('habit_entries').upsert({ habit_id: row.id, user_id: uid, day, value }, { onConflict: 'habit_id,day' }));
+      } else {
+        must(await sb.from('daily_logs').upsert({ user_id: uid, day, [row.field]: value }, { onConflict: 'user_id,day' }));
+      }
+      invalidate(uid);
+      renderHabits(day, 'day');
+    });
+  }
+
+  // ---------------------------------------------------------------- client: home
+
+  function progressRow(icon, label, sub, value, target, unit, st, dp) {
+    const ratio = value !== null && value !== undefined && target ? Math.min(1, Number(value) / target) : 0;
+    return `<div class="prow">
+      <span class="habit-icon" aria-hidden="true">${icon}</span>
+      <div class="prow-text"><b>${esc(label)}</b><small>${esc(sub || st.label || '')}</small></div>
+      <div class="prow-val"><span>${value === null || value === undefined ? '–' : fmt(value, dp)} <i>/ ${target ? fmt(target, dp) : '–'} ${esc(unit)}</i></span>
+        <div class="pbar ${st.level || 'empty'}" aria-hidden="true"><span style="width:${Math.round(ratio * 100)}%"></span></div></div>
+    </div>`;
+  }
+
+  function todaysSession(ctx, day) {
+    if (!ctx.training.length) return null;
+    const starts = [...new Set(ctx.training.map((r) => r.program_start_date))].sort().reverse();
+    const start = starts.find((d) => d <= day);
+    if (!start) return null;
+    const sessions = ctx.training.filter((r) => r.program_start_date === start);
+    const len = Math.max(...sessions.map((r) => r.cycle_day));
+    return sessions.find((r) => r.cycle_day === (S.daysBetween(start, day) % len) + 1) || null;
+  }
+
+  async function renderHome(day) {
+    const now = S.today();
+    if (!day || day > now) day = now;
+    const ctx = await loadCtx(state.me.id);
+    const p = ctx.profile;
+    const t = ctx.targets;
+    const week = S.weekOf(p.start_date, day);
+    const m = S.macrosForWeek(ctx.macros, week || Math.max(S.currentWeek(p.start_date), 1));
+    const log = ctx.logs.find((l) => l.day === day) || {};
+    const session = todaysSession(ctx, day);
+    const rows = habitRows(ctx, day);
+    const custom = rows.filter((r) => r.custom);
+    const st = (key) => (rows.find((r) => r.key === key) || { status: {} }).status;
+    const macroSt = (v, target) => S.habitStatus('default', v, target);
+    const label = day === now ? 'Today' : day === S.addDays(now, -1) ? 'Yesterday' : niceDate(day);
+
+    shell(
+      `Hi ${p.full_name ? p.full_name.split(' ')[0] : 'there'}`,
+      week ? `Week ${week} of 12` : p.start_date && day < p.start_date ? `Starts ${niceDate(p.start_date)}` : '',
+      `
+      <div class="date-stepper">
+        <a href="#home/${S.addDays(day, -1)}" aria-label="Previous day">‹</a>
+        <b>${esc(label)} · ${niceDate(day, { day: 'numeric', month: 'short' })}</b>
+        ${day < now ? `<a href="#home/${S.addDays(day, 1)}" aria-label="Next day">›</a>` : '<span></span>'}
+      </div>
+      <a class="checkin-row card" href="#log/${day}">
+        <span class="state ${log.id ? 'good' : 'empty'}" aria-hidden="true">${log.id ? STATE_ICONS.good : ''}</span>
+        <span><b>Daily check-in</b><small>${log.id ? 'Logged. Tap to update' : 'Weight, steps, food and how the day went'}</small></span><span class="chev" aria-hidden="true">›</span>
+      </a>
+      ${t.coach_note ? `<div class="card coach-note"><p class="kicker">From ${esc(COACH)} · biggest lever this week</p><div>${esc(t.coach_note)}</div></div>` : ''}
+      <section class="panel">
+        <div class="panel-banner exercise"><h2>Exercise</h2><p>What to do ${day === now ? 'today' : 'on this day'}</p></div>
+        <div class="panel-body">
+          <div class="prow">
+            <span class="habit-icon" aria-hidden="true">🏋️</span>
+            <div class="prow-text"><b>${esc(session ? session.session_name : 'No session set')}</b><small>${session ? (session.is_rest_day ? 'Recovery day' : `Day ${session.cycle_day} of your cycle`) : `${esc(COACH)} adds your program`}</small></div>
+            ${session && !session.is_rest_day ? '<a class="btn btn-small" href="#training">Start workout</a>' : stateBadge(st('training'))}
+          </div>
+          ${t.steps_target ? progressRow('👟', 'Steps', '', log.steps, t.steps_target, 'steps', st('steps')) : ''}
+          <div class="prow"><span class="habit-icon" aria-hidden="true">🏃</span><div class="prow-text"><b>Cardio</b><small>Extra conditioning</small></div><div class="prow-val"><span>${fmt(log.cardio_min)} <i>mins</i></span></div></div>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="panel-banner nutrition"><h2>Nutrition</h2><p>Your daily intake against target</p></div>
+        <div class="panel-body">
+          ${m ? `${progressRow('🔥', 'Calories', '', log.calories, m.calories, 'kcal', st('calories'))}
+          ${progressRow('🍗', 'Protein', '', log.protein_g, m.protein_g, 'g', st('protein'))}
+          ${progressRow('🍚', 'Carbs', '', log.carbs_g, m.carbs_g, 'g', macroSt(log.carbs_g, m.carbs_g))}
+          ${progressRow('🥑', 'Fats', '', log.fats_g, m.fats_g, 'g', macroSt(log.fats_g, m.fats_g))}
+          ${progressRow('🥦', 'Fibre', '', log.fibre_g, m.fibre_g || t.fibre_target_g, 'g', st('fibre'))}` : `<p class="hint" style="padding:12px 14px">${esc(COACH)} will add your macros after your kickoff call.</p>`}
+        </div>
+      </section>
+      ${ctx.habitsReady ? `<section class="panel">
+        <div class="panel-banner recovery"><h2>Recovery</h2><p>Sleep and water</p></div>
+        <div class="panel-body">
+          ${progressRow('😴', 'Sleep', '', log.sleep_h, t.sleep_target_h, 'hrs', st('sleep'), 1)}
+          ${progressRow('💧', 'Water', '', log.water_l, S.parseLitres(t.water_target), 'L', st('water'), 1)}
+        </div>
+      </section>` : ''}
+      <a class="card checkin-row" href="#habits/${day}">
+        <span class="habit-icon" aria-hidden="true">✅</span>
+        <span><b>Habit tracker</b><small>${rows.filter((r) => r.status.level === 'good').length} of ${rows.length} on target${custom.length ? ` · ${custom.length} of your own` : ''}</small></span><span class="chev" aria-hidden="true">›</span>
+      </a>`,
+      'home',
+    );
+  }
+
+  // ---------------------------------------------------------------- client: coach hub
+
+  async function renderHub() {
+    const ctx = await loadCtx(state.me.id);
+    const week = S.currentWeek(ctx.profile.start_date);
+    const latest = ctx.checkins.filter((c) => c.coach_feedback).sort((a, b) => b.week_number - a.week_number)[0];
+    const done = ctx.checkins.some((c) => c.week_number === week);
+    const items = [
+      ['#checkin', ICONS.checkin, 'Weekly check-in', week ? (done ? `Week ${week} sent` : `Week ${week} due Sunday night`) : 'Opens in week 1'],
+      ['#photos', ICONS.photos, 'Progress photos', 'Front, side and back each week'],
+      ['#supps', ICONS.supps, 'Supplements', ctx.supplements.length ? `${ctx.supplements.length} from ${COACH}` : 'Your plan and the general guide'],
+      ['#profile', ICONS.profile, 'Profile and targets', 'Your details and 12-week goals'],
+    ];
+    shell(
+      'Coach hub',
+      `You and ${COACH}`,
+      `${latest ? `<div class="card coach-note"><p class="kicker">Latest feedback · week ${latest.week_number}</p><div class="feedback">${esc(latest.coach_feedback)}</div></div>` : ''}
+      <ul class="hub-list">${items
+        .map(([href, icon, title, sub]) => `<li><a class="card checkin-row" href="${href}"><span class="habit-icon" aria-hidden="true">${icon}</span><span><b>${title}</b><small>${esc(sub)}</small></span><span class="chev" aria-hidden="true">›</span></a></li>`)
+        .join('')}</ul>`,
+      'hub',
+    );
   }
 
   // -------------------------------------------------------- client: training
@@ -1006,7 +1393,7 @@
       <p>Start with your profile. ${esc(COACH)} uses it to set your targets after your kickoff call.</p>
       ${profileFormHTML(state.me, 'Save and continue')}`);
     bindProfileForm(state.me.id, () => {
-      location.hash = '#today';
+      location.hash = '#home';
       route();
     });
   }
@@ -1054,9 +1441,254 @@
     root.querySelector('[data-signout]').addEventListener('click', signOut);
   }
 
+  // ---------------------------------------------------------------- coach CRM building blocks
+
+  function statCards(cards) {
+    return `<div class="stat-cards">${cards
+      .map((c) => `<div class="stat-card"><div class="k">${esc(c.k)}</div><div class="v">${c.v}${c.delta || ''}</div>${c.s ? `<div class="s">${esc(c.s)}</div>` : ''}</div>`)
+      .join('')}</div>`;
+  }
+
+  // ▲/▼ change. goodWhen 'down' or 'up' colours it; anything else stays neutral.
+  function deltaHTML(d, dp, unit, goodWhen) {
+    if (d === null || d === undefined || Number.isNaN(d)) return '<span class="delta">–</span>';
+    if (Math.abs(d) < Math.pow(10, -(dp || 0)) / 2) return '<span class="delta">No change</span>';
+    const up = d > 0;
+    const tone = !goodWhen ? '' : (goodWhen === 'up') === up ? ' good' : ' bad';
+    return `<span class="delta${tone}">${up ? '▲' : '▼'} ${signed(d, dp)}${unit ? ` ${unit}` : ''}</span>`;
+  }
+
+  function dotCell(st, text) {
+    return `<span class="cell-status"><span class="dot-s ${st.level || 'empty'}" title="${esc(st.label || '')}"></span>${text}</span>`;
+  }
+
+  // A table that shows `per` rows at a time with a footer like the reference.
+  function pagedTable(headers, rows, per) {
+    per = per || 10;
+    if (!rows.length) return '<div class="card"><p>Nothing logged yet.</p></div>';
+    return `<div class="card table-card" data-paged="${per}"><div class="table-wrap"><table class="crm-table">
+      <thead><tr>${headers.map((h) => `<th>${h}</th>`).join('')}</tr></thead>
+      <tbody>${rows.join('')}</tbody></table></div>
+      <div class="pager"><span data-range></span><span class="pager-btns"><button type="button" class="btn btn-ghost btn-small" data-prev aria-label="Previous page">‹</button><span data-page></span><button type="button" class="btn btn-ghost btn-small" data-next aria-label="Next page">›</button></span></div></div>`;
+  }
+
+  function bindPaged() {
+    root.querySelectorAll('[data-paged]').forEach((box) => {
+      const per = Number(box.dataset.paged);
+      const trs = [...box.querySelectorAll('tbody tr')];
+      const pages = Math.max(1, Math.ceil(trs.length / per));
+      let page = 0;
+      const show = () => {
+        trs.forEach((tr, i) => (tr.hidden = Math.floor(i / per) !== page));
+        box.querySelector('[data-range]').textContent = `${page * per + 1}–${Math.min(trs.length, (page + 1) * per)} of ${trs.length} items`;
+        box.querySelector('[data-page]').textContent = `${page + 1} of ${pages}`;
+        box.querySelector('[data-prev]').disabled = page === 0;
+        box.querySelector('[data-next]').disabled = page >= pages - 1;
+      };
+      box.querySelector('[data-prev]').addEventListener('click', () => { page -= 1; show(); });
+      box.querySelector('[data-next]').addEventListener('click', () => { page += 1; show(); });
+      show();
+    });
+  }
+
+  function sectionTabs(id, section, tabs, current) {
+    return `<nav class="crm-tabs" aria-label="Section views">${tabs
+      .map(([t, l]) => `<a href="#client/${id}/${section}/${t}"${t === current ? ' aria-current="page"' : ''}>${l}</a>`)
+      .join('')}</nav>`;
+  }
+
+  // The current program week's days (or the last 7 days before a start date).
+  function coachWeek(ctx) {
+    const w = S.currentWeek(ctx.profile.start_date);
+    return { week: w, days: w ? S.weekDates(ctx.profile.start_date, w) : Array.from({ length: 7 }, (_, i) => S.addDays(S.today(), i - 6)) };
+  }
+
+  function avgOf(xs) {
+    const v = xs.filter((x) => x !== null && x !== undefined && x !== '').map(Number);
+    return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
+  }
+
+  function weekValues(ctx, days, field) {
+    const byDay = new Map(ctx.logs.map((l) => [l.day, l]));
+    const vals = days.map((d) => (byDay.get(d) || {})[field]).filter((v) => v !== null && v !== undefined);
+    return vals.map(Number);
+  }
+
+  function prevDays(days) {
+    return days.map((d) => S.addDays(d, -7));
+  }
+
+  // ---------------------------------------------------------------- coach CRM sections
+
+  function renderCoachPhysique(ctx, nav, title, sub, view) {
+    const id = ctx.profile.id;
+    view = view === 'measurements' ? 'measurements' : 'bodyweight';
+    const tabs = sectionTabs(id, 'physique', [['bodyweight', 'Bodyweight'], ['measurements', 'Measurements']], view);
+    if (view === 'measurements') {
+      return shell(title, sub, `${tabs}${measurementsTable(ctx) || '<div class="card"><p>No measurements yet.</p></div>'}`);
+    }
+    const { days } = coachWeek(ctx);
+    const w = weekValues(ctx, days, 'weight_kg');
+    const pw = weekValues(ctx, prevDays(days), 'weight_kg');
+    const avg = avgOf(w);
+    const startW = S.firstWeight(ctx.logs);
+    const goalDown = ctx.targets.goal_weight_kg && startW ? Number(ctx.targets.goal_weight_kg) < startW : true;
+    const goal = goalDown ? 'down' : 'up';
+    const logged = `${w.length}/7 days logged`;
+    const weights = ctx.logs.filter((l) => l.weight_kg !== null && l.weight_kg !== undefined);
+    const rows = weights
+      .map((l, i) => ({ l, change: i ? Number(l.weight_kg) - Number(weights[i - 1].weight_kg) : null }))
+      .reverse()
+      .map(({ l, change }) => `<tr><td>${niceDate(l.day, { day: '2-digit', month: '2-digit', year: 'numeric' })}</td><td>${fmt(l.weight_kg, 1)} kg</td><td>${change === null ? '–' : deltaHTML(change, 1, 'kg', goal)}</td></tr>`);
+    shell(
+      title,
+      sub,
+      `${tabs}${statCards([
+        { k: 'Average weight', v: avg === null ? '–' : `${fmt(avg, 1)} kg`, delta: avg !== null && pw.length ? deltaHTML(avg - avgOf(pw), 1, 'kg', goal) : '', s: logged },
+        { k: 'High weight', v: w.length ? `${fmt(Math.max(...w), 1)} kg` : '–', s: logged },
+        { k: 'Low weight', v: w.length ? `${fmt(Math.min(...w), 1)} kg` : '–', s: logged },
+        { k: 'Goal weight', v: ctx.targets.goal_weight_kg ? `${fmt(ctx.targets.goal_weight_kg, 1)} kg` : '–', s: startW ? `Started at ${fmt(startW, 1)} kg` : '' },
+      ])}${pagedTable(['Date', 'Weight', 'Change (kg)'], rows)}`,
+    );
+    bindPaged();
+  }
+
+  function renderCoachNutrition(ctx, nav, title, sub, view) {
+    const id = ctx.profile.id;
+    const tabs = sectionTabs(id, 'nutrition', [['daily', 'Daily intake'], ['targets', 'Targets and macros']], view === 'targets' ? 'targets' : 'daily');
+    if (view === 'targets') return renderCoachTargets(ctx, tabs, title, sub);
+    const { week, days } = coachWeek(ctx);
+    const m = S.macrosForWeek(ctx.macros, Math.max(week, 1));
+    const cal = weekValues(ctx, days, 'calories');
+    const pro = weekValues(ctx, days, 'protein_g');
+    const fib = weekValues(ctx, days, 'fibre_g');
+    const rows = ctx.logs
+      .filter((l) => l.calories !== null || l.protein_g !== null)
+      .slice()
+      .reverse()
+      .map((l) => {
+        const mm = S.macrosForWeek(ctx.macros, S.weekOf(ctx.profile.start_date, l.day) || 1) || {};
+        return `<tr><td>${niceDate(l.day, { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
+          <td>${dotCell(S.habitStatus('calories', l.calories, mm.calories), fmt(l.calories))}</td>
+          <td>${dotCell(S.habitStatus('protein', l.protein_g, mm.protein_g), `${fmt(l.protein_g)} g`)}</td>
+          <td>${fmt(l.carbs_g)} g</td><td>${fmt(l.fats_g)} g</td>
+          <td>${dotCell(S.habitStatus('fibre', l.fibre_g, mm.fibre_g || ctx.targets.fibre_target_g), `${fmt(l.fibre_g)} g`)}</td>
+          ${ctx.profile.nutrition_tracking === 'Assigned meal plan' ? `<td>${esc(l.meal_plan || '–')}</td>` : ''}</tr>`;
+      });
+    const food = `${cal.length}/7 days logged`;
+    shell(
+      title,
+      sub,
+      `${tabs}${statCards([
+        { k: 'Average calories', v: fmt(avgOf(cal)), s: m ? `Target ${fmt(m.calories)} kcal · ${food}` : food },
+        { k: 'Average protein', v: avgOf(pro) === null ? '–' : `${fmt(avgOf(pro))} g`, s: m ? `Target ${m.protein_g} g` : '' },
+        { k: 'Average fibre', v: avgOf(fib) === null ? '–' : `${fmt(avgOf(fib))} g`, s: `Target ${fmt((m && m.fibre_g) || ctx.targets.fibre_target_g)} g` },
+        { k: 'Tracking', v: esc(ctx.profile.nutrition_tracking || '–'), s: m ? `P ${m.protein_g} · C ${m.carbs_g} · F ${m.fats_g}` : 'No macros set' },
+      ])}${pagedTable(['Date', 'Calories', 'Protein', 'Carbs', 'Fats', 'Fibre'].concat(ctx.profile.nutrition_tracking === 'Assigned meal plan' ? ['Meal plan'] : []), rows)}`,
+    );
+    bindPaged();
+  }
+
+  function renderCoachActivity(ctx, nav, title, sub) {
+    const { week, days } = coachWeek(ctx);
+    const t = ctx.targets;
+    const steps = weekValues(ctx, days, 'steps');
+    const psteps = weekValues(ctx, prevDays(days), 'steps');
+    const cardio = weekValues(ctx, days, 'cardio_min');
+    const byDay = new Map(ctx.logs.map((l) => [l.day, l]));
+    const sessions = days.filter((d) => (byDay.get(d) || {}).trained === 'Yes').length;
+    const rows = ctx.logs
+      .filter((l) => l.steps !== null || l.cardio_min !== null || l.trained)
+      .slice()
+      .reverse()
+      .map((l) => `<tr><td>${niceDate(l.day, { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
+        <td>${dotCell(S.habitStatus('steps', l.steps, t.steps_target), fmt(l.steps))}</td><td>${fmt(l.cardio_min)} min</td>
+        <td>${dotCell(trainedStatus(l.trained), esc(l.trained || '–'))}</td></tr>`);
+    shell(
+      title,
+      sub,
+      `${statCards([
+        { k: 'Average steps', v: fmt(avgOf(steps)), delta: avgOf(steps) !== null && psteps.length ? deltaHTML(avgOf(steps) - avgOf(psteps), 0, '', 'up') : '', s: `Target ${fmt(t.steps_target)} · ${steps.length}/7 days logged` },
+        { k: 'Training sessions', v: `${sessions}${ctx.profile.training_days_per_week ? ` / ${ctx.profile.training_days_per_week}` : ''}`, s: week ? `Week ${week}` : 'Last 7 days' },
+        { k: 'Cardio', v: cardio.length ? `${fmt(cardio.reduce((a, b) => a + b, 0))} min` : '–', s: 'Total this week' },
+      ])}${pagedTable(['Date', 'Steps', 'Cardio', 'Trained'], rows)}`,
+    );
+    bindPaged();
+  }
+
+  function renderCoachRecovery(ctx, nav, title, sub) {
+    const { days } = coachWeek(ctx);
+    const t = ctx.targets;
+    const water = S.parseLitres(t.water_target);
+    const sleep = weekValues(ctx, days, 'sleep_h');
+    const drank = weekValues(ctx, days, 'water_l');
+    const latest = ctx.checkins.slice().sort((a, b) => b.week_number - a.week_number)[0] || {};
+    const rows = ctx.logs
+      .filter((l) => l.sleep_h != null || l.water_l != null)
+      .slice()
+      .reverse()
+      .map((l) => `<tr><td>${niceDate(l.day, { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
+        <td>${dotCell(S.habitStatus('sleep', l.sleep_h, t.sleep_target_h), `${fmt(l.sleep_h, 1)} hrs`)}</td>
+        <td>${dotCell(S.habitStatus('water', l.water_l, water), `${fmt(l.water_l, 1)} L`)}</td></tr>`);
+    const weekly = ctx.checkins
+      .slice()
+      .sort((a, b) => b.week_number - a.week_number)
+      .map((c) => `<tr><td>Week ${c.week_number}</td><td>${fmt(c.sleep_hours, 1)} hrs</td><td>${fmt(c.stress)}</td><td>${fmt(c.energy)}</td><td>${fmt(c.hunger)}</td><td>${fmt(c.digestion)}</td></tr>`);
+    shell(
+      title,
+      sub,
+      `${statCards([
+        { k: 'Average sleep', v: avgOf(sleep) === null ? '–' : `${fmt(avgOf(sleep), 1)} hrs`, s: `Target ${fmt(t.sleep_target_h, 0)}+ hrs · ${sleep.length}/7 days logged` },
+        { k: 'Average water', v: avgOf(drank) === null ? '–' : `${fmt(avgOf(drank), 1)} L`, s: `Target ${esc(t.water_target || '–')}` },
+        { k: 'Stress / Energy', v: latest.week_number ? `${fmt(latest.stress)} / ${fmt(latest.energy)}` : '–', s: latest.week_number ? `Week ${latest.week_number} check-in (10 = best)` : 'No check-ins yet' },
+      ])}
+      ${ctx.habitsReady ? '' : '<div class="card muted-box">Daily sleep and water start once the habit tracker update has been run in Supabase (see docs/client-app-setup.md).</div>'}
+      <h2 class="crm-sub">Daily</h2>${pagedTable(['Date', 'Sleep', 'Water'], rows)}
+      <h2 class="crm-sub">Weekly check-ins</h2>${pagedTable(['Week', 'Sleep', 'Stress', 'Energy', 'Hunger', 'Digestion'], weekly)}`,
+    );
+    bindPaged();
+  }
+
+  function renderCoachHabits(ctx, nav, title, sub, day) {
+    const now = S.today();
+    if (!day || day > now) day = now;
+    const id = ctx.profile.id;
+    const rows = habitRows(ctx, day);
+    shell(
+      title,
+      sub,
+      `<div class="date-stepper">
+        <a href="#client/${id}/habits/${S.addDays(day, -7)}" aria-label="Previous week">‹</a>
+        <b>Week of ${niceDate(weekOfDay(ctx, day)[0], { day: 'numeric', month: 'long' })}</b>
+        ${day < now ? `<a href="#client/${id}/habits/${S.addDays(day, 7)}" aria-label="Next week">›</a>` : '<span></span>'}
+      </div>
+      ${statCards([
+        { k: 'On target today', v: `${rows.filter((r) => r.status.level === 'good').length} / ${rows.length}`, s: niceDate(day) },
+        { k: 'Own habits', v: String(ctx.habits.length), s: 'Added by the client' },
+      ])}
+      <section class="card">${habitWeekHTML(ctx, day)}</section>`,
+    );
+  }
+
+  async function renderInbox() {
+    const [clients, open] = await Promise.all([
+      sb.from('profiles').select('id, full_name, email').eq('role', 'client'),
+      sb.from('weekly_checkins').select('user_id, week_number, submitted_at, biggest_win, biggest_struggle').is('coach_feedback', null).order('submitted_at'),
+    ]).then((rs) => rs.map(must));
+    const name = new Map(clients.map((c) => [c.id, c.full_name || c.email]));
+    const rows = open.map(
+      (c) => `<tr><td><a href="#client/${c.user_id}/checkins">${esc(name.get(c.user_id) || 'Client')}</a></td><td>Week ${c.week_number}</td>
+        <td>${new Date(c.submitted_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</td><td class="wrap-text">${esc(c.biggest_struggle || c.biggest_win || '–')}</td></tr>`,
+    );
+    state.coachView = { section: 'inbox' };
+    shell('Check-ins', `${open.length} waiting for your reply`, pagedTable(['Client', 'Week', 'Sent', 'Note'], rows, 15));
+    bindPaged();
+  }
+
   // ---------------------------------------------------------------- coach
 
   async function renderClients() {
+    state.coachView = { section: 'clients' };
     const since = S.addDays(S.today(), -21);
     const [clients, logs, checkins] = await Promise.all([
       sb.from('profiles').select('*').eq('role', 'client').order('full_name'),
@@ -1094,7 +1726,7 @@
           cards
             .map(({ c, flags, week, st, prevSt, last, daysSince }) => {
               const change = st && prevSt && st.avgWeight !== null && prevSt.avgWeight !== null ? st.avgWeight - prevSt.avgWeight : null;
-              return `<a class="card client-row" href="#client/${c.id}/dashboard">
+              return `<a class="card client-row" href="#client/${c.id}/overview">
                 <div>
                   <div class="name">${esc(c.full_name || c.email)}</div>
                   <div class="meta">${week ? `Week ${week} of 12` : c.start_date ? `Starts ${niceDate(c.start_date)}` : 'No start date'} · Last log: ${
@@ -1121,64 +1753,59 @@
     );
   }
 
-  const COACH_TABS = [
-    ['dashboard', 'Dashboard'],
-    ['logs', 'Daily logs'],
-    ['checkins', 'Check-ins'],
-    ['photos', 'Photos'],
-    ['targets', 'Targets'],
-    ['training', 'Training'],
-    ['supps', 'Supps'],
-    ['profile', 'Profile'],
-  ];
+  // Old links (#client/<id>/dashboard, /targets, /profile) still land in the right place.
+  const OLD_SECTIONS = { dashboard: 'overview', targets: 'nutrition', profile: 'settings' };
 
-  async function renderClient(id, tab, arg) {
-    tab = tab || 'dashboard';
-    const ctx = await loadCtx(id, tab === 'dashboard');
+  async function renderClient(id, section, arg) {
+    if (OLD_SECTIONS[section]) {
+      if (section === 'targets') arg = 'targets';
+      section = OLD_SECTIONS[section];
+    }
+    section = section || 'overview';
+    const ctx = await loadCtx(id, section === 'overview');
     const p = ctx.profile;
     const week = S.currentWeek(p.start_date);
-    const nav = `<p><a href="#clients">‹ All clients</a></p>
-      <nav class="subtabs" aria-label="Client sections">${COACH_TABS.map(
-        ([t, l]) => `<a href="#client/${id}/${t}"${t === tab ? ' aria-current="page"' : ''}>${l}</a>`,
-      ).join('')}</nav>`;
-    const title = p.full_name || p.email;
-    const sub = week ? `Week ${week} of 12` : p.start_date ? `Starts ${niceDate(p.start_date)}` : 'No start date yet';
+    const name = p.full_name || p.email;
+    state.coachView = { clientId: id, clientName: name, section };
+    const label = (COACH_SECTIONS.find(([s]) => s === section) || [, 'Client settings'])[1];
+    const title = label;
+    const sub = `${name} · ${week ? `Week ${week} of 12` : p.start_date ? `Starts ${niceDate(p.start_date)}` : 'No start date yet'}`;
+    const nav = '';
 
-    if (tab === 'dashboard') return shell(title, sub, `${nav}<div class="coach-shortcuts">
-      <a class="card" href="#client/${id}/training"><b>Training</b><span>Edit this client's exercises and sessions →</span></a>
-      <a class="card" href="#client/${id}/supps"><b>Supps</b><span>Assign and update supplements →</span></a>
-    </div>${dashboardHTML(ctx)}`);
-    if (tab === 'logs') return renderCoachLogs(ctx, nav, title, sub, Number(arg) || Math.max(week, 1));
-    if (tab === 'checkins') return renderCoachCheckins(ctx, nav, title, sub);
-    if (tab === 'photos') return renderCoachPhotos(ctx, nav, title, sub, arg);
-    if (tab === 'targets') return renderCoachTargets(ctx, nav, title, sub);
-    if (tab === 'training') return renderCoachTraining(ctx, nav, title, sub);
-    if (tab === 'supps') return renderCoachSupps(ctx, nav, title, sub);
-    if (tab === 'profile') {
-      const rows = [
-        ['Email', p.email],
-        ['Phone', p.phone],
-        ['Start date', p.start_date && niceDate(p.start_date, { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })],
-        ['Age', p.age],
-        ['Height', p.height_cm && `${p.height_cm} cm`],
-        ['Dream outcome', p.dream_outcome],
-        ['Training days a week', p.training_days_per_week],
-        ['Experience', p.training_experience],
-        ['Nutrition tracking', p.nutrition_tracking],
-        ['Injuries / medical', p.injuries],
-        ['Work schedule', p.work_schedule],
-        ['Wake / sleep', p.wake_sleep],
-        ['Privacy consent', p.consent_at ? new Date(p.consent_at).toLocaleString('en-AU') : 'Not yet'],
-      ];
-      return shell(
-        title,
-        sub,
-        `${nav}<section class="card"><table><tbody>${rows
-          .map(([k, v]) => `<tr><th scope="row">${k}</th><td class="wrap-text">${esc(v || '–')}</td></tr>`)
-          .join('')}</tbody></table></section>`,
-      );
-    }
-    return shell(title, sub, nav);
+    if (section === 'overview') return shell(title, sub, dashboardHTML(ctx));
+    if (section === 'physique') return renderCoachPhysique(ctx, nav, title, sub, arg);
+    if (section === 'nutrition') return renderCoachNutrition(ctx, nav, title, sub, arg);
+    if (section === 'activity') return renderCoachActivity(ctx, nav, title, sub);
+    if (section === 'recovery') return renderCoachRecovery(ctx, nav, title, sub);
+    if (section === 'habits') return renderCoachHabits(ctx, nav, title, sub, arg);
+    if (section === 'logs') return renderCoachLogs(ctx, nav, title, sub, Number(arg) || Math.max(week, 1));
+    if (section === 'checkins') return renderCoachCheckins(ctx, nav, title, sub);
+    if (section === 'photos') return renderCoachPhotos(ctx, nav, title, sub, arg);
+    if (section === 'training') return renderCoachTraining(ctx, nav, title, sub);
+    if (section === 'supps') return renderCoachSupps(ctx, nav, title, sub);
+    const rows = [
+      ['Email', p.email],
+      ['Phone', p.phone],
+      ['Start date', p.start_date && niceDate(p.start_date, { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })],
+      ['Age', p.age],
+      ['Height', p.height_cm && `${p.height_cm} cm`],
+      ['Dream outcome', p.dream_outcome],
+      ['Training days a week', p.training_days_per_week],
+      ['Experience', p.training_experience],
+      ['Nutrition tracking', p.nutrition_tracking],
+      ['Injuries / medical', p.injuries],
+      ['Work schedule', p.work_schedule],
+      ['Wake / sleep', p.wake_sleep],
+      ['Privacy consent', p.consent_at ? new Date(p.consent_at).toLocaleString('en-AU') : 'Not yet'],
+    ];
+    return shell(
+      'Client settings',
+      sub,
+      `<section class="card"><table><tbody>${rows
+        .map(([k, v]) => `<tr><th scope="row">${k}</th><td class="wrap-text">${esc(v || '–')}</td></tr>`)
+        .join('')}</tbody></table></section>
+      <p class="hint">Start date, targets and macros are set under <a href="#client/${id}/nutrition/targets">Nutrition → Targets and macros</a>.</p>`,
+    );
   }
 
   function renderCoachLogs(ctx, nav, title, sub, week) {
@@ -1610,12 +2237,19 @@
 
       if (state.me.role === 'coach') {
         if (parts[0] === 'client' && parts[1]) return await renderClient(parts[1], parts[2], parts[3]);
+        if (parts[0] === 'inbox') return await renderInbox();
         return await renderClients();
       }
 
       if (!state.me.consent_at) return renderConsent();
       if (!state.me.full_name || !state.me.start_date) return renderOnboarding();
       switch (parts[0]) {
+        case 'log':
+          return await renderLog(parts[1]);
+        case 'habits':
+          return await renderHabits(parts[1], parts[2]);
+        case 'hub':
+          return await renderHub();
         case 'training':
           return await renderTraining();
         case 'supps':
@@ -1629,7 +2263,8 @@
         case 'profile':
           return await renderProfile();
         default:
-          return await renderToday(parts[1]);
+          // #today/<day> was the old home; keep it working.
+          return await renderHome(parts[1]);
       }
     } catch (err) {
       console.error(err);
