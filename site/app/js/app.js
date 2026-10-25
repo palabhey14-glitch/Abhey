@@ -5,6 +5,7 @@
   'use strict';
 
   const S = window.RewiredStats;
+  const NUI = window.RewiredNutritionUI;
   const cfg = window.REWIRED_CONFIG || {};
   const root = document.getElementById('root');
   const configured =
@@ -200,12 +201,12 @@
       sb.from('habit_entries').select('*').eq('user_id', id).order('day'),
     ]);
     const habitsReady = !habits.error && !habitEntries.error;
-    // Same for migrations/2026-10-25-meal-plans.sql.
-    const plan = await sb.from('meal_plans').select('*').eq('client_id', id).maybeSingle();
+    // Same for migrations/2026-10-25-nutrition.sql (plans and food logs).
+    const nutrition = await NUI.load(id);
     const ctx = {
       profile, targets: targets || {}, macros, training, supplements, logs, checkins, measurements, photos,
       habits: habitsReady ? habits.data : [], habitEntries: habitsReady ? habitEntries.data : [], habitsReady,
-      mealPlan: plan.error ? null : plan.data, mealsReady: !plan.error,
+      ...nutrition,
     };
     state.ctx[id] = ctx;
     return ctx;
@@ -232,13 +233,17 @@
     ['habits', 'Habits'],
   ];
   // Screens without their own tab (reached from Home) keep Home lit.
-  const TAB_OF = { checkin: 'home', photos: 'home', supps: 'home', profile: 'home', log: 'home', today: 'home', progress: 'home', hub: 'home' };
+  const TAB_OF = {
+    checkin: 'home', photos: 'home', supps: 'home', profile: 'home', log: 'home', today: 'home', progress: 'home', hub: 'home',
+    recipes: 'meals', recipe: 'meals', 'recipe-import': 'meals',
+  };
 
   const COACH_SECTIONS = [
     ['overview', 'Overview'],
     ['physique', 'Physique'],
     ['nutrition', 'Nutrition'],
     ['meals', 'Meal plan'],
+    ['foodlog', 'Food log'],
     ['activity', 'Activity'],
     ['recovery', 'Recovery'],
     ['habits', 'Habits'],
@@ -276,8 +281,9 @@
     document.body.classList.add('crm-body');
     const rail = `<aside class="crm-rail">
         <a class="crm-brand" href="#clients"><img src="icons/icon-192.png" alt=""><span>Rewired<small>Coach</small></span></a>
-        <a href="#clients"${v.section !== 'inbox' ? ' aria-current="page"' : ''}>${ICONS.profile}<span>Clients</span></a>
+        <a href="#clients"${v.section !== 'inbox' && v.section !== 'library' ? ' aria-current="page"' : ''}>${ICONS.profile}<span>Clients</span></a>
         <a href="#inbox"${v.section === 'inbox' ? ' aria-current="page"' : ''}>${ICONS.checkin}<span>Check-ins</span></a>
+        <a href="#library"${v.section === 'library' ? ' aria-current="page"' : ''}>${ICONS.meals}<span>Foods &amp; plans</span></a>
         <button type="button" class="crm-signout" data-signout>Sign out</button>
       </aside>`;
     const sections = v.clientId
@@ -654,8 +660,14 @@
     </fieldset>`;
   }
 
-  function targetsLine(ctx, week) {
-    const m = week ? S.macrosForWeek(ctx.macros, week) : null;
+  // The calorie and macro targets for one day: the assigned nutrition plan
+  // if there is one, otherwise the weekly macro targets.
+  function macrosForDay(ctx, day) {
+    return NUI.dayTarget(ctx, day);
+  }
+
+  function targetsLine(ctx, day) {
+    const m = day ? macrosForDay(ctx, day) : null;
     const t = ctx.targets;
     const bits = [];
     if (m) {
@@ -688,6 +700,8 @@
     }
 
     const mealPlan = p.nutrition_tracking === 'Assigned meal plan';
+    // Days with a food log show its totals; the database keeps them in step.
+    const fromLog = NUI.checkinFoodHTML(ctx, day);
     const title = day === now ? 'Today' : day === S.addDays(now, -1) ? 'Yesterday' : niceDate(day);
     shell(
       'Daily check-in',
@@ -699,7 +713,7 @@
         ${day < now ? `<a class="btn btn-ghost" href="#log/${S.addDays(day, 1)}" aria-label="Next day">›</a>` : '<span style="width:48px"></span>'}
       </div>
       ${strip}
-      <div class="card"><p class="kicker">This week's targets</p>${targetsLine(ctx, week)}</div>
+      <div class="card"><p class="kicker">${week ? "This day's targets" : "This week's targets"}</p>${targetsLine(ctx, week ? day : null)}</div>
       <form id="log-form" class="card" novalidate>
         <p class="kicker">Activity</p>
         <div class="grid-2">
@@ -714,15 +728,15 @@
           ${numberField('water_l', 'Water (litres)', log.water_l, { decimal: true, max: 15 })}
         </div>` : ''}
         <p class="kicker" style="margin-top:8px">Food</p>
-        <p class="hint" style="margin:-4px 0 12px">Copy your daily totals from MyFitnessPal. Logging yesterday's food? Tap ‹ to go back a day.</p>
+        ${fromLog || `<p class="hint" style="margin:-4px 0 12px">Log meals in the <a href="#meals/${day}">Meal plan tab</a> and these fill in for you, or type your daily totals here. Logging yesterday's food? Tap ‹ to go back a day.</p>
         <div class="grid-2">
           ${numberField('calories', 'Calories', log.calories, { max: 10000 })}
           ${numberField('protein_g', 'Protein (g)', log.protein_g, { max: 600 })}
           ${numberField('carbs_g', 'Carbs (g)', log.carbs_g, { max: 1000 })}
           ${numberField('fats_g', 'Fats (g)', log.fats_g, { max: 400 })}
           ${numberField('fibre_g', 'Fibre (g)', log.fibre_g, { max: 150 })}
-        </div>
-        ${mealPlan ? choiceField('meal_plan', 'Followed the meal plan?', ['Yes', 'Partly', 'No'], log.meal_plan) : ''}
+        </div>`}
+        ${mealPlan && !NUI.hasMealPlan(ctx, day) ? choiceField('meal_plan', 'Followed the meal plan?', ['Yes', 'Partly', 'No'], log.meal_plan) : ''}
         <div class="field">
           <label for="f-notes">How did today go?</label>
           <textarea id="f-notes" name="notes" maxlength="1000">${esc(log.notes || '')}</textarea>
@@ -776,8 +790,7 @@
   // (stored on daily_logs) followed by the client's own habits.
   function habitRows(ctx, day) {
     const t = ctx.targets;
-    const week = S.weekOf(ctx.profile.start_date, day) || Math.max(S.currentWeek(ctx.profile.start_date), 1);
-    const m = S.macrosForWeek(ctx.macros, week);
+    const m = macrosForDay(ctx, day);
     const log = ctx.logs.find((l) => l.day === day) || {};
     const builtIn = [
       { key: 'steps', field: 'steps', name: 'Daily steps', cat: 'Activity', icon: '👟', unit: 'steps', target: t.steps_target },
@@ -794,7 +807,10 @@
     }
     const rows = builtIn
       .filter((r) => r.choice || r.target)
-      .map((r) => ({ ...r, value: log[r.field], status: r.choice ? trainedStatus(log.trained) : S.habitStatus(r.key, log[r.field], r.target) }));
+      .map((r) => ({
+        ...r, value: log[r.field], status: r.choice ? trainedStatus(log.trained) : S.habitStatus(r.key, log[r.field], r.target),
+        fromLog: r.cat === 'Nutrition' && Boolean(log.food_from_log),
+      }));
     for (const h of ctx.habits) {
       const entry = ctx.habitEntries.find((e) => e.habit_id === h.id && e.day === day);
       const value = entry ? Number(entry.value) : null;
@@ -872,7 +888,9 @@
               ${stateBadge(r.status)}<span class="chev" aria-hidden="true">›</span>
             </button>
             <form class="habit-entry" hidden novalidate>${
-              r.choice
+              r.fromLog
+                ? `<p class="hint">Worked out from the food you logged. <a href="#meals/${day}">Change it in Meal plan</a>.</p>`
+                : r.choice
                 ? choiceField(`hv-${r.key}`, 'Trained today?', r.choice, r.value)
                 : `<label for="hv-${esc(r.key)}">${esc(r.name)} (${esc(r.unit)})</label>
                    <div class="entry-row"><input id="hv-${esc(r.key)}" name="value" type="number" inputmode="${r.decimal ? 'decimal' : 'numeric'}" step="${r.decimal ? '0.1' : '1'}" min="0" value="${r.value === null || r.value === undefined ? '' : esc(r.value)}" placeholder="Target ${fmt(r.target, r.decimal && r.target % 1 ? 1 : 0)}"><button class="btn btn-small" type="submit">Save</button></div>`
@@ -1048,7 +1066,7 @@
     const p = ctx.profile;
     const t = ctx.targets;
     const week = S.weekOf(p.start_date, day);
-    const m = S.macrosForWeek(ctx.macros, week || Math.max(S.currentWeek(p.start_date), 1));
+    const m = macrosForDay(ctx, day);
     const log = ctx.logs.find((l) => l.day === day) || {};
     const session = todaysSession(ctx, day);
     const rows = habitRows(ctx, day);
@@ -1134,69 +1152,6 @@
     );
     const chip = root.querySelector('[data-goto]');
     if (chip) chip.addEventListener('click', () => document.getElementById(chip.dataset.goto).scrollIntoView({ behavior: 'smooth', block: 'center' }));
-  }
-
-  // ---------------------------------------------------------------- client: meal plan
-
-  async function renderMeals(day) {
-    const now = S.today();
-    if (!day || day > now) day = now;
-    const ctx = await loadCtx(state.me.id);
-    const p = ctx.profile;
-    const week = S.weekOf(p.start_date, day) || Math.max(S.currentWeek(p.start_date), 1);
-    const m = S.macrosForWeek(ctx.macros, week);
-    const log = ctx.logs.find((l) => l.day === day) || {};
-    const ws = S.weekStats(ctx, week);
-    const assigned = p.nutrition_tracking === 'Assigned meal plan';
-    const rows = habitRows(ctx, day);
-    const st = (key) => (rows.find((r) => r.key === key) || { status: {} }).status;
-    const kcal = st('calories');
-    const macro = (label, value, target, key) => {
-      const s2 = key ? st(key) : S.habitStatus('default', value, target);
-      const ratio = value !== null && value !== undefined && target ? Math.min(1, value / target) : 0;
-      return `<div class="macro"><span class="mk">${label}</span><b>${value === null || value === undefined ? '–' : fmt(value)}<small> / ${fmt(target)} g</small></b>
-        <div class="pbar ${s2.level || 'empty'}" aria-hidden="true"><span style="width:${Math.round(ratio * 100)}%"></span></div><span class="ms ${s2.level || ''}">${esc(s2.label || 'Not logged')}</span></div>`;
-    };
-    const built = mealPlanHTML(ctx.mealPlan);
-    const plan = built
-      ? `${built}<div class="mv-total"><span>Plan total</span><b>${macroLine(planMacros(ctx.mealPlan.meals))}</b></div>
-        <p class="mv-credit">Plain foods: Australian Food Composition Database, Food Standards Australia New Zealand. Home-style dishes are estimates.</p>`
-      : assigned
-      ? `<div class="plan-empty"><span class="qt-ic" aria-hidden="true">${ICONS.meals}</span><div><b>${esc(COACH)} is writing your meal plan</b><p>It's built around the food you already eat, from dal and roti to your weekend dinners. Each meal will show here with its macros, and you'll be able to swap items.</p></div></div>`
-      : `<div class="plan-empty"><span class="qt-ic" aria-hidden="true">${ICONS.meals}</span><div><b>You're on flexible macros</b><p>Eat the food you like and land close to the numbers above. If you'd rather follow set meals, ask ${esc(COACH)} at your next check-in.</p></div></div>`;
-
-    shell(
-      'Meal plan',
-      `Week ${week} of 12`,
-      m
-        ? `<section class="score left">
-          <p class="label">${day === now ? 'Eaten today' : `Eaten · ${niceDate(day, { day: 'numeric', month: 'short' })}`}</p>
-          <div class="big-num">${log.calories ? fmt(log.calories) : '0'}<span> kcal</span></div>
-          <p class="label">of ${fmt(m.calories)} kcal target${kcal.label ? ` · <b class="ms ${kcal.level}">${esc(kcal.label)}</b>` : ''}</p>
-        </section>
-        <div class="macro-grid">
-          ${macro('Protein', log.protein_g, m.protein_g, 'protein')}
-          ${macro('Carbs', log.carbs_g, m.carbs_g)}
-          ${macro('Fats', log.fats_g, m.fats_g)}
-          ${macro('Fibre', log.fibre_g, m.fibre_g || ctx.targets.fibre_target_g, 'fibre')}
-        </div>
-        <a class="btn-dark wide" href="#log/${day}">${log.calories ? 'Update today\'s food' : 'Log today\'s food'}</a>
-        <section>
-          <h2 class="sec-title">Your meal plan</h2>
-          <p class="sec-sub">${built ? `Set by ${esc(COACH)}` : assigned ? 'Set meals from ' + esc(COACH) : 'Flexible macros'}</p>
-          ${plan}
-        </section>
-        <section class="week-food">
-          <h2 class="sec-title">This week so far</h2>
-          <div class="wf-grid">
-            <div><small>Food days</small><b>${ws.foodDays}<span> / 7</span></b></div>
-            <div><small>Avg kcal</small><b>${fmt(ws.avgCalories)}</b></div>
-            <div><small>Avg protein</small><b>${fmt(ws.avgProtein)}<span> g</span></b></div>
-          </div>
-        </section>`
-        : `<section class="plan-empty"><span class="qt-ic" aria-hidden="true">${ICONS.meals}</span><div><b>Your targets are on the way</b><p>${esc(COACH)} sets your calories and macros after your kickoff call. Your meal plan will show here too.</p></div></section>`,
-      'meals',
-    );
   }
 
   // ---------------------------------------------------------------- client: coach hub
@@ -1518,6 +1473,11 @@
             ${opts.map((o) => `<option${String(p[k]) === String(o) ? ' selected' : ''}>${esc(o)}</option>`).join('')}
           </select>
         </div>`).join('')}
+      ${'country' in p ? `<div class="field">
+          <label for="p-country">Country you buy food in</label>
+          <select id="p-country" name="country">${NUI.COUNTRIES.map(([c, l]) => `<option value="${c}"${(p.country || 'AU') === c ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>
+          <p class="hint">Food search shows foods sold there first.</p>
+        </div>` : ''}
       ${PROFILE_TEXT.map(([k, l, hint]) => `<div class="field">
           <label for="p-${k}">${l}</label>
           <textarea id="p-${k}" name="${k}" maxlength="1000" placeholder="${esc(hint)}">${esc(p[k] || '')}</textarea>
@@ -1713,7 +1673,7 @@
     const tabs = sectionTabs(id, 'nutrition', [['daily', 'Daily intake'], ['targets', 'Targets and macros']], view === 'targets' ? 'targets' : 'daily');
     if (view === 'targets') return renderCoachTargets(ctx, tabs, title, sub);
     const { week, days } = coachWeek(ctx);
-    const m = S.macrosForWeek(ctx.macros, Math.max(week, 1));
+    const m = macrosForDay(ctx, S.today());
     const cal = weekValues(ctx, days, 'calories');
     const pro = weekValues(ctx, days, 'protein_g');
     const fib = weekValues(ctx, days, 'fibre_g');
@@ -1722,7 +1682,7 @@
       .slice()
       .reverse()
       .map((l) => {
-        const mm = S.macrosForWeek(ctx.macros, S.weekOf(ctx.profile.start_date, l.day) || 1) || {};
+        const mm = macrosForDay(ctx, l.day) || {};
         return `<tr><td>${niceDate(l.day, { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
           <td>${dotCell(S.habitStatus('calories', l.calories, mm.calories), fmt(l.calories))}</td>
           <td>${dotCell(S.habitStatus('protein', l.protein_g, mm.protein_g), `${fmt(l.protein_g)} g`)}</td>
@@ -1917,7 +1877,8 @@
       section = OLD_SECTIONS[section];
     }
     section = section || 'overview';
-    const ctx = await loadCtx(id, section === 'overview');
+    // Overview, meal plan and food log always show the client's latest records.
+    const ctx = await loadCtx(id, ['overview', 'meals', 'foodlog'].includes(section));
     const p = ctx.profile;
     const week = S.currentWeek(p.start_date);
     const name = p.full_name || p.email;
@@ -1938,7 +1899,8 @@
     if (section === 'photos') return renderCoachPhotos(ctx, nav, title, sub, arg);
     if (section === 'training') return renderCoachTraining(ctx, nav, title, sub);
     if (section === 'supps') return renderCoachSupps(ctx, nav, title, sub);
-    if (section === 'meals') return renderCoachMeals(ctx, title, sub);
+    if (section === 'meals') return NUI.coachMeals(ctx, title, sub, arg);
+    if (section === 'foodlog') return NUI.coachFoodLog(ctx, title, sub, arg);
     const rows = [
       ['Email', p.email],
       ['Phone', p.phone],
@@ -2185,288 +2147,6 @@
     });
   }
 
-  // ------------------------------------------------------------ meal plans
-
-  const F = window.RewiredFoods || { FOODS: [], CATEGORIES: [], byId: () => null };
-  const PLATE = {
-    'Curries & mains': '#e06a35', 'Dal & legumes': '#f0b530', 'Rice & breads': '#e2b676', Breakfast: '#f4c77d',
-    Protein: '#c8553d', 'Veg & sides': '#3e9b5f', Dairy: '#9db8f0', Fruit: '#e5486a', 'Fats & nuts': '#b07a3b',
-    'Snacks & sweets': '#d98c3e', Drinks: '#8c6a4f',
-  };
-  const MACRO_KEYS = ['kcal', 'p', 'c', 'f'];
-
-  function plate(cat) {
-    return `<span class="plate" style="--plate:${PLATE[cat] || '#9aa8bd'}" aria-hidden="true"></span>`;
-  }
-
-  // Macros for one serving: the coach's own numbers if they edited the item,
-  // otherwise worked out from the food's per-100 g values.
-  function perServing(it) {
-    if (it.edited) return it.edited;
-    const k = (it.serving_g || 0) / 100;
-    return { kcal: it.per100.kcal * k, p: it.per100.p * k, c: it.per100.c * k, f: it.per100.f * k };
-  }
-
-  function itemMacros(it) {
-    const s1 = perServing(it);
-    const q = Number(it.qty) || 0;
-    return { kcal: s1.kcal * q, p: s1.p * q, c: s1.c * q, f: s1.f * q };
-  }
-
-  function sumMacros(list) {
-    return list.reduce((t, m) => ({ kcal: t.kcal + m.kcal, p: t.p + m.p, c: t.c + m.c, f: t.f + m.f }), { kcal: 0, p: 0, c: 0, f: 0 });
-  }
-
-  const mealMacros = (meal) => sumMacros((meal.items || []).map(itemMacros));
-  const planMacros = (meals) => sumMacros(meals.map(mealMacros));
-  const macroLine = (m) => `${fmt(m.kcal)} kcal · ${fmt(m.p)}P ${fmt(m.c)}C ${fmt(m.f)}F`;
-  const qtyLabel = (it) => `${Number(it.qty) === 1 ? '' : `${fmt(it.qty, it.qty % 1 ? 2 : 0)} × `}${it.serving}${it.serving_g ? ` · ${fmt(it.serving_g * it.qty)} g` : ''}`;
-
-  // The client's view of their plan, meal by meal.
-  function mealPlanHTML(plan) {
-    const meals = (plan && plan.meals) || [];
-    if (!meals.some((m) => (m.items || []).length)) return '';
-    return `${plan.coach_note ? `<div class="note-card"><span class="note-mark" aria-hidden="true">R<i>.</i></span><div><p class="kicker">From ${esc(COACH)}</p><p>${esc(plan.coach_note)}</p></div></div>` : ''}
-      ${meals
-        .filter((m) => (m.items || []).length)
-        .map((m) => `<section class="meal-view">
-          <div class="mv-head"><h3>${esc(m.name)}</h3><span>${fmt(mealMacros(m).kcal)} kcal</span></div>
-          <ul>${m.items
-            .map((it) => {
-              const x = itemMacros(it);
-              return `<li>${plate(it.cat)}<span class="mv-name"><b>${esc(it.name)}</b><small>${esc(qtyLabel(it))}</small></span><span class="mv-mac">${fmt(x.kcal)} kcal<small>${fmt(x.p)}P · ${fmt(x.c)}C · ${fmt(x.f)}F</small></span></li>`;
-            })
-            .join('')}</ul>
-        </section>`)
-        .join('')}`;
-  }
-
-  function newItem(food) {
-    return { food: food.id, name: food.name, cat: food.cat, qty: 1, serving: food.serving, serving_g: food.g, per100: { ...food.per100 }, edited: null };
-  }
-
-  // Coach: build a client's meal plan. Every change saves on its own.
-  function renderCoachMeals(ctx, title, sub) {
-    const id = ctx.profile.id;
-    if (!ctx.mealsReady) {
-      return shell(title, sub, `<div class="card"><p class="kicker">One step first</p><p>Run <b>supabase/migrations/2026-10-25-meal-plans.sql</b> in the Supabase SQL Editor, then reload this page.</p></div>`);
-    }
-    const week = Math.max(S.currentWeek(ctx.profile.start_date), 1);
-    const target = S.macrosForWeek(ctx.macros, week);
-    const plan = {
-      meals: ctx.mealPlan ? JSON.parse(JSON.stringify(ctx.mealPlan.meals)) : ['Breakfast', 'Lunch', 'Snack', 'Dinner'].map((name) => ({ name, items: [] })),
-      coach_note: ctx.mealPlan ? ctx.mealPlan.coach_note || '' : '',
-    };
-    let diet = 'all';
-    const DIETS = [['all', 'All foods'], ['veg', 'Vegetarian'], ['vegan', 'Vegan'], ['fish', 'Pescatarian']];
-    const allowed = (f) => diet === 'all' || (diet === 'vegan' ? f.diet === 'vegan' : diet === 'veg' ? f.diet !== 'meat' && f.diet !== 'fish' : f.diet !== 'meat');
-
-    shell(title, sub, `<div class="mp-top">
-        <div class="mp-totals" id="mp-totals"></div>
-        <p class="mp-save" id="mp-save" role="status">${ctx.mealPlan ? 'All changes saved' : 'Not saved yet. Add a food to start.'}</p>
-      </div>
-      <div class="mp-diet" role="group" aria-label="Foods to show">${DIETS.map(([k, l]) => `<button type="button" data-diet="${k}" aria-pressed="${k === diet}">${l}</button>`).join('')}</div>
-      <div id="mp-meals"></div>
-      <button type="button" class="btn-dark" id="mp-add-meal">+ Add a meal</button>
-      <section class="card"><label for="mp-note">Note for ${esc(ctx.profile.full_name || 'the client')} <span class="hint">(shown above their plan)</span></label>
-        <textarea id="mp-note" rows="2" maxlength="1000" placeholder="e.g. Swap roti for rice on training days if you prefer.">${esc(plan.coach_note)}</textarea></section>
-      <p class="hint">Plain foods use the Australian Food Composition Database (FSANZ); home-style dishes, which it doesn't cover, are estimates, marked "est." in search. Use Edit on any item to put in your own numbers; Reset brings back the list's.</p>`);
-
-    const saveEl = root.querySelector('#mp-save');
-    let timer = null;
-    let saving = Promise.resolve();
-    const save = () => {
-      clearTimeout(timer);
-      saveEl.textContent = 'Saving…';
-      saveEl.className = 'mp-save';
-      timer = setTimeout(() => {
-        saving = saving.then(async () => {
-          try {
-            must(await sb.from('meal_plans').upsert({ client_id: id, meals: plan.meals, coach_note: plan.coach_note.trim() || null }, { onConflict: 'client_id' }));
-            ctx.mealPlan = { ...(ctx.mealPlan || {}), client_id: id, meals: plan.meals, coach_note: plan.coach_note.trim() || null };
-            saveEl.textContent = 'All changes saved';
-          } catch (err) {
-            saveEl.textContent = `Not saved: ${friendlyError(err)}`;
-            saveEl.className = 'mp-save bad';
-          }
-        });
-      }, 700);
-    };
-
-    const bar = (label, v, t, kind, unit) => {
-      const st = S.habitStatus(kind, v, t);
-      const r = t ? Math.min(1, v / t) : 0;
-      return `<div class="mp-t"><span>${label}</span><b>${fmt(v)}<small> / ${t ? fmt(t) : '–'} ${unit}</small></b>
-        <div class="pbar ${st.level || 'empty'}" aria-hidden="true"><span style="width:${Math.round(r * 100)}%"></span></div></div>`;
-    };
-    const drawTotals = () => {
-      const t = planMacros(plan.meals);
-      root.querySelector('#mp-totals').innerHTML = target
-        ? `${bar('Calories', t.kcal, target.calories, 'calories', 'kcal')}${bar('Protein', t.p, target.protein_g, 'default', 'g')}${bar('Carbs', t.c, target.carbs_g, 'default', 'g')}${bar('Fats', t.f, target.fats_g, 'default', 'g')}`
-        : `<div class="mp-t"><span>Plan total</span><b>${macroLine(t)}</b><small>Set this client's macros under Nutrition to compare.</small></div>`;
-      plan.meals.forEach((m, i) => {
-        const el = root.querySelector(`[data-meal="${i}"] .meal-sum`);
-        if (el) el.textContent = macroLine(mealMacros(m));
-        (m.items || []).forEach((it, j) => {
-          const li = root.querySelector(`[data-meal="${i}"] [data-item="${j}"]`);
-          if (!li) return;
-          li.querySelector('.mi-mac').textContent = macroLine(itemMacros(it));
-          li.querySelector('.mi-g').textContent = Number(it.qty) !== 1 && it.serving_g ? ` · ${fmt(it.serving_g * it.qty)} g total` : '';
-        });
-      });
-    };
-
-    const itemHTML = (it, j) => {
-      const s1 = perServing(it);
-      return `<li class="mi" data-item="${j}">
-        <div class="mi-row">
-          ${plate(it.cat)}
-          <span class="mi-name"><b>${esc(it.name)}</b><small>${esc(it.serving)}${it.serving_g ? `, ${fmt(it.serving_g)} g` : ''}<span class="mi-g"></span>${it.edited ? ' · <em>Your numbers</em>' : ''}</small></span>
-          <label class="mi-qty"><span class="sr-only">Servings of ${esc(it.name)}</span><input type="number" inputmode="decimal" min="0.25" max="20" step="0.25" value="${esc(it.qty)}" data-qty></label>
-          <span class="mi-mac"></span>
-          <button type="button" class="mi-btn" data-edit aria-expanded="false">Edit</button>
-          <button type="button" class="mi-btn x" data-del aria-label="Remove ${esc(it.name)}">×</button>
-        </div>
-        <div class="mi-edit" hidden>
-          <p class="hint">Per serving (${esc(it.serving)}):</p>
-          <div class="mi-edit-grid">${[['kcal', 'Calories'], ['p', 'Protein g'], ['c', 'Carbs g'], ['f', 'Fat g']]
-            .map(([k, l]) => `<label>${l}<input type="number" inputmode="decimal" min="0" step="0.1" value="${fmt(s1[k], k === 'kcal' ? 0 : 1).replace(/,/g, '')}" data-k="${k}"></label>`)
-            .join('')}</div>
-          <div class="row-actions"><button type="button" class="btn btn-small" data-apply>Use these numbers</button>${it.edited ? '<button type="button" class="btn btn-ghost btn-small" data-reset>Reset to food list</button>' : ''}</div>
-        </div>
-      </li>`;
-    };
-
-    const drawMeals = () => {
-      root.querySelector('#mp-meals').innerHTML = plan.meals
-        .map((m, i) => `<section class="meal-card" data-meal="${i}">
-          <div class="meal-head">
-            <input class="meal-name" value="${esc(m.name)}" maxlength="40" aria-label="Meal name">
-            <span class="meal-sum"></span>
-            <button type="button" class="mi-btn" data-del-meal aria-label="Remove ${esc(m.name)}">Remove</button>
-          </div>
-          <ul class="meal-items">${(m.items || []).map(itemHTML).join('')}</ul>
-          <div class="add-food">
-            <input type="search" placeholder="Add food: dal, roti, chicken, paneer…" aria-label="Search foods to add to ${esc(m.name)}" autocomplete="off">
-            <ul class="af-results" role="listbox" hidden></ul>
-          </div>
-        </section>`)
-        .join('');
-      drawTotals();
-    };
-
-    root.querySelector('#mp-meals').addEventListener('input', (e) => {
-      const card = e.target.closest('[data-meal]');
-      if (!card) return;
-      const m = plan.meals[+card.dataset.meal];
-      if (e.target.classList.contains('meal-name')) {
-        m.name = e.target.value.trim() || 'Meal';
-        return save();
-      }
-      if (e.target.matches('[data-qty]')) {
-        const it = m.items[+e.target.closest('[data-item]').dataset.item];
-        const q = Number(e.target.value);
-        if (!(q > 0) || q > 20) return;
-        it.qty = q;
-        drawTotals();
-        return save();
-      }
-      if (e.target.type === 'search') {
-        const q = e.target.value.trim().toLowerCase();
-        const list = card.querySelector('.af-results');
-        // Foods whose name matches come before ones that only match by category.
-        const named = (f) => f.name.toLowerCase().includes(q);
-        const hits = q
-          ? F.FOODS.filter((f) => allowed(f) && named(f)).concat(F.FOODS.filter((f) => allowed(f) && !named(f) && f.cat.toLowerCase().includes(q))).slice(0, 8)
-          : [];
-        list.innerHTML = hits.length
-          ? hits.map((f) => `<li role="option" tabindex="-1" data-food="${f.id}">${plate(f.cat)}<span><b>${esc(f.name)}</b><small>${esc(f.serving)} · ${fmt(f.per100.kcal * f.g / 100)} kcal · ${fmt(f.per100.p * f.g / 100)} g protein${f.src === 'est' ? ' · est.' : ''}</small></span></li>`).join('')
-          : q ? `<li class="af-none">No match${diet !== 'all' ? ' in this filter' : ''}. Try another word.</li>` : '';
-        list.hidden = !q;
-      }
-    });
-    const addFood = (card, foodId) => {
-      const food = F.byId(foodId);
-      if (!food) return;
-      const i = +card.dataset.meal;
-      plan.meals[i].items.push(newItem(food));
-      drawMeals();
-      save();
-      const input = root.querySelector(`[data-meal="${i}"] input[type=search]`);
-      if (input) input.focus();
-    };
-    root.querySelector('#mp-meals').addEventListener('keydown', (e) => {
-      if (e.target.type !== 'search' || e.key !== 'Enter') return;
-      e.preventDefault();
-      const first = e.target.closest('[data-meal]').querySelector('[data-food]');
-      if (first) addFood(e.target.closest('[data-meal]'), first.dataset.food);
-    });
-    root.querySelector('#mp-meals').addEventListener('click', (e) => {
-      const card = e.target.closest('[data-meal]');
-      if (!card) return;
-      const i = +card.dataset.meal;
-      const pick = e.target.closest('[data-food]');
-      if (pick) return addFood(card, pick.dataset.food);
-      if (e.target.matches('[data-del-meal]')) {
-        if (plan.meals[i].items.length && !window.confirm(`Remove ${plan.meals[i].name} and its foods?`)) return;
-        plan.meals.splice(i, 1);
-        drawMeals();
-        return save();
-      }
-      const li = e.target.closest('[data-item]');
-      if (!li) return;
-      const j = +li.dataset.item;
-      const it = plan.meals[i].items[j];
-      if (e.target.matches('[data-del]')) {
-        plan.meals[i].items.splice(j, 1);
-        drawMeals();
-        return save();
-      }
-      if (e.target.matches('[data-edit]')) {
-        const box = li.querySelector('.mi-edit');
-        box.hidden = !box.hidden;
-        e.target.setAttribute('aria-expanded', String(!box.hidden));
-        return;
-      }
-      if (e.target.matches('[data-apply]')) {
-        const vals = {};
-        for (const input of li.querySelectorAll('[data-k]')) {
-          const v = Number(input.value);
-          if (input.value === '' || Number.isNaN(v) || v < 0) return toast('Enter a number of 0 or more for each.', true);
-          vals[input.dataset.k] = v;
-        }
-        it.edited = vals;
-        drawMeals();
-        return save();
-      }
-      if (e.target.matches('[data-reset]')) {
-        const food = F.byId(it.food);
-        it.edited = null;
-        if (food) Object.assign(it, { name: food.name, cat: food.cat, serving: food.serving, serving_g: food.g, per100: { ...food.per100 } });
-        drawMeals();
-        return save();
-      }
-    });
-    root.querySelectorAll('[data-diet]').forEach((b) =>
-      b.addEventListener('click', () => {
-        diet = b.dataset.diet;
-        root.querySelectorAll('[data-diet]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-        root.querySelectorAll('.add-food input').forEach((x) => x.dispatchEvent(new Event('input', { bubbles: true })));
-      }),
-    );
-    root.querySelector('#mp-add-meal').addEventListener('click', () => {
-      plan.meals.push({ name: `Meal ${plan.meals.length + 1}`, items: [] });
-      drawMeals();
-      save();
-      root.querySelector(`[data-meal="${plan.meals.length - 1}"] .meal-name`).select();
-    });
-    root.querySelector('#mp-note').addEventListener('input', (e) => {
-      plan.coach_note = e.target.value;
-      save();
-    });
-    drawMeals();
-  }
-
   function renderCoachSupps(ctx, nav, title, sub) {
     const fields = (item) => `<div class="grid-2"><label>Supplement<input name="name" value="${esc(item.name || '')}" maxlength="120" required></label>
       <label>Dose<input name="dose" value="${esc(item.dose || '')}" maxlength="120" required></label>
@@ -2661,6 +2341,11 @@
     });
   }
 
+  NUI.init({
+    sb, state, root, S, COACH, ICONS, esc, fmt, toast, friendlyError, readForm, withBusy, must, niceDate,
+    shell, loadCtx, invalidate, sectionTabs, statCards, dotCell,
+  });
+
   // ---------------------------------------------------------------- router
 
   async function route() {
@@ -2676,6 +2361,7 @@
       if (state.me.role === 'coach') {
         if (parts[0] === 'client' && parts[1]) return await renderClient(parts[1], parts[2], parts[3]);
         if (parts[0] === 'inbox') return await renderInbox();
+        if (parts[0] === 'library') return await NUI.library(parts[1], parts[2]);
         return await renderClients();
       }
 
@@ -2687,7 +2373,11 @@
         case 'habits':
           return await renderHabits(parts[1], parts[2]);
         case 'meals':
-          return await renderMeals(parts[1]);
+          return await NUI.clientMeals(parts[1]);
+        case 'recipes':
+        case 'recipe':
+        case 'recipe-import':
+          return await NUI.library(parts[0], parts[1]);
         case 'hub':
           return await renderHub();
         case 'training':

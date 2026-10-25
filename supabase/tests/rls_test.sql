@@ -56,14 +56,4 @@ select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000c'
 select count(*) as coach_sees_habit_entries from habit_entries;
 update client_habits set name='coach edit'; select 'coach habit update above should be 0 rows';
 reset role;
--- meal plans: coach writes, client reads own only
-set role authenticated;
-select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000c',false);
-insert into meal_plans(client_id, meals) values ('00000000-0000-0000-0000-0000000000a1', '[{"name":"Lunch","items":[]}]');
-select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-0000000000a1',false);
-select count(*) as a_sees_own_plan from meal_plans;
-update meal_plans set meals='[]'; select 'A updated meal plan rows above should be 0';
-insert into meal_plans(client_id) values ('00000000-0000-0000-0000-0000000000a1'); -- expect RLS or duplicate error
-select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-0000000000b2',false);
-select count(*) as b_sees_a_plan_should_be_0 from meal_plans;
-reset role;
+-- Nutrition rules (foods, plans, food logs) are checked in nutrition_test.sql.
