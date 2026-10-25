@@ -200,9 +200,12 @@
       sb.from('habit_entries').select('*').eq('user_id', id).order('day'),
     ]);
     const habitsReady = !habits.error && !habitEntries.error;
+    // Same for migrations/2026-10-25-meal-plans.sql.
+    const plan = await sb.from('meal_plans').select('*').eq('client_id', id).maybeSingle();
     const ctx = {
       profile, targets: targets || {}, macros, training, supplements, logs, checkins, measurements, photos,
       habits: habitsReady ? habits.data : [], habitEntries: habitsReady ? habitEntries.data : [], habitsReady,
+      mealPlan: plan.error ? null : plan.data, mealsReady: !plan.error,
     };
     state.ctx[id] = ctx;
     return ctx;
@@ -235,6 +238,7 @@
     ['overview', 'Overview'],
     ['physique', 'Physique'],
     ['nutrition', 'Nutrition'],
+    ['meals', 'Meal plan'],
     ['activity', 'Activity'],
     ['recovery', 'Recovery'],
     ['habits', 'Habits'],
@@ -1153,7 +1157,10 @@
       return `<div class="macro"><span class="mk">${label}</span><b>${value === null || value === undefined ? '–' : fmt(value)}<small> / ${fmt(target)} g</small></b>
         <div class="pbar ${s2.level || 'empty'}" aria-hidden="true"><span style="width:${Math.round(ratio * 100)}%"></span></div><span class="ms ${s2.level || ''}">${esc(s2.label || 'Not logged')}</span></div>`;
     };
-    const plan = assigned
+    const built = mealPlanHTML(ctx.mealPlan);
+    const plan = built
+      ? `${built}<div class="mv-total"><span>Plan total</span><b>${macroLine(planMacros(ctx.mealPlan.meals))}</b></div>`
+      : assigned
       ? `<div class="plan-empty"><span class="qt-ic" aria-hidden="true">${ICONS.meals}</span><div><b>${esc(COACH)} is writing your meal plan</b><p>It's built around the food you already eat, from dal and roti to your weekend dinners. Each meal will show here with its macros, and you'll be able to swap items.</p></div></div>`
       : `<div class="plan-empty"><span class="qt-ic" aria-hidden="true">${ICONS.meals}</span><div><b>You're on flexible macros</b><p>Eat the food you like and land close to the numbers above. If you'd rather follow set meals, ask ${esc(COACH)} at your next check-in.</p></div></div>`;
 
@@ -1175,7 +1182,7 @@
         <a class="btn-dark wide" href="#log/${day}">${log.calories ? 'Update today\'s food' : 'Log today\'s food'}</a>
         <section>
           <h2 class="sec-title">Your meal plan</h2>
-          <p class="sec-sub">${assigned ? 'Set meals from ' + esc(COACH) : 'Flexible macros'}</p>
+          <p class="sec-sub">${built ? `Set by ${esc(COACH)}` : assigned ? 'Set meals from ' + esc(COACH) : 'Flexible macros'}</p>
           ${plan}
         </section>
         <section class="week-food">
@@ -1930,6 +1937,7 @@
     if (section === 'photos') return renderCoachPhotos(ctx, nav, title, sub, arg);
     if (section === 'training') return renderCoachTraining(ctx, nav, title, sub);
     if (section === 'supps') return renderCoachSupps(ctx, nav, title, sub);
+    if (section === 'meals') return renderCoachMeals(ctx, title, sub);
     const rows = [
       ['Email', p.email],
       ['Phone', p.phone],
@@ -2174,6 +2182,284 @@
         renderClient(ctx.profile.id, 'training');
       });
     });
+  }
+
+  // ------------------------------------------------------------ meal plans
+
+  const F = window.RewiredFoods || { FOODS: [], CATEGORIES: [], byId: () => null };
+  const PLATE = {
+    'Curries & mains': '#e06a35', 'Dal & legumes': '#f0b530', 'Rice & breads': '#e2b676', Breakfast: '#f4c77d',
+    Protein: '#c8553d', 'Veg & sides': '#3e9b5f', Dairy: '#9db8f0', Fruit: '#e5486a', 'Fats & nuts': '#b07a3b',
+    'Snacks & sweets': '#d98c3e', Drinks: '#8c6a4f',
+  };
+  const MACRO_KEYS = ['kcal', 'p', 'c', 'f'];
+
+  function plate(cat) {
+    return `<span class="plate" style="--plate:${PLATE[cat] || '#9aa8bd'}" aria-hidden="true"></span>`;
+  }
+
+  // Macros for one serving: the coach's own numbers if they edited the item,
+  // otherwise worked out from the food's per-100 g values.
+  function perServing(it) {
+    if (it.edited) return it.edited;
+    const k = (it.serving_g || 0) / 100;
+    return { kcal: it.per100.kcal * k, p: it.per100.p * k, c: it.per100.c * k, f: it.per100.f * k };
+  }
+
+  function itemMacros(it) {
+    const s1 = perServing(it);
+    const q = Number(it.qty) || 0;
+    return { kcal: s1.kcal * q, p: s1.p * q, c: s1.c * q, f: s1.f * q };
+  }
+
+  function sumMacros(list) {
+    return list.reduce((t, m) => ({ kcal: t.kcal + m.kcal, p: t.p + m.p, c: t.c + m.c, f: t.f + m.f }), { kcal: 0, p: 0, c: 0, f: 0 });
+  }
+
+  const mealMacros = (meal) => sumMacros((meal.items || []).map(itemMacros));
+  const planMacros = (meals) => sumMacros(meals.map(mealMacros));
+  const macroLine = (m) => `${fmt(m.kcal)} kcal · ${fmt(m.p)}P ${fmt(m.c)}C ${fmt(m.f)}F`;
+  const qtyLabel = (it) => `${Number(it.qty) === 1 ? '' : `${fmt(it.qty, it.qty % 1 ? 2 : 0)} × `}${it.serving}${it.serving_g ? ` · ${fmt(it.serving_g * it.qty)} g` : ''}`;
+
+  // The client's view of their plan, meal by meal.
+  function mealPlanHTML(plan) {
+    const meals = (plan && plan.meals) || [];
+    if (!meals.some((m) => (m.items || []).length)) return '';
+    return `${plan.coach_note ? `<div class="note-card"><span class="note-mark" aria-hidden="true">R<i>.</i></span><div><p class="kicker">From ${esc(COACH)}</p><p>${esc(plan.coach_note)}</p></div></div>` : ''}
+      ${meals
+        .filter((m) => (m.items || []).length)
+        .map((m) => `<section class="meal-view">
+          <div class="mv-head"><h3>${esc(m.name)}</h3><span>${fmt(mealMacros(m).kcal)} kcal</span></div>
+          <ul>${m.items
+            .map((it) => {
+              const x = itemMacros(it);
+              return `<li>${plate(it.cat)}<span class="mv-name"><b>${esc(it.name)}</b><small>${esc(qtyLabel(it))}</small></span><span class="mv-mac">${fmt(x.kcal)} kcal<small>${fmt(x.p)}P · ${fmt(x.c)}C · ${fmt(x.f)}F</small></span></li>`;
+            })
+            .join('')}</ul>
+        </section>`)
+        .join('')}`;
+  }
+
+  function newItem(food) {
+    return { food: food.id, name: food.name, cat: food.cat, qty: 1, serving: food.serving, serving_g: food.g, per100: { ...food.per100 }, edited: null };
+  }
+
+  // Coach: build a client's meal plan. Every change saves on its own.
+  function renderCoachMeals(ctx, title, sub) {
+    const id = ctx.profile.id;
+    if (!ctx.mealsReady) {
+      return shell(title, sub, `<div class="card"><p class="kicker">One step first</p><p>Run <b>supabase/migrations/2026-10-25-meal-plans.sql</b> in the Supabase SQL Editor, then reload this page.</p></div>`);
+    }
+    const week = Math.max(S.currentWeek(ctx.profile.start_date), 1);
+    const target = S.macrosForWeek(ctx.macros, week);
+    const plan = {
+      meals: ctx.mealPlan ? JSON.parse(JSON.stringify(ctx.mealPlan.meals)) : ['Breakfast', 'Lunch', 'Snack', 'Dinner'].map((name) => ({ name, items: [] })),
+      coach_note: ctx.mealPlan ? ctx.mealPlan.coach_note || '' : '',
+    };
+    let diet = 'all';
+    const DIETS = [['all', 'All foods'], ['veg', 'Vegetarian'], ['vegan', 'Vegan'], ['fish', 'Pescatarian']];
+    const allowed = (f) => diet === 'all' || (diet === 'vegan' ? f.diet === 'vegan' : diet === 'veg' ? f.diet !== 'meat' && f.diet !== 'fish' : f.diet !== 'meat');
+
+    shell(title, sub, `<div class="mp-top">
+        <div class="mp-totals" id="mp-totals"></div>
+        <p class="mp-save" id="mp-save" role="status">${ctx.mealPlan ? 'All changes saved' : 'Not saved yet. Add a food to start.'}</p>
+      </div>
+      <div class="mp-diet" role="group" aria-label="Foods to show">${DIETS.map(([k, l]) => `<button type="button" data-diet="${k}" aria-pressed="${k === diet}">${l}</button>`).join('')}</div>
+      <div id="mp-meals"></div>
+      <button type="button" class="btn-dark" id="mp-add-meal">+ Add a meal</button>
+      <section class="card"><label for="mp-note">Note for ${esc(ctx.profile.full_name || 'the client')} <span class="hint">(shown above their plan)</span></label>
+        <textarea id="mp-note" rows="2" maxlength="1000" placeholder="e.g. Swap roti for rice on training days if you prefer.">${esc(plan.coach_note)}</textarea></section>
+      <p class="hint">Food numbers are typical values: USDA FoodData Central for plain foods, and estimates for home-style dishes. Use Edit on any item to put in your own numbers; Reset brings back the list's.</p>`);
+
+    const saveEl = root.querySelector('#mp-save');
+    let timer = null;
+    let saving = Promise.resolve();
+    const save = () => {
+      clearTimeout(timer);
+      saveEl.textContent = 'Saving…';
+      saveEl.className = 'mp-save';
+      timer = setTimeout(() => {
+        saving = saving.then(async () => {
+          try {
+            must(await sb.from('meal_plans').upsert({ client_id: id, meals: plan.meals, coach_note: plan.coach_note.trim() || null }, { onConflict: 'client_id' }));
+            ctx.mealPlan = { ...(ctx.mealPlan || {}), client_id: id, meals: plan.meals, coach_note: plan.coach_note.trim() || null };
+            saveEl.textContent = 'All changes saved';
+          } catch (err) {
+            saveEl.textContent = `Not saved: ${friendlyError(err)}`;
+            saveEl.className = 'mp-save bad';
+          }
+        });
+      }, 700);
+    };
+
+    const bar = (label, v, t, kind, unit) => {
+      const st = S.habitStatus(kind, v, t);
+      const r = t ? Math.min(1, v / t) : 0;
+      return `<div class="mp-t"><span>${label}</span><b>${fmt(v)}<small> / ${t ? fmt(t) : '–'} ${unit}</small></b>
+        <div class="pbar ${st.level || 'empty'}" aria-hidden="true"><span style="width:${Math.round(r * 100)}%"></span></div></div>`;
+    };
+    const drawTotals = () => {
+      const t = planMacros(plan.meals);
+      root.querySelector('#mp-totals').innerHTML = target
+        ? `${bar('Calories', t.kcal, target.calories, 'calories', 'kcal')}${bar('Protein', t.p, target.protein_g, 'default', 'g')}${bar('Carbs', t.c, target.carbs_g, 'default', 'g')}${bar('Fats', t.f, target.fats_g, 'default', 'g')}`
+        : `<div class="mp-t"><span>Plan total</span><b>${macroLine(t)}</b><small>Set this client's macros under Nutrition to compare.</small></div>`;
+      plan.meals.forEach((m, i) => {
+        const el = root.querySelector(`[data-meal="${i}"] .meal-sum`);
+        if (el) el.textContent = macroLine(mealMacros(m));
+        (m.items || []).forEach((it, j) => {
+          const li = root.querySelector(`[data-meal="${i}"] [data-item="${j}"]`);
+          if (!li) return;
+          li.querySelector('.mi-mac').textContent = macroLine(itemMacros(it));
+          li.querySelector('.mi-g').textContent = Number(it.qty) !== 1 && it.serving_g ? ` · ${fmt(it.serving_g * it.qty)} g total` : '';
+        });
+      });
+    };
+
+    const itemHTML = (it, j) => {
+      const s1 = perServing(it);
+      return `<li class="mi" data-item="${j}">
+        <div class="mi-row">
+          ${plate(it.cat)}
+          <span class="mi-name"><b>${esc(it.name)}</b><small>${esc(it.serving)}${it.serving_g ? `, ${fmt(it.serving_g)} g` : ''}<span class="mi-g"></span>${it.edited ? ' · <em>Your numbers</em>' : ''}</small></span>
+          <label class="mi-qty"><span class="sr-only">Servings of ${esc(it.name)}</span><input type="number" inputmode="decimal" min="0.25" max="20" step="0.25" value="${esc(it.qty)}" data-qty></label>
+          <span class="mi-mac"></span>
+          <button type="button" class="mi-btn" data-edit aria-expanded="false">Edit</button>
+          <button type="button" class="mi-btn x" data-del aria-label="Remove ${esc(it.name)}">×</button>
+        </div>
+        <div class="mi-edit" hidden>
+          <p class="hint">Per serving (${esc(it.serving)}):</p>
+          <div class="mi-edit-grid">${[['kcal', 'Calories'], ['p', 'Protein g'], ['c', 'Carbs g'], ['f', 'Fat g']]
+            .map(([k, l]) => `<label>${l}<input type="number" inputmode="decimal" min="0" step="0.1" value="${fmt(s1[k], k === 'kcal' ? 0 : 1).replace(/,/g, '')}" data-k="${k}"></label>`)
+            .join('')}</div>
+          <div class="row-actions"><button type="button" class="btn btn-small" data-apply>Use these numbers</button>${it.edited ? '<button type="button" class="btn btn-ghost btn-small" data-reset>Reset to food list</button>' : ''}</div>
+        </div>
+      </li>`;
+    };
+
+    const drawMeals = () => {
+      root.querySelector('#mp-meals').innerHTML = plan.meals
+        .map((m, i) => `<section class="meal-card" data-meal="${i}">
+          <div class="meal-head">
+            <input class="meal-name" value="${esc(m.name)}" maxlength="40" aria-label="Meal name">
+            <span class="meal-sum"></span>
+            <button type="button" class="mi-btn" data-del-meal aria-label="Remove ${esc(m.name)}">Remove</button>
+          </div>
+          <ul class="meal-items">${(m.items || []).map(itemHTML).join('')}</ul>
+          <div class="add-food">
+            <input type="search" placeholder="Add food: dal, roti, chicken, paneer…" aria-label="Search foods to add to ${esc(m.name)}" autocomplete="off">
+            <ul class="af-results" role="listbox" hidden></ul>
+          </div>
+        </section>`)
+        .join('');
+      drawTotals();
+    };
+
+    root.querySelector('#mp-meals').addEventListener('input', (e) => {
+      const card = e.target.closest('[data-meal]');
+      if (!card) return;
+      const m = plan.meals[+card.dataset.meal];
+      if (e.target.classList.contains('meal-name')) {
+        m.name = e.target.value.trim() || 'Meal';
+        return save();
+      }
+      if (e.target.matches('[data-qty]')) {
+        const it = m.items[+e.target.closest('[data-item]').dataset.item];
+        const q = Number(e.target.value);
+        if (!(q > 0) || q > 20) return;
+        it.qty = q;
+        drawTotals();
+        return save();
+      }
+      if (e.target.type === 'search') {
+        const q = e.target.value.trim().toLowerCase();
+        const list = card.querySelector('.af-results');
+        const hits = q ? F.FOODS.filter((f) => allowed(f) && (f.name.toLowerCase().includes(q) || f.cat.toLowerCase().includes(q))).slice(0, 8) : [];
+        list.innerHTML = hits.length
+          ? hits.map((f) => `<li role="option" tabindex="-1" data-food="${f.id}">${plate(f.cat)}<span><b>${esc(f.name)}</b><small>${esc(f.serving)} · ${fmt(f.per100.kcal * f.g / 100)} kcal · ${fmt(f.per100.p * f.g / 100)} g protein</small></span></li>`).join('')
+          : q ? `<li class="af-none">No match${diet !== 'all' ? ' in this filter' : ''}. Try another word.</li>` : '';
+        list.hidden = !q;
+      }
+    });
+    const addFood = (card, foodId) => {
+      const food = F.byId(foodId);
+      if (!food) return;
+      const i = +card.dataset.meal;
+      plan.meals[i].items.push(newItem(food));
+      drawMeals();
+      save();
+      const input = root.querySelector(`[data-meal="${i}"] input[type=search]`);
+      if (input) input.focus();
+    };
+    root.querySelector('#mp-meals').addEventListener('keydown', (e) => {
+      if (e.target.type !== 'search' || e.key !== 'Enter') return;
+      e.preventDefault();
+      const first = e.target.closest('[data-meal]').querySelector('[data-food]');
+      if (first) addFood(e.target.closest('[data-meal]'), first.dataset.food);
+    });
+    root.querySelector('#mp-meals').addEventListener('click', (e) => {
+      const card = e.target.closest('[data-meal]');
+      if (!card) return;
+      const i = +card.dataset.meal;
+      const pick = e.target.closest('[data-food]');
+      if (pick) return addFood(card, pick.dataset.food);
+      if (e.target.matches('[data-del-meal]')) {
+        if (plan.meals[i].items.length && !window.confirm(`Remove ${plan.meals[i].name} and its foods?`)) return;
+        plan.meals.splice(i, 1);
+        drawMeals();
+        return save();
+      }
+      const li = e.target.closest('[data-item]');
+      if (!li) return;
+      const j = +li.dataset.item;
+      const it = plan.meals[i].items[j];
+      if (e.target.matches('[data-del]')) {
+        plan.meals[i].items.splice(j, 1);
+        drawMeals();
+        return save();
+      }
+      if (e.target.matches('[data-edit]')) {
+        const box = li.querySelector('.mi-edit');
+        box.hidden = !box.hidden;
+        e.target.setAttribute('aria-expanded', String(!box.hidden));
+        return;
+      }
+      if (e.target.matches('[data-apply]')) {
+        const vals = {};
+        for (const input of li.querySelectorAll('[data-k]')) {
+          const v = Number(input.value);
+          if (input.value === '' || Number.isNaN(v) || v < 0) return toast('Enter a number of 0 or more for each.', true);
+          vals[input.dataset.k] = v;
+        }
+        it.edited = vals;
+        drawMeals();
+        return save();
+      }
+      if (e.target.matches('[data-reset]')) {
+        const food = F.byId(it.food);
+        it.edited = null;
+        if (food) Object.assign(it, { name: food.name, cat: food.cat, serving: food.serving, serving_g: food.g, per100: { ...food.per100 } });
+        drawMeals();
+        return save();
+      }
+    });
+    root.querySelectorAll('[data-diet]').forEach((b) =>
+      b.addEventListener('click', () => {
+        diet = b.dataset.diet;
+        root.querySelectorAll('[data-diet]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+        root.querySelectorAll('.add-food input').forEach((x) => x.dispatchEvent(new Event('input', { bubbles: true })));
+      }),
+    );
+    root.querySelector('#mp-add-meal').addEventListener('click', () => {
+      plan.meals.push({ name: `Meal ${plan.meals.length + 1}`, items: [] });
+      drawMeals();
+      save();
+      root.querySelector(`[data-meal="${plan.meals.length - 1}"] .meal-name`).select();
+    });
+    root.querySelector('#mp-note').addEventListener('input', (e) => {
+      plan.coach_note = e.target.value;
+      save();
+    });
+    drawMeals();
   }
 
   function renderCoachSupps(ctx, nav, title, sub) {

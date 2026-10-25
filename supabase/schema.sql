@@ -519,3 +519,38 @@ create policy "client updates own habit entries" on public.habit_entries
 drop policy if exists "client deletes own habit entries" on public.habit_entries;
 create policy "client deletes own habit entries" on public.habit_entries
   for delete to authenticated using (user_id = (select auth.uid()));
+
+-- ---------------------------------------------------------------------------
+-- Meal plans (also in migrations/2026-10-25-meal-plans.sql)
+-- ---------------------------------------------------------------------------
+create table if not exists public.meal_plans (
+  client_id   uuid primary key references public.profiles (id) on delete cascade,
+  meals       jsonb not null default '[]'::jsonb
+                check (jsonb_typeof(meals) = 'array' and pg_column_size(meals) < 200000),
+  coach_note  text check (coach_note is null or length(coach_note) <= 1000),
+  updated_at  timestamptz not null default now()
+);
+
+drop trigger if exists touch_meal_plans on public.meal_plans;
+create trigger touch_meal_plans before update on public.meal_plans
+  for each row execute function public.touch_updated_at();
+
+revoke all on public.meal_plans from anon;
+grant select, insert, update, delete on public.meal_plans to authenticated;
+alter table public.meal_plans enable row level security;
+
+-- The client reads their own plan; only the coach writes plans.
+drop policy if exists "read own meal plan or coach reads all" on public.meal_plans;
+create policy "read own meal plan or coach reads all" on public.meal_plans
+  for select to authenticated
+  using (client_id = (select auth.uid()) or (select public.is_coach()));
+drop policy if exists "coach adds meal plans" on public.meal_plans;
+create policy "coach adds meal plans" on public.meal_plans
+  for insert to authenticated with check ((select public.is_coach()));
+drop policy if exists "coach updates meal plans" on public.meal_plans;
+create policy "coach updates meal plans" on public.meal_plans
+  for update to authenticated
+  using ((select public.is_coach())) with check ((select public.is_coach()));
+drop policy if exists "coach deletes meal plans" on public.meal_plans;
+create policy "coach deletes meal plans" on public.meal_plans
+  for delete to authenticated using ((select public.is_coach()));
