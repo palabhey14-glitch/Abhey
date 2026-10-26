@@ -1362,9 +1362,9 @@
       <div class="wl-top"><div><p class="kicker">Log your workout</p>
         <h2>${existing ? 'Workout logged <span class="wl-done">✓</span>' : scheduledRest && !cycleDay ? 'Rest day today' : 'How did it go?'}</h2>
         <p class="hint" style="margin-top:0">${scheduledRest && !existing ? 'Rest day on your plan. Trained anyway? Pick the session below.' : 'Enter the weight and reps you did for each set. Grey numbers are from last time.'}</p></div></div>
-      <div class="grid-2">
+      <div class="wl-meta">
         <label>Date<input type="date" id="wl-day" value="${esc(day)}" max="${esc(S.today())}" min="${esc(S.addDays(S.today(), -14))}"></label>
-        <label>Session<select id="wl-session">${training.map((r) => `<option value="${r.cycle_day}"${r.cycle_day === chosen ? ' selected' : ''}>Day ${r.cycle_day} · ${esc(r.session_name)}${r.cycle_day === prog.scheduled ? ' (today)' : ''}</option>`).join('')}</select></label>
+        <label>Session<select id="wl-session">${training.map((r) => `<option value="${r.cycle_day}"${r.cycle_day === chosen ? ' selected' : ''}>Day ${r.cycle_day} · ${esc(r.session_name)}${r.cycle_day === prog.scheduled ? ' · today' : ''}</option>`).join('')}</select></label>
       </div>
       ${rows ? `<ol class="wl-list">${rows}</ol>` : '<p>No exercises in this session.</p>'}
       <label>Notes (optional)<textarea id="wl-note" maxlength="2000" placeholder="How it felt, anything to tell ${esc(COACH)}">${esc((sameSession && existing.note) || '')}</textarea></label>

@@ -1557,3 +1557,10 @@ svg.mx text { fill: #7a879b; font: 600 9px var(--font); letter-spacing: 0.06em; 
 .photo-prompt > span:nth-child(2) { flex: 1; min-width: 0; }
 .photo-prompt b, .photo-prompt small { display: block; }
 .photo-prompt small { color: var(--ink-2); font-size: 13px; }
+.wl-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.wl-meta label { display: flex; flex-direction: column; gap: 6px; margin: 0; min-width: 0; }
+.wl-meta input, .wl-meta select { display: block; width: 100%; min-width: 0; max-width: 100%; height: 48px; margin: 0; box-sizing: border-box; }
+.wl-meta input[type="date"] { -webkit-appearance: none; appearance: none; text-align: left; }
+.wl-meta input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+.wl-meta select { text-overflow: ellipsis; }
+@media (max-width: 560px) { .wl-meta { grid-template-columns: 1fr; } }
