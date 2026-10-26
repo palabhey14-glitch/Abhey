@@ -27,7 +27,14 @@
   <script src="js/stats.js"></script>
   <script src="js/nutrition.js"></script>
   <script src="js/ingredients.js"></script>
+  <script src="js/exercises.js"></script>
   <script src="js/nutrition-ui.js"></script>
   <script src="js/app.js"></script>
+  <!-- Netlify reads this at deploy time so the app can post check-in notices to it.
+       Netlify's form notification emails each one to the coach. Not shown. -->
+  <form name="checkin-complete" data-netlify="true" netlify-honeypot="bot-field" hidden>
+    <input name="bot-field"><input name="subject"><input name="client_name"><input name="client_email">
+    <input name="week"><input name="sent_at"><input name="review_link">
+  </form>
 </body>
 </html>

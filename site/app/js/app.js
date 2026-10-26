@@ -6,6 +6,7 @@
 
   const S = window.RewiredStats;
   const NUI = window.RewiredNutritionUI;
+  const X = window.RewiredExercises;
   const cfg = window.REWIRED_CONFIG || {};
   const root = document.getElementById('root');
   const configured =
@@ -1057,15 +1058,21 @@
     return sessions.find((r) => r.cycle_day === (S.daysBetween(start, day) % len) + 1) || null;
   }
 
-  // The week's check-in is flagged on Home from Saturday until it is sent.
-  // On Monday it is still shown (as overdue) for the week that ended Sunday.
+  // The coach picks each client's check-in day (targets.checkin_day,
+  // 0 = Sunday). The check-in opens the day before and closes at the end of
+  // that day; see checkinWindow in stats.js.
+  function checkinDay(ctx) {
+    const d = Number(ctx.targets && ctx.targets.checkin_day);
+    return Number.isInteger(d) && d >= 0 && d <= 6 ? d : 0;
+  }
+
+  // The week's check-in is flagged on Home while its window is open and it
+  // has not been sent.
   function checkinDue(ctx) {
     const now = S.today();
-    const dow = new Date(`${now}T12:00:00`).getDay();
-    if (dow !== 6 && dow !== 0 && dow !== 1) return null;
-    const week = S.weekOf(ctx.profile.start_date, dow === 1 ? S.addDays(now, -1) : now);
-    if (!week || ctx.checkins.some((c) => c.week_number === week)) return null;
-    return { week, overdue: dow === 1 };
+    const win = S.openCheckin(ctx.profile.start_date, checkinDay(ctx), now);
+    if (!win || ctx.checkins.some((c) => c.week_number === win.week)) return null;
+    return { week: win.week, dueToday: win.due === now, due: win.due };
   }
 
   // Smooth weekly-average bodyweight line with the latest week highlighted.
@@ -1193,7 +1200,7 @@
 
       ${due ? `<section class="due-card" id="checkin-due">
         <span class="due-ic" aria-hidden="true">${ICONS.checkin}</span>
-        <div><p class="kicker">${due.overdue ? 'Overdue' : 'Due tonight'}</p><h2>Week ${due.week} check-in</h2>
+        <div><p class="kicker">${due.dueToday ? 'Due today' : `Open now · due ${esc(S.DAY_NAMES[checkinDay(ctx)])}`}</p><h2>Week ${due.week} check-in</h2>
         <p>Photos, measurements and how the week went. About 5 minutes, then ${esc(COACH)} reviews it.</p></div>
         <a class="btn-dark" href="#checkin/${due.week}">Start check-in</a>
       </section>` : ''}`,
@@ -1210,9 +1217,11 @@
     const ctx = await loadCtx(state.me.id);
     const week = S.currentWeek(ctx.profile.start_date);
     const latest = ctx.checkins.filter((c) => c.coach_feedback).sort((a, b) => b.week_number - a.week_number)[0];
-    const done = ctx.checkins.some((c) => c.week_number === week);
+    const next = S.nextCheckin(ctx.profile.start_date, checkinDay(ctx), S.today());
+    const nextSent = next && ctx.checkins.some((c) => c.week_number === next.week);
     const items = [
-      ['#checkin', ICONS.checkin, 'Weekly check-in', week ? (done ? `Week ${week} sent` : `Week ${week} due Sunday night`) : 'Opens in week 1'],
+      ['#checkin', ICONS.checkin, 'Weekly check-in', !week || !next ? 'Opens in week 1'
+        : nextSent ? `Week ${next.week} sent` : `Week ${next.week} due ${niceDate(next.due, { weekday: 'long', day: 'numeric', month: 'short' })}`],
       ['#photos', ICONS.photos, 'Progress photos', 'Front, side and back each week'],
       ['#supps', ICONS.supps, 'Supplements', ctx.supplements.length ? `${ctx.supplements.length} from ${COACH}` : 'Your plan and the general guide'],
       ['#profile', ICONS.profile, 'Profile and targets', 'Your details and 12-week goals'],
@@ -1246,19 +1255,23 @@
       ${current ? `<div class="training-today"><span>Today · Day ${activeDay}</span><strong>${esc(current.session_name)}</strong></div>` : ''}
     </section>`;
     const cards = sessions.map((row) => {
-      const exercises = Array.isArray(row.exercises) ? row.exercises : [];
+      const exercises = (Array.isArray(row.exercises) ? row.exercises : []).map((ex) => withMuscles(ex, state.exLib && state.exLib.list));
       const rows = exercises.map((ex, index) => {
         const reps = ex.reps_min === ex.reps_max ? fmt(ex.reps_min) : `${fmt(ex.reps_min)}–${fmt(ex.reps_max)}`;
-        const rest = ex.rest_seconds_min && ex.rest_seconds_max ? `${fmt(ex.rest_seconds_min)}–${fmt(ex.rest_seconds_max)} sec rest` : '';
-        const effort = ex.rpe_min && ex.rpe_max ? `RPE ${fmt(ex.rpe_min)}–${fmt(ex.rpe_max)}` : '';
-        return `<li class="training-exercise"><div class="exercise-count">${index + 1}</div><div>
-          <strong>${esc(ex.name)}</strong><div class="exercise-meta">${fmt(ex.sets)} sets × ${esc(reps)} reps${effort ? ` · ${esc(effort)}` : ''}${rest ? ` · ${esc(rest)}` : ''}</div>
+        const rest = !ex.rest_seconds_min && !ex.rest_seconds_max ? ''
+          : ex.rest_seconds_min === ex.rest_seconds_max || !ex.rest_seconds_max ? `${fmt(ex.rest_seconds_min || ex.rest_seconds_max)} sec rest`
+            : `${fmt(ex.rest_seconds_min)}–${fmt(ex.rest_seconds_max)} sec rest`;
+        const effort = ex.rir && ex.rir_target != null ? `${fmt(ex.rir_target)} RIR` : ex.rpe_min && ex.rpe_max ? `RPE ${fmt(ex.rpe_min)}–${fmt(ex.rpe_max)}` : '';
+        const muscles = (ex.primary || []).map((k) => X.MUSCLES[k]).filter(Boolean).join(', ');
+        return `<li class="training-exercise"><div class="exercise-map" aria-hidden="true"><span class="exercise-count">${index + 1}</span>${(ex.primary || []).length ? X.bodyDiagram(ex.primary, ex.secondary, { small: true }) : ''}</div><div>
+          <strong>${esc(ex.name)}</strong>${muscles ? `<div class="exercise-muscles">${esc(muscles)}</div>` : ''}<div class="exercise-meta">${fmt(ex.sets)} sets × ${esc(reps)} reps${effort ? ` · ${esc(effort)}` : ''}${rest ? ` · ${esc(rest)}` : ''}</div>
+          ${ex.rir && ex.rir_target != null ? `<div class="exercise-meta">${Number(ex.rir_target) === 0 ? 'Take each set to the last clean rep' : `Stop each set with about ${fmt(ex.rir_target)} clean rep${Number(ex.rir_target) === 1 ? '' : 's'} left in the tank`}</div>` : ''}
           ${ex.final_set_rpe_target ? `<div class="exercise-meta">Final set: about RPE ${fmt(ex.final_set_rpe_target)} if technique stays solid</div>` : ''}
           ${ex.note ? `<p class="exercise-note">${esc(ex.note)}</p>` : ''}
         </div></li>`;
       }).join('');
       return `<details class="training-day card"${row.cycle_day === activeDay ? ' open' : ''}>
-        <summary><span class="day-pill">Day ${fmt(row.cycle_day)}</span><span><strong>${esc(row.session_name)}</strong><small>${row.is_rest_day ? 'Recovery day' : `${exercises.length} exercises`}</small></span>${row.cycle_day === activeDay ? '<em>Today</em>' : ''}</summary>
+        <summary><span class="day-pill">Day ${fmt(row.cycle_day)}</span><span><strong>${esc(row.session_name)}</strong><small>${row.is_rest_day ? 'Recovery day' : `${exercises.length} exercise${exercises.length === 1 ? '' : 's'}`}</small></span>${row.cycle_day === activeDay ? '<em>Today</em>' : ''}</summary>
         <div class="training-details">${rows ? `<ol class="training-exercises">${rows}</ol>` : ''}${row.session_note ? `<p class="training-session-note">${esc(row.session_note)}</p>` : ''}</div>
       </details>`;
     }).join('');
@@ -1322,12 +1335,42 @@
     return `<table><tbody>${rows.map(([k, v]) => `<tr><th scope="row">${k}</th><td>${v}</td></tr>`).join('')}</tbody></table>`;
   }
 
+  // Emails the coach through the "checkin-complete" Netlify form (declared in
+  // app/index.html); Netlify's form notification sends it to the coach inbox.
+  // A failed notice never blocks the check-in itself.
+  async function notifyCheckin(ctx, week) {
+    const name = ctx.profile.full_name || (state.session && state.session.user && state.session.user.email) || 'A client';
+    const body = new URLSearchParams({
+      'form-name': 'checkin-complete',
+      subject: `Check-in complete for ${name}`,
+      client_name: name,
+      client_email: (state.session && state.session.user && state.session.user.email) || '',
+      week: `Week ${week}`,
+      sent_at: new Date().toLocaleString('en-AU', { dateStyle: 'medium', timeStyle: 'short' }),
+      review_link: `${location.origin}/app/#client/${ctx.profile.id}/checkins`,
+    });
+    try {
+      await fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString() });
+    } catch (_) { /* offline or blocked: the coach still sees it in Check-ins */ }
+  }
+
   async function renderCheckin(weekParam) {
     const ctx = await loadCtx(state.me.id);
     const p = ctx.profile;
     const thisWeek = S.currentWeek(p.start_date);
-    const week = Math.min(Math.max(Number(weekParam) || thisWeek || 1, 1), 12);
+    const day = checkinDay(ctx);
+    const dayName = S.DAY_NAMES[day];
+    const openWin = S.openCheckin(p.start_date, day, S.today());
+    const week = Math.min(Math.max(Number(weekParam) || (openWin && openWin.week) || thisWeek || 1, 1), 12);
     const c = ctx.checkins.find((x) => x.week_number === week) || {};
+    const win = p.start_date ? S.checkinWindow(p.start_date, week, day) : null;
+    const winState = S.checkinState(win, S.today());
+    const long = (iso) => niceDate(iso, { weekday: 'long', day: 'numeric', month: 'long' });
+    const windowNote = !win ? `Your check-in opens once ${esc(COACH)} sets your start date.`
+      : winState === 'open' ? `Open now until the end of ${long(win.due)}.`
+        : winState === 'upcoming' ? `Opens ${long(win.opens)}, the day before your check-in day (${dayName}).`
+          : c.submitted_at ? `Sent ${niceDate(c.submitted_at.slice(0, 10))}. This check-in closed at the end of ${long(win.due)}.`
+            : `This check-in closed at the end of ${long(win.due)} without being sent.`;
     const evenWeek = week % 2 === 0 ? week : week - 1;
     const mWeek = Number(new URLSearchParams(location.hash.split('?')[1] || '').get('m') || evenWeek);
     const m = ctx.measurements.find((x) => x.week_number === mWeek) || {};
@@ -1335,7 +1378,7 @@
 
     shell(
       'Weekly check-in',
-      'Fill in every Sunday night',
+      `Every ${dayName} · opens the day before`,
       `
       <div class="card">
         <label for="week-pick">Week</label>
@@ -1349,6 +1392,8 @@
       </section>
       <form id="checkin-form" class="card" novalidate>
         <p class="kicker">How was week ${week}?</p>
+        <p class="checkin-window ${winState}">${windowNote}</p>
+        <fieldset class="checkin-fields"${winState === 'open' ? '' : ' disabled'}>
         ${numberField('sleep_hours', 'Sleep (hours a night, on average)', c.sleep_hours, { decimal: true, max: 14 })}
         <p class="hint" style="margin:-6px 0 12px">Rate 1 to 10, where 10 is best (low stress = 10).</p>
         ${choiceField('stress', 'Stress', scale, c.stress, 'scale')}
@@ -1357,7 +1402,8 @@
         ${choiceField('digestion', 'Digestion', scale, c.digestion, 'scale')}
         <div class="field"><label for="f-win">Biggest win</label><textarea id="f-win" name="biggest_win" maxlength="1000">${esc(c.biggest_win || '')}</textarea></div>
         <div class="field"><label for="f-struggle">Biggest struggle</label><textarea id="f-struggle" name="biggest_struggle" maxlength="1000">${esc(c.biggest_struggle || '')}</textarea></div>
-        <button class="btn" type="submit" style="width:100%">${c.submitted_at ? 'Update' : 'Send'} check-in</button>
+        ${winState === 'open' ? `<button class="btn" type="submit" style="width:100%">${c.submitted_at ? 'Update' : 'Send'} check-in</button>` : ''}
+        </fieldset>
       </form>
       <form id="measure-form" class="card" novalidate>
         <p class="kicker">Body measurements (cm) · every 2 weeks</p>
@@ -1384,9 +1430,11 @@
     const form = document.getElementById('checkin-form');
     form.addEventListener('submit', (e) => {
       e.preventDefault();
+      if (S.checkinState(win, S.today()) !== 'open') return toast(`This check-in is closed. Your check-in day is ${dayName}.`, true);
       const data = readForm(form);
-      withBusy(form.querySelector('button'), async () => {
+      withBusy(form.querySelector('button[type="submit"]'), async () => {
         must(await sb.from('weekly_checkins').upsert({ ...data, user_id: state.me.id, week_number: week }, { onConflict: 'user_id,week_number' }));
+        if (!c.submitted_at) await notifyCheckin(ctx, week);
         invalidate(state.me.id);
         toast(`Check-in sent to ${COACH}.`);
         renderCheckin(week);
@@ -1861,6 +1909,9 @@
       sb.from('daily_logs').select('user_id, day, weight_kg, steps, trained, calories, meal_plan').gte('day', since).order('day'),
       sb.from('weekly_checkins').select('user_id, week_number, coach_feedback'),
     ]).then((rs) => rs.map(must));
+    // Check-in days arrive with migrations/2026-10-26-checkin-day.sql.
+    const days = await sb.from('targets').select('client_id, checkin_day');
+    const dayOf = new Map((days.error ? [] : days.data).map((t) => [t.client_id, t.checkin_day]));
 
     const now = S.today();
     const cards = clients.map((c) => {
@@ -1876,7 +1927,9 @@
       if (!c.consent_at) flags.push('Not signed in yet');
       else if (!c.start_date) flags.push('No start date');
       if (week && (daysSince === null || daysSince >= 2)) flags.push(daysSince === null ? 'No logs yet' : `No log for ${daysSince} days`);
-      if (week > 1 && !mineCheckins.some((x) => x.week_number === week - 1)) flags.push(`Week ${week - 1} check-in missing`);
+      const lastClosed = [week, week - 1].map((w) => (w >= 1 ? S.checkinWindow(c.start_date, w, dayOf.get(c.id) || 0) : null))
+        .find((win) => win && S.checkinState(win, now) === 'closed');
+      if (lastClosed && !mineCheckins.some((x) => x.week_number === lastClosed.week)) flags.push(`Week ${lastClosed.week} check-in missing`);
       const needsFeedback = mineCheckins.filter((x) => !x.coach_feedback).length;
       if (needsFeedback) flags.push(`${needsFeedback} check-in${needsFeedback > 1 ? 's' : ''} to reply to`);
       return { c, flags, week, st, prevSt, last, daysSince };
@@ -2034,7 +2087,39 @@
         </section>`,
       )
       .join('');
-    shell(title, sub, `${nav}${items || '<div class="card"><p>No check-ins yet.</p></div>'}`);
+    const day = checkinDay(ctx);
+    const now = S.today();
+    const next = p.start_date ? S.nextCheckin(p.start_date, day, now) : null;
+    const nextText = !p.start_date ? 'Set a start date in Client settings to schedule check-ins.'
+      : !next ? 'All 12 check-ins are behind them.'
+        : `${S.checkinState(next, now) === 'open' ? 'Open now' : `Opens ${niceDate(next.opens, { weekday: 'long', day: 'numeric', month: 'short' })}`} · Week ${next.week}, due ${niceDate(next.due, { weekday: 'long', day: 'numeric', month: 'short' })}`;
+    const picker = `<section class="card checkin-day-card">
+        <div><p class="kicker">Check-in day</p>
+        <p class="hint" style="margin:0">Their check-in opens 24 hours before this day and closes at the end of it. You get an email when they send it.</p></div>
+        <label class="checkin-day-pick">Day<select id="checkin-day">${S.DAY_NAMES.map((d, i) => `<option value="${i}"${i === day ? ' selected' : ''}>${d}</option>`).join('')}</select></label>
+        <p class="checkin-next" id="checkin-next">${esc(nextText)}</p>
+      </section>`;
+    shell(title, sub, `${nav}${picker}${items || '<div class="card"><p>No check-ins yet.</p></div>'}`);
+    root.querySelector('#checkin-day').addEventListener('change', async (e) => {
+      const sel = e.target;
+      const value = Number(sel.value);
+      sel.disabled = true;
+      try {
+        const res = await sb.from('targets').update({ checkin_day: value }).eq('client_id', p.id).select('checkin_day');
+        if (res.error && /checkin_day|column|schema cache/i.test(res.error.message || '')) {
+          throw new Error('Run supabase/migrations/2026-10-26-checkin-day.sql in Supabase first, then try again.');
+        }
+        if (!must(res).length) throw new Error('Not saved. Check you are signed in as the coach.');
+        invalidate(p.id);
+        toast(`Check-in day set to ${S.DAY_NAMES[value]}.`);
+        renderClient(p.id, 'checkins');
+      } catch (err) {
+        sel.value = String(day);
+        toast(friendlyError(err), true);
+      } finally {
+        sel.disabled = false;
+      }
+    });
     root.querySelectorAll('.feedback-form').forEach((form) => {
       form.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -2080,117 +2165,486 @@
     document.getElementById('pb').addEventListener('change', go);
   }
 
-  // The coach saves one complete eight-day version at a time. A new start
+  // ------------------------------------------------- coach: training builder
+  // The coach saves one complete seven-day version at a time. A new start
   // date creates a new version; the old plan remains available in Supabase.
-  function exerciseEditorHTML(ex) {
-    const field = (key, label, extra) => `<label>${label}<input data-ex-field="${key}" value="${esc(ex[key] ?? '')}" ${extra || ''}></label>`;
-    return `<div class="exercise-editor" data-exercise>
-      <div class="exercise-editor-top">${field('name', 'Exercise', 'maxlength="120" required')}<button type="button" class="btn btn-ghost btn-small" data-remove-ex>Remove</button></div>
-      <div class="exercise-editor-grid">
-        ${field('sets', 'Sets', 'type="number" min="1" max="20" inputmode="numeric"')}
-        ${field('reps_min', 'Reps from', 'type="number" min="1" max="100" inputmode="numeric"')}
-        ${field('reps_max', 'Reps to', 'type="number" min="1" max="100" inputmode="numeric"')}
-        ${field('rpe_min', 'RPE from', 'type="number" min="1" max="10" step="0.5" inputmode="decimal"')}
-        ${field('rpe_max', 'RPE to', 'type="number" min="1" max="10" step="0.5" inputmode="decimal"')}
-        ${field('final_set_rpe_target', 'Final set RPE', 'type="number" min="1" max="10" step="0.5" inputmode="decimal"')}
-        ${field('rest_seconds_min', 'Rest from (sec)', 'type="number" min="0" max="1200" inputmode="numeric"')}
-        ${field('rest_seconds_max', 'Rest to (sec)', 'type="number" min="0" max="1200" inputmode="numeric"')}
-      </div>${field('note', 'Exercise note', 'maxlength="500"')}
+  // Exercises come from the exercises table (migrations/2026-10-26-exercises.sql);
+  // until that has been run, the built-in starter list in exercises.js is used.
+  const TRAINING_DAYS = 7;
+  const DEFAULT_SESSIONS = ['Push', 'Pull', 'Legs', 'Rest day', 'Upper', 'Lower', 'Rest day'];
+
+  async function loadExerciseLibrary(force) {
+    if (state.exLib && !force) return state.exLib;
+    const r = await sb.from('exercises').select('id,name,primary_muscles,secondary_muscles,equipment,is_custom').order('name');
+    if (r.error) {
+      state.exLib = { ready: false, list: X.LIBRARY.slice() };
+    } else {
+      state.exLib = { ready: true, list: r.data.map((row) => ({ id: row.id, name: row.name, primary: row.primary_muscles || [], secondary: row.secondary_muscles || [], equipment: row.equipment, custom: row.is_custom })) };
+    }
+    return state.exLib;
+  }
+
+  // Older plans stored just a name: look the muscles up so the diagram works.
+  function withMuscles(ex, list) {
+    if (Array.isArray(ex.primary) && ex.primary.length) return ex;
+    const hit = (list || X.LIBRARY).find((item) => X.normalise(item.name) === X.normalise(ex.name));
+    return hit ? { ...ex, primary: hit.primary, secondary: hit.secondary, equipment: ex.equipment || hit.equipment } : ex;
+  }
+
+  function muscleChips(m) {
+    return [...m.primary.map((k) => `<span class="mx-chip p">${esc(X.MUSCLES[k])}</span>`), ...m.secondary.map((k) => `<span class="mx-chip s">${esc(X.MUSCLES[k])}</span>`)].join('');
+  }
+
+  function pickLabel(ex) {
+    if (!ex || !ex.name) return '<span class="tp-pick-name placeholder">Choose an exercise</span><small>Search the library or pick a muscle</small>';
+    const muscles = (ex.primary || []).map((k) => X.MUSCLES[k]).filter(Boolean).join(', ');
+    return `<span class="tp-pick-name">${esc(ex.name)}</span><small>${esc([muscles, ex.equipment].filter(Boolean).join(' · ') || 'Custom exercise')}</small>`;
+  }
+
+  function exerciseRowHTML(ex, index) {
+    const e = ex || {};
+    const rir = e.rir !== undefined ? Boolean(e.rir) : true;
+    const num = (key, label, attrs, value) => `<label class="tp-num">${label}<input data-ex-field="${key}" type="number" inputmode="numeric" value="${esc(value ?? '')}" ${attrs}></label>`;
+    const restValue = e.rest_seconds_min ?? e.rest_seconds_max ?? '';
+    return `<div class="tp-ex" data-exercise data-ex="${esc(JSON.stringify({ exercise_id: e.exercise_id || null, name: e.name || '', primary: e.primary || [], secondary: e.secondary || [], equipment: e.equipment || null }))}">
+      <div class="tp-ex-map" aria-hidden="true"><span class="tp-ex-num">${index + 1}</span>${X.bodyDiagram(e.primary, e.secondary, { small: true })}</div>
+      <div class="tp-ex-main">
+        <div class="tp-pick"><button type="button" class="tp-pick-btn" data-pick aria-haspopup="listbox" aria-expanded="false">${pickLabel(e)}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+        <div class="tp-ex-fields">
+          ${num('sets', 'Sets', 'min="1" max="20"', e.sets ?? 3)}
+          ${num('reps_min', 'Reps from', 'min="1" max="100"', e.reps_min ?? 8)}
+          ${num('reps_max', 'Reps to', 'min="1" max="100"', e.reps_max ?? 12)}
+          <fieldset class="tp-rir"><legend>Reps in reserve</legend>
+            <div class="tp-seg" role="group"><button type="button" data-rir="yes" aria-pressed="${rir}">Yes</button><button type="button" data-rir="no" aria-pressed="${!rir}">No</button></div>
+          </fieldset>
+          <label class="tp-num tp-rir-n"${rir ? '' : ' hidden'}>RIR<select data-ex-field="rir_target">${[0, 1, 2, 3, 4].map((n) => `<option value="${n}"${(e.rir_target ?? 2) === n ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
+          ${num('rest', 'Rest (sec)', 'min="0" max="1200" step="15" placeholder="e.g. 90"', restValue)}
+        </div>
+        <label class="tp-note">Coach cue<input data-ex-field="note" value="${esc(e.note || '')}" maxlength="500" placeholder="Optional, e.g. pause 1 sec at the bottom"></label>
+      </div>
+      <button type="button" class="tp-del" data-remove-ex aria-label="Delete exercise"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Delete</span></button>
     </div>`;
   }
 
-  function renderCoachTraining(ctx, nav, title, sub, newPlan) {
+  function dayExercises(day) {
+    return [...day.querySelectorAll('[data-exercise]')].map((row) => JSON.parse(row.dataset.ex || '{}'));
+  }
+
+  function dayMapHTML(exercises) {
+    const m = X.musclesOf(exercises);
+    return `${X.bodyDiagram(m.primary, m.secondary)}<div class="mx-chips">${muscleChips(m) || '<span class="mx-empty">Add exercises to see the muscles this day trains.</span>'}</div>
+      <div class="mx-legend"><span><i class="p"></i>Main focus</span><span><i class="s"></i>Also works</span></div>`;
+  }
+
+  function trainingDayHTML(row, list) {
+    const exercises = (Array.isArray(row.exercises) ? row.exercises : []).map((ex) => withMuscles(ex, list));
+    const rest = Boolean(row.is_rest_day);
+    const sessionName = rest && /^rest( day)?$/i.test(row.session_name || '') ? '' : row.session_name || '';
+    return `<section class="tp-day${rest ? ' is-rest' : ''}${row.cycle_day === 1 ? ' open' : ''}" data-training-day="${row.cycle_day}">
+      <header class="tp-day-head">
+        <button type="button" class="tp-day-toggle" data-toggle-day aria-expanded="${row.cycle_day === 1}">
+          <span class="tp-day-num">Day ${row.cycle_day}</span>
+          <span class="tp-day-sum" data-day-summary></span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <label class="tp-rest"><input type="checkbox" data-rest-day${rest ? ' checked' : ''}><span>Rest day</span></label>
+      </header>
+      <div class="tp-rest-block" aria-hidden="${!rest}"><strong>Rest day</strong><span>Walk, stretch and recover.</span></div>
+      <div class="tp-day-body" data-exercise-controls>
+        <label class="tp-session">Session name<input data-session-name value="${esc(sessionName)}" maxlength="120" placeholder="e.g. Push, Upper, Legs"></label>
+        <div class="tp-day-grid">
+          <div>
+            <div class="tp-ex-list" data-exercise-list>${exercises.map(exerciseRowHTML).join('')}</div>
+            <button class="tp-add" type="button" data-add-ex><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Add exercise</button>
+          </div>
+          <aside class="tp-day-map" data-day-map>${dayMapHTML(exercises)}</aside>
+        </div>
+        <label class="tp-session-note">Session note<textarea data-session-note maxlength="2000" placeholder="Optional: warm-up, tempo, anything for the whole session">${esc(row.session_note || '')}</textarea></label>
+      </div>
+    </section>`;
+  }
+
+  async function renderCoachTraining(ctx, nav, title, sub, newPlan) {
+    const lib = await loadExerciseLibrary();
     const latestStart = ctx.training.length ? ctx.training[0].program_start_date : null;
     const latest = newPlan || !latestStart ? [] : ctx.training.filter((row) => row.program_start_date === latestStart);
-    const defaults = ['Chest-focused push', 'Pull', 'Legs', 'Rest', 'Shoulder-focused push', 'Pull 2', 'Hamstring-focused legs', 'Rest'];
-    const sessions = defaults.map((name, i) => latest.find((row) => row.cycle_day === i + 1) || {
-      cycle_day: i + 1, session_name: name, is_rest_day: i === 3 || i === 7, exercises: [], session_note: '',
+    const sessions = DEFAULT_SESSIONS.map((name, i) => latest.find((row) => row.cycle_day === i + 1) || {
+      cycle_day: i + 1, session_name: name, is_rest_day: /rest/i.test(name), exercises: [], session_note: '',
     });
     const start = newPlan || !latestStart ? (ctx.profile.start_date || S.today()) : latestStart;
-    const programName = latest[0]?.program_name || 'Classic Physique — 3 On / 1 Off';
+    const programName = latest[0]?.program_name || '12 Week Premium Designer Coaching · Phase 1';
+    const extraDays = latest.some((row) => row.cycle_day > TRAINING_DAYS);
     shell(title, sub, `${nav}
       <section class="card coach-editor-intro"><p class="kicker">Coach controls · Training</p>
         <h2>${newPlan ? 'Create a new training plan' : latest.length ? 'Edit training plan' : 'Assign a training plan'}</h2>
-        <p>Save all eight days together. Your client sees the updated program when they open Training.</p>
+        <p>Seven days that repeat. Tick a rest day to block it out, or pick exercises from the library for a training day. Your client sees the plan as soon as you save.</p>
+        ${extraDays ? '<p class="hint">This plan was set up as an eight-day cycle. Saving it here makes it a seven-day week.</p>' : ''}
+        ${lib.ready ? '' : '<p class="hint">Using the built-in exercise list. Run <b>supabase/migrations/2026-10-26-exercises.sql</b> in Supabase to save your own exercises too.</p>'}
         ${latest.length && !newPlan ? '<button class="btn btn-ghost btn-small" type="button" id="new-training-plan">Create a new program version</button>' : ''}
         ${newPlan ? '<button class="btn btn-ghost btn-small" type="button" id="cancel-training-plan">Back to current program</button>' : ''}
       </section>
-      <form id="training-editor" class="card" novalidate>
+      <form id="training-editor" class="card tp" novalidate>
         <div class="grid-2"><label>Program name<input name="program_name" value="${esc(programName)}" maxlength="160" required></label>
         <label>Start date<input name="program_start_date" type="date" value="${esc(start)}"${latest.length && !newPlan ? ' readonly' : ''} required></label></div>
         <p class="hint">To schedule a different start date, create a new program version.</p>
-        <div class="training-edit-days">${sessions.map((row) => `<details class="training-edit-day" data-training-day="${row.cycle_day}"${row.cycle_day === 1 ? ' open' : ''}>
-          <summary><b>Day ${row.cycle_day}</b> · ${esc(row.session_name)} <span>${row.is_rest_day ? 'Rest' : `${row.exercises.length} exercises`}</span></summary>
-          <div class="training-edit-body">
-            <label>Session name<input data-session-name value="${esc(row.session_name)}" maxlength="120" required></label>
-            <label class="training-rest-toggle"><input type="checkbox" data-rest-day${row.is_rest_day ? ' checked' : ''}> Rest day</label>
-            <div data-exercise-controls${row.is_rest_day ? ' hidden' : ''}>
-              <div data-exercise-list>${(Array.isArray(row.exercises) ? row.exercises : []).map(exerciseEditorHTML).join('')}</div>
-              <button class="btn btn-ghost btn-small" type="button" data-add-ex>Add exercise</button>
-            </div>
-            <label>Session note<textarea data-session-note maxlength="2000">${esc(row.session_note || '')}</textarea></label>
-          </div>
-        </details>`).join('')}</div>
-        <button class="btn" type="submit">Save training plan</button>
+        <div class="tp-days">${sessions.map((row) => trainingDayHTML(row, lib.list)).join('')}</div>
+        <div class="tp-save"><button class="btn" type="submit">Save training plan</button></div>
+      </form>
+      <form id="custom-exercise" class="card tp-custom-card" novalidate>
+        <p class="kicker">Add custom exercise</p>
+        <p class="hint" style="margin-top:0">Saved to your exercise library, so it shows in the dropdown for every client from now on.</p>
+        <div class="tp-custom-grid">
+          <label>Exercise name<input name="name" maxlength="120" placeholder="e.g. Seated cable hip abduction" required></label>
+          <label>Main muscle<select name="primary" required><option value="">Choose a muscle</option>${Object.entries(X.MUSCLES).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('')}</select></label>
+          <label>Also works (optional)<select name="secondary"><option value="">None</option>${Object.entries(X.MUSCLES).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('')}</select></label>
+          <label>Equipment (optional)<select name="equipment"><option value="">Choose</option>${X.EQUIPMENT.map((e) => `<option>${esc(e)}</option>`).join('')}</select></label>
+        </div>
+        <div class="tp-custom-foot"><div class="tp-custom-map" data-custom-map aria-hidden="true">${X.bodyDiagram([], [], { small: true })}</div>
+          <button class="btn" type="submit">Add to exercise library</button></div>
+        <div class="tp-custom-list" data-custom-list></div>
       </form>
       ${latest.length && !newPlan ? `<section class="coach-preview"><p class="kicker">Client preview</p>${trainingHTML(ctx)}</section>` : ''}`);
 
     if (root.querySelector('#new-training-plan')) root.querySelector('#new-training-plan').addEventListener('click', () => renderCoachTraining(ctx, nav, title, sub, true));
     if (root.querySelector('#cancel-training-plan')) root.querySelector('#cancel-training-plan').addEventListener('click', () => renderCoachTraining(ctx, nav, title, sub, false));
     const form = root.querySelector('#training-editor');
+
+    const refreshDay = (day) => {
+      const rest = day.querySelector('[data-rest-day]').checked;
+      day.classList.toggle('is-rest', rest);
+      day.querySelector('.tp-rest-block').setAttribute('aria-hidden', String(!rest));
+      const exercises = dayExercises(day).filter((ex) => ex.name);
+      day.querySelectorAll('[data-exercise]').forEach((row, i) => { row.querySelector('.tp-ex-num').textContent = i + 1; });
+      day.querySelector('[data-day-map]').innerHTML = dayMapHTML(exercises);
+      const name = day.querySelector('[data-session-name]').value.trim();
+      const m = X.musclesOf(exercises);
+      day.querySelector('[data-day-summary]').innerHTML = rest
+        ? '<b>Rest day</b>'
+        : `<b>${esc(name || 'Training day')}</b><small>${exercises.length} exercise${exercises.length === 1 ? '' : 's'}${m.primary.length ? ` · ${esc(m.primary.slice(0, 3).map((k) => X.MUSCLES[k]).join(', '))}` : ''}</small>`;
+    };
+    form.querySelectorAll('[data-training-day]').forEach(refreshDay);
+
+    // ---- exercise picker: one panel, moved under whichever row opened it.
+    const panel = document.createElement('div');
+    panel.className = 'tp-panel';
+    panel.hidden = true;
+    panel.innerHTML = `<div class="tp-panel-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input type="search" placeholder="Search exercises, e.g. incline press" aria-label="Search exercises" autocomplete="off" data-q></div>
+      <div class="tp-filters" role="group" aria-label="Filter by muscle"><button type="button" data-muscle="" aria-pressed="true">All</button>${Object.entries(X.MUSCLES).map(([k, v]) => `<button type="button" data-muscle="${k}" aria-pressed="false">${esc(v)}</button>`).join('')}</div>
+      <div class="tp-panel-body"><div class="tp-results" role="listbox" aria-label="Exercises" data-results></div><div class="tp-preview" data-preview aria-hidden="true"></div></div>
+      <div class="tp-custom" data-custom hidden></div>`;
+    let openRow = null;
+    let active = 0;
+    let muscle = '';
+    let shown = [];
+
+    const optHTML = (ex, i) => `<button type="button" role="option" class="tp-opt${i === active ? ' active' : ''}" data-i="${i}" aria-selected="${i === active}">
+        <span class="tp-opt-text"><b>${esc(ex.name)}</b><small>${esc((ex.primary || []).map((k) => X.MUSCLES[k]).join(', '))}${ex.equipment ? ` · ${esc(ex.equipment)}` : ''}</small></span></button>`;
+    const preview = () => {
+      const ex = shown[active];
+      panel.querySelector('[data-preview]').innerHTML = ex
+        ? `${X.bodyDiagram(ex.primary, ex.secondary)}<p><b>${esc(ex.name)}</b></p><div class="mx-chips">${muscleChips({ primary: ex.primary || [], secondary: (ex.secondary || []).filter((m) => !(ex.primary || []).includes(m)) })}</div>`
+        : X.bodyDiagram([], []);
+    };
+    const setActive = (i, scroll) => {
+      active = i;
+      panel.querySelectorAll('.tp-opt[data-i]').forEach((b) => {
+        const on = Number(b.dataset.i) === active;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-selected', String(on));
+        if (on && scroll) b.scrollIntoView({ block: 'nearest' });
+      });
+      preview();
+    };
+
+    const renderResults = () => {
+      const typed = panel.querySelector('[data-q]').value.trim();
+      shown = X.search(lib.list, typed, muscle);
+      // With no search and no filter, list by muscle group under headings.
+      const grouped = !typed && !muscle;
+      if (grouped) {
+        const order = Object.keys(X.MUSCLES);
+        shown.sort((a, b) => order.indexOf(X.groupOf(a)) - order.indexOf(X.groupOf(b)) || a.name.localeCompare(b.name));
+      }
+      let html = '';
+      let lastGroup = null;
+      shown.forEach((ex, i) => {
+        if (grouped && X.groupOf(ex) !== lastGroup) {
+          lastGroup = X.groupOf(ex);
+          html += `<p class="tp-group">${esc(X.MUSCLES[lastGroup] || 'Other')}</p>`;
+        }
+        html += optHTML(ex, i);
+      });
+      const exact = lib.list.some((ex) => X.normalise(ex.name) === X.normalise(typed));
+      if (!shown.length) html += `<p class="tp-none">No exercise matches “${esc(typed)}”.</p>`;
+      if (typed && !exact) html += `<button type="button" class="tp-opt tp-new" data-new><span class="tp-plus">+</span><span class="tp-opt-text"><b>Add “${esc(typed)}” as a new exercise</b><small>Choose the muscles it works</small></span></button>`;
+      panel.querySelector('[data-results]').innerHTML = html;
+      preview();
+    };
+
+    const closePanel = () => {
+      if (!openRow) return;
+      openRow.querySelector('[data-pick]').setAttribute('aria-expanded', 'false');
+      openRow.classList.remove('picking');
+      panel.hidden = true;
+      panel.querySelector('[data-custom]').hidden = true;
+      openRow = null;
+    };
+
+    const openPanel = (row) => {
+      if (openRow === row) { closePanel(); return; }
+      closePanel();
+      openRow = row;
+      row.classList.add('picking');
+      row.querySelector('.tp-pick').appendChild(panel);
+      row.querySelector('[data-pick]').setAttribute('aria-expanded', 'true');
+      panel.hidden = false;
+      const current = JSON.parse(row.dataset.ex || '{}');
+      panel.querySelector('[data-q]').value = '';
+      muscle = '';
+      panel.querySelectorAll('[data-muscle]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.muscle === '')));
+      active = 0;
+      renderResults();
+      const i = current.name ? shown.findIndex((ex) => ex.name === current.name) : -1;
+      panel.querySelector('[data-q]').focus({ preventScroll: true });
+      if (i >= 0) setActive(i, true);
+    };
+
+    const choose = (ex) => {
+      const row = openRow;
+      if (!row || !ex) return;
+      const data = { exercise_id: ex.id || null, name: ex.name, primary: ex.primary || [], secondary: ex.secondary || [], equipment: ex.equipment || null };
+      row.dataset.ex = JSON.stringify(data);
+      row.querySelector('[data-pick]').innerHTML = `${pickLabel(data)}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+      row.querySelector('.tp-ex-map').innerHTML = `<span class="tp-ex-num"></span>${X.bodyDiagram(data.primary, data.secondary, { small: true })}`;
+      closePanel();
+      refreshDay(row.closest('[data-training-day]'));
+      row.querySelector('[data-ex-field="sets"]').focus();
+    };
+
+    const showCustom = (name) => {
+      const box = panel.querySelector('[data-custom]');
+      box.hidden = false;
+      box.innerHTML = `<p class="kicker">New exercise</p>
+        <label>Name<input data-c-name value="${esc(name)}" maxlength="120"></label>
+        <p class="tp-c-label">Main muscles</p><div class="tp-filters" data-c-primary>${Object.entries(X.MUSCLES).map(([k, v]) => `<button type="button" data-m="${k}" aria-pressed="false">${esc(v)}</button>`).join('')}</div>
+        <p class="tp-c-label">Also works (optional)</p><div class="tp-filters" data-c-secondary>${Object.entries(X.MUSCLES).map(([k, v]) => `<button type="button" data-m="${k}" aria-pressed="false">${esc(v)}</button>`).join('')}</div>
+        <label>Equipment<select data-c-eq><option value="">Choose</option>${X.EQUIPMENT.map((e) => `<option>${esc(e)}</option>`).join('')}</select></label>
+        <div class="row-actions"><button type="button" class="btn btn-small" data-c-save>Add exercise</button><button type="button" class="btn btn-ghost btn-small" data-c-cancel>Cancel</button></div>`;
+      box.querySelector('[data-c-name]').focus();
+    };
+
+    const saveCustom = async () => {
+      const box = panel.querySelector('[data-custom]');
+      const picked = (sel) => [...box.querySelectorAll(`${sel} [aria-pressed="true"]`)].map((b) => b.dataset.m);
+      const name = box.querySelector('[data-c-name]').value.trim();
+      const primary = picked('[data-c-primary]');
+      const secondary = picked('[data-c-secondary]').filter((m) => !primary.includes(m));
+      const equipment = box.querySelector('[data-c-eq]').value || null;
+      if (!name) throw new Error('Give the exercise a name.');
+      if (!primary.length) throw new Error('Pick at least one main muscle.');
+      let ex = { name, primary, secondary, equipment, custom: true };
+      if (lib.ready) {
+        const saved = must(await sb.from('exercises').insert({ name, primary_muscles: primary, secondary_muscles: secondary, equipment, is_custom: true }).select('id').single());
+        ex = { ...ex, id: saved.id };
+      }
+      lib.list.push(ex);
+      lib.list.sort((a, b) => a.name.localeCompare(b.name));
+      toast(lib.ready ? `${name} added to your exercise library.` : `${name} added to this plan.`);
+      choose(ex);
+    };
+
+    panel.addEventListener('input', (e) => {
+      if (e.target.matches('[data-q]')) { active = 0; renderResults(); }
+    });
+    panel.addEventListener('keydown', (e) => {
+      if (!e.target.matches('[data-q]')) { if (e.key === 'Escape') { const row = openRow; closePanel(); row?.querySelector('[data-pick]').focus(); } return; }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (!shown.length) return;
+        setActive((active + (e.key === 'ArrowDown' ? 1 : -1) + shown.length) % shown.length, true);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (shown[active]) choose(shown[active]);
+        else if (panel.querySelector('[data-new]')) showCustom(panel.querySelector('[data-q]').value.trim());
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        const row = openRow;
+        closePanel();
+        row?.querySelector('[data-pick]').focus();
+      }
+    });
+    panel.addEventListener('mouseover', (e) => {
+      const opt = e.target.closest('.tp-opt[data-i]');
+      if (opt && Number(opt.dataset.i) !== active) setActive(Number(opt.dataset.i), false);
+    });
+    panel.addEventListener('click', (e) => {
+      const filter = e.target.closest('[data-muscle]');
+      if (filter) {
+        muscle = filter.dataset.muscle;
+        panel.querySelectorAll('[data-muscle]').forEach((b) => b.setAttribute('aria-pressed', String(b === filter)));
+        active = 0;
+        renderResults();
+        panel.querySelector('[data-results]').scrollTop = 0;
+        return;
+      }
+      const opt = e.target.closest('.tp-opt[data-i]');
+      if (opt) { choose(shown[Number(opt.dataset.i)]); return; }
+      if (e.target.closest('[data-new]')) { showCustom(panel.querySelector('[data-q]').value.trim()); return; }
+      const m = e.target.closest('[data-m]');
+      if (m) { m.setAttribute('aria-pressed', String(m.getAttribute('aria-pressed') !== 'true')); return; }
+      if (e.target.closest('[data-c-cancel]')) { panel.querySelector('[data-custom]').hidden = true; return; }
+      const save = e.target.closest('[data-c-save]');
+      if (save) withBusy(save, saveCustom);
+    });
+    document.addEventListener('click', function outside(e) {
+      if (!document.body.contains(form)) { document.removeEventListener('click', outside); return; }
+      if (openRow && !e.target.closest('.tp-pick, [data-add-ex]')) closePanel();
+    });
+
     form.addEventListener('click', (e) => {
+      const toggle = e.target.closest('[data-toggle-day]');
+      if (toggle) {
+        const day = toggle.closest('[data-training-day]');
+        const open = !day.classList.contains('open');
+        day.classList.toggle('open', open);
+        toggle.setAttribute('aria-expanded', String(open));
+        return;
+      }
+      const pick = e.target.closest('[data-pick]');
+      if (pick) { openPanel(pick.closest('[data-exercise]')); return; }
       const add = e.target.closest('[data-add-ex]');
-      if (add) add.closest('[data-training-day]').querySelector('[data-exercise-list]').insertAdjacentHTML('beforeend', exerciseEditorHTML({}));
+      if (add) {
+        const day = add.closest('[data-training-day]');
+        const list = day.querySelector('[data-exercise-list]');
+        const prev = dayExercises(day).length;
+        list.insertAdjacentHTML('beforeend', exerciseRowHTML({}, prev));
+        refreshDay(day);
+        openPanel(list.lastElementChild);
+        return;
+      }
       const remove = e.target.closest('[data-remove-ex]');
-      if (remove) remove.closest('[data-exercise]').remove();
+      if (remove) {
+        const day = remove.closest('[data-training-day]');
+        const row = remove.closest('[data-exercise]');
+        if (openRow === row) closePanel();
+        row.remove();
+        refreshDay(day);
+        return;
+      }
+      const rir = e.target.closest('[data-rir]');
+      if (rir) {
+        const row = rir.closest('[data-exercise]');
+        const yes = rir.dataset.rir === 'yes';
+        row.querySelectorAll('[data-rir]').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.rir === 'yes') === yes)));
+        row.querySelector('.tp-rir-n').hidden = !yes;
+      }
     });
     form.addEventListener('change', (e) => {
-      if (e.target.matches('[data-rest-day]')) e.target.closest('[data-training-day]').querySelector('[data-exercise-controls]').hidden = e.target.checked;
+      if (e.target.matches('[data-rest-day]')) {
+        const day = e.target.closest('[data-training-day]');
+        if (openRow && day.contains(openRow)) closePanel();
+        if (!e.target.checked) {
+          day.classList.add('open');
+          day.querySelector('[data-toggle-day]').setAttribute('aria-expanded', 'true');
+          if (!dayExercises(day).length) {
+            day.querySelector('[data-exercise-list]').insertAdjacentHTML('beforeend', exerciseRowHTML({}, 0));
+          }
+        }
+        refreshDay(day);
+      }
     });
+    form.addEventListener('input', (e) => {
+      if (e.target.matches('[data-session-name]')) refreshDay(e.target.closest('[data-training-day]'));
+    });
+
+    // ---- "Add custom exercise" card under the plan.
+    const cform = root.querySelector('#custom-exercise');
+    const customList = () => {
+      const mine = lib.list.filter((ex) => ex.custom);
+      cform.querySelector('[data-custom-list]').innerHTML = mine.length
+        ? `<p class="tp-c-label">Your custom exercises (${mine.length})</p><div class="mx-chips">${mine.map((ex) => `<span class="mx-chip s">${esc(ex.name)}</span>`).join('')}</div>`
+        : '';
+    };
+    customList();
+    cform.addEventListener('change', () => {
+      const primary = cform.elements.primary.value;
+      const secondary = cform.elements.secondary.value;
+      cform.querySelector('[data-custom-map]').innerHTML = X.bodyDiagram(primary ? [primary] : [], secondary && secondary !== primary ? [secondary] : [], { small: true });
+    });
+    cform.addEventListener('submit', (e) => {
+      e.preventDefault();
+      withBusy(cform.querySelector('[type="submit"]'), async () => {
+        const name = cform.elements.name.value.trim().replace(/\s+/g, ' ');
+        const primary = cform.elements.primary.value;
+        const secondary = cform.elements.secondary.value;
+        const equipment = cform.elements.equipment.value || null;
+        if (!name) throw new Error('Give the exercise a name.');
+        if (!primary) throw new Error('Choose the main muscle it targets.');
+        if (lib.list.some((ex) => X.normalise(ex.name) === X.normalise(name))) throw new Error(`${name} is already in your library.`);
+        if (!lib.ready) throw new Error('Run supabase/migrations/2026-10-26-exercises.sql in Supabase first, then try again.');
+        const sec = secondary && secondary !== primary ? [secondary] : [];
+        const saved = must(await sb.from('exercises').insert({ name, primary_muscles: [primary], secondary_muscles: sec, equipment, is_custom: true }).select('id').single());
+        lib.list.push({ id: saved.id, name, primary: [primary], secondary: sec, equipment, custom: true });
+        lib.list.sort((a, b) => a.name.localeCompare(b.name));
+        cform.reset();
+        cform.querySelector('[data-custom-map]').innerHTML = X.bodyDiagram([], [], { small: true });
+        customList();
+        toast(`${name} added. Pick it from the exercise dropdown on any day.`);
+      });
+    });
+
     form.addEventListener('submit', (e) => {
       e.preventDefault();
+      closePanel();
       withBusy(form.querySelector('[type="submit"]'), async () => {
         const name = form.elements.program_name.value.trim();
         const programStart = form.elements.program_start_date.value;
         if (!name || !programStart) throw new Error('Add a program name and start date.');
         const rows = [...form.querySelectorAll('[data-training-day]')].map((day) => {
           const cycleDay = Number(day.dataset.trainingDay);
-          const sessionName = day.querySelector('[data-session-name]').value.trim();
           const rest = day.querySelector('[data-rest-day]').checked;
-          if (!sessionName) throw new Error(`Add a name for day ${cycleDay}.`);
-          const exercises = rest ? [] : [...day.querySelectorAll('[data-exercise]')].map((item) => {
+          const sessionName = rest ? 'Rest day' : day.querySelector('[data-session-name]').value.trim();
+          const fail = (msg) => {
+            day.classList.add('open');
+            throw new Error(`Day ${cycleDay}: ${msg}`);
+          };
+          if (!sessionName) fail('add a session name, e.g. Push or Legs.');
+          const exercises = rest ? [] : [...day.querySelectorAll('[data-exercise]')].map((item, i) => {
+            const picked = JSON.parse(item.dataset.ex || '{}');
             const value = (key) => item.querySelector(`[data-ex-field="${key}"]`).value.trim();
-            const number = (key, low, high, required) => {
+            const number = (key, label, low, high, required) => {
               const raw = value(key);
-              if (!raw) { if (required) throw new Error(`Day ${cycleDay}: add ${key.replaceAll('_', ' ')}.`); return null; }
+              if (!raw) { if (required) fail(`add ${label} for exercise ${i + 1}.`); return null; }
               const n = Number(raw);
-              if (!Number.isFinite(n) || n < low || n > high) throw new Error(`Day ${cycleDay}: check ${key.replaceAll('_', ' ')}.`);
+              if (!Number.isFinite(n) || n < low || n > high) fail(`check ${label} for exercise ${i + 1}.`);
               return n;
             };
+            if (!picked.name) fail(`choose exercise ${i + 1} from the list, or delete it.`);
             const ex = {
-              name: value('name'), sets: number('sets', 1, 20, true),
-              reps_min: number('reps_min', 1, 100, true), reps_max: number('reps_max', 1, 100, true),
+              name: picked.name, primary: picked.primary || [], secondary: picked.secondary || [],
+              sets: number('sets', 'sets', 1, 20, true),
+              reps_min: number('reps_min', 'reps from', 1, 100, true), reps_max: number('reps_max', 'reps to', 1, 100, true),
+              rir: item.querySelector('[data-rir="yes"]').getAttribute('aria-pressed') === 'true',
             };
-            if (!ex.name) throw new Error(`Day ${cycleDay}: add an exercise name.`);
-            if (ex.reps_min > ex.reps_max) throw new Error(`Day ${cycleDay}: rep range is reversed.`);
-            for (const key of ['rpe_min', 'rpe_max', 'final_set_rpe_target']) {
-              const n = number(key, 1, 10, false); if (n !== null) ex[key] = n;
-            }
-            for (const key of ['rest_seconds_min', 'rest_seconds_max']) {
-              const n = number(key, 0, 1200, false); if (n !== null) ex[key] = n;
-            }
-            if (ex.rpe_min != null && ex.rpe_max != null && ex.rpe_min > ex.rpe_max) throw new Error(`Day ${cycleDay}: RPE range is reversed.`);
-            if (ex.rest_seconds_min != null && ex.rest_seconds_max != null && ex.rest_seconds_min > ex.rest_seconds_max) throw new Error(`Day ${cycleDay}: rest range is reversed.`);
+            if (picked.exercise_id) ex.exercise_id = picked.exercise_id;
+            if (picked.equipment) ex.equipment = picked.equipment;
+            if (ex.reps_min > ex.reps_max) fail(`the rep range for ${picked.name} is reversed.`);
+            if (ex.rir) ex.rir_target = Number(value('rir_target'));
+            const restSec = number('rest', 'rest', 0, 1200, false);
+            if (restSec !== null) { ex.rest_seconds_min = restSec; ex.rest_seconds_max = restSec; }
             if (value('note')) ex.note = value('note');
             return ex;
           });
-          if (!rest && !exercises.length) throw new Error(`Day ${cycleDay}: add an exercise or mark it as rest.`);
+          if (!rest && !exercises.length) fail('add an exercise or tick Rest day.');
           return { client_id: ctx.profile.id, program_start_date: programStart, cycle_day: cycleDay,
             program_name: name, session_name: sessionName, is_rest_day: rest, exercises,
-            session_note: day.querySelector('[data-session-note]').value.trim() || null };
+            session_note: rest ? null : day.querySelector('[data-session-note]').value.trim() || null };
         });
         const saved = must(await sb.from('training_plan').upsert(rows, { onConflict: 'client_id,program_start_date,cycle_day' }).select('cycle_day'));
-        if (saved.length !== 8) throw new Error('The full program was not saved. Please retry.');
+        if (saved.length !== TRAINING_DAYS) throw new Error('The full program was not saved. Please retry.');
+        // An older eight-day version becomes a seven-day week.
+        must(await sb.from('training_plan').delete().eq('client_id', ctx.profile.id).eq('program_start_date', programStart).gt('cycle_day', TRAINING_DAYS));
         invalidate(ctx.profile.id);
         toast('Training plan saved for this client.');
         renderClient(ctx.profile.id, 'training');

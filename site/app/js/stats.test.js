@@ -83,4 +83,21 @@ assert.equal(S.parseLitres('3-4 L'), 3);
 assert.equal(S.parseLitres('2.5L'), 2.5);
 assert.equal(S.parseLitres('lots'), null);
 
+// Check-in windows: open the day before the check-in day, close at its end.
+// 2026-10-05 is a Monday; Sunday check-ins.
+const sun1 = S.checkinWindow('2026-10-05', 1, 0);
+assert.deepEqual(sun1, { week: 1, opens: '2026-10-10', due: '2026-10-11' });
+assert.equal(S.checkinState(sun1, '2026-10-09'), 'upcoming');
+assert.equal(S.checkinState(sun1, '2026-10-10'), 'open');
+assert.equal(S.checkinState(sun1, '2026-10-11'), 'open');
+assert.equal(S.checkinState(sun1, '2026-10-12'), 'closed');
+// Monday check-ins review the week that just finished.
+assert.deepEqual(S.checkinWindow('2026-10-05', 1, 1), { week: 1, opens: '2026-10-11', due: '2026-10-12' });
+assert.equal(S.openCheckin('2026-10-05', 1, '2026-10-12').week, 1);
+assert.equal(S.openCheckin('2026-10-05', 1, '2026-10-13'), null);
+// Wednesday check-ins, mid-program.
+assert.deepEqual(S.checkinWindow('2026-10-05', 3, 3), { week: 3, opens: '2026-10-20', due: '2026-10-21' });
+assert.equal(S.nextCheckin('2026-10-05', 3, '2026-10-22').week, 4);
+assert.equal(S.DAY_NAMES[S.weekday('2026-10-26')], 'Monday');
+
 console.log('stats.js: all checks passed');
