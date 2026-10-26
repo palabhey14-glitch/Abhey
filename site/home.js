@@ -265,28 +265,28 @@
     }, 3600);
   }
 
-  // "What that looks like": a looping walkthrough built from the app's UI.
-  // Plays only while on screen; reduced motion shows each step still, chosen
-  // from the list beside it.
+  // "What that looks like": a looping promo built from the app's own UI, in
+  // the shape of a short app film: cold open, big words, numbered steps on one
+  // phone, a win screen and an end card. Plays only while on screen; reduced
+  // motion shows each step still, chosen from the list beside it.
   function startFilm() {
     const film = document.getElementById('film');
     if (!film) return;
     const frame = film.querySelector('.film-frame');
     const scenes = [...film.querySelectorAll('.fs')];
-    const bars = [...film.querySelectorAll('.film-progress i')];
+    const screens = [...film.querySelectorAll('.fm-scr')];
     const steps = [...document.querySelectorAll('#film-steps [data-scene]')];
     const top = film.querySelector('.fs-top'), tag = film.querySelector('.fs-tag');
     const toggle = document.getElementById('film-toggle');
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const LENGTH = [3200, 3600, 3400, 3200, 3200, 4200, 2600];
-    let i = 0, start = 0, elapsed = 0, playing = !reduce, visible = false, timers = [];
+    const LENGTH = [2500, 2900, 3200, 3600, 3300, 3300, 3600, 4000];
+    let i = 0, start = 0, elapsed = 0, playing = !reduce, visible = false, seen = false, timers = [];
 
     const later = (fn, ms) => timers.push(setTimeout(fn, ms));
     const clear = () => { timers.forEach(clearTimeout); timers = []; };
 
     // The little things that happen inside a scene: typing, counting.
     function play(scene) {
-      clear();
       scene.querySelectorAll('[data-count]').forEach((el, k) => {
         const to = Number(el.dataset.count);
         if (reduce) { el.textContent = to.toLocaleString(); return; }
@@ -299,51 +299,51 @@
         };
         requestAnimationFrame(tick);
       });
-      const inputs = [...scene.querySelectorAll('[data-type]')];
-      inputs.forEach((el, k) => {
+      scene.querySelectorAll('[data-type]').forEach((el, k) => {
         if (reduce) { el.textContent = el.dataset.type; return; }
         el.textContent = '';
         later(() => {
           el.classList.add('typing');
           [...el.dataset.type].forEach((ch, c) => later(() => { el.textContent += ch; }, c * 70));
           later(() => el.classList.remove('typing'), el.dataset.type.length * 70 + 120);
-        }, 450 + k * 230);
+        }, 650 + k * 230);
       });
-      const typed = scene.querySelector('[data-typed]');
-      if (typed) {
-        const text = typed.dataset.typed;
-        if (reduce) { typed.textContent = text; return; }
-        typed.textContent = '';
-        typed.classList.add('typing');
-        [...text].forEach((ch, c) => later(() => { typed.textContent += ch; }, 600 + c * 22));
-        later(() => typed.classList.remove('typing'), 600 + text.length * 22 + 300);
-      }
+      scene.querySelectorAll('[data-typed]').forEach((el) => {
+        const text = el.dataset.typed;
+        if (reduce) { el.textContent = text; return; }
+        el.textContent = '';
+        el.classList.add('typing');
+        [...text].forEach((ch, c) => later(() => { el.textContent += ch; }, 1700 + c * 55));
+      });
     }
 
     function show(n) {
+      clear();
       i = (n + scenes.length) % scenes.length;
       const s = scenes[i];
+      frame.dataset.scene = i;
       scenes.forEach((x) => x.classList.toggle('on', x === s));
+      const screen = screens.find((x) => x.dataset.screen === s.dataset.screen);
+      screens.forEach((x) => x.classList.toggle('on', x === screen));
       frame.classList.add('swap');
       setTimeout(() => {
-        top.querySelector('.fs-n').textContent = s.dataset.n;
-        top.querySelector('.fs-title').textContent = s.dataset.title;
-        tag.textContent = s.dataset.tag;
+        top.querySelector('.fs-n').textContent = s.dataset.n || '';
+        top.querySelector('.fs-title').textContent = s.dataset.title || '';
+        tag.textContent = s.dataset.tag || '';
         tag.classList.toggle('alert', s.hasAttribute('data-alert'));
-        frame.classList.toggle('at-end', !s.dataset.n);
+        frame.classList.toggle('bare', !s.dataset.n);
         frame.classList.remove('swap');
       }, reduce ? 0 : 200);
       steps.forEach((b) => b.setAttribute('aria-current', String(Number(b.dataset.scene) === i)));
-      bars.forEach((b, k) => b.style.setProperty('--p', k < i ? 1 : 0));
       start = performance.now();
       elapsed = 0;
       play(s);
+      if (screen) play(screen);
     }
 
     function frameLoop(t) {
       if (playing && visible) {
         elapsed = t - start;
-        if (bars[i]) bars[i].style.setProperty('--p', Math.min(elapsed / LENGTH[i], 1));
         if (elapsed >= LENGTH[i]) show(i + 1);
       } else start = t - elapsed;
       requestAnimationFrame(frameLoop);
@@ -355,9 +355,13 @@
       toggle.textContent = playing ? 'Pause' : 'Play';
     });
     if (reduce) toggle.textContent = 'Play';
-    if ('IntersectionObserver' in window) new IntersectionObserver(([e]) => { visible = e.isIntersecting; }, { threshold: .35 }).observe(frame);
+    if ('IntersectionObserver' in window) new IntersectionObserver(([e]) => {
+      visible = e.isIntersecting;
+      // start from the top the first time it comes into view
+      if (visible && !seen && !reduce) { seen = true; show(0); }
+    }, { threshold: .35 }).observe(frame);
     else visible = true;
-    show(0);
+    show(reduce ? 2 : 0);
     requestAnimationFrame(frameLoop);
   }
 
