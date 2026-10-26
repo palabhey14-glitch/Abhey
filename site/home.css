@@ -187,11 +187,26 @@ p { margin: 0; }
 .promise small { color: var(--ink-2); font-size: 15px; }
 .promise small a { color: inherit; text-underline-offset: 3px; }
 
-/* start */
-.start { border-top: 1px solid var(--line); }
-.start-row { display: grid; }
-.start-row > div:first-child { display: grid; gap: 20px; justify-items: start; }
-.start-row > div:first-child p { color: var(--ink-2); max-width: 32em; }
+/* FAQ */
+.faq { border-top: 1px solid var(--line); }
+.faq-row { display: grid; grid-template-columns: 4fr 7fr; gap: 40px 72px; align-items: start; }
+.faq-head { display: grid; gap: 20px; justify-items: start; position: sticky; top: 104px; }
+.faq-head p { color: var(--ink-2); max-width: 26em; }
+.faq-list { display: grid; }
+.faq-item { border-top: 1px solid var(--line); }
+.faq-item:last-child { border-bottom: 1px solid var(--line); }
+.faq-item summary { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-block: 20px; cursor: pointer; list-style: none; font: 600 20px/1.35 var(--serif); color: var(--navy); }
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary::after { content: ""; flex: none; width: 28px; height: 28px; border-radius: 50%; background:
+    linear-gradient(var(--navy), var(--navy)) center / 12px 2px no-repeat,
+    linear-gradient(var(--navy), var(--navy)) center / 2px 12px no-repeat, var(--cloud); transition: transform .25s ease, background-color .25s; }
+.faq-item[open] summary::after { transform: rotate(45deg); background-color: var(--sky); }
+.faq-item summary:hover { color: var(--blue); }
+.faq-item summary:focus-visible { outline: 3px solid var(--sand); outline-offset: 2px; border-radius: 4px; }
+.faq-a { display: grid; gap: 12px; padding: 0 48px 22px 0; color: var(--ink-2); max-width: 40em; }
+.faq-a p { margin: 0; }
+.faq-a a { color: var(--blue); text-underline-offset: 3px; }
+@media (max-width: 860px) { .faq-row { grid-template-columns: 1fr; } .faq-head { position: static; } .faq-a { padding-right: 0; } .faq-item summary { font-size: 18px; } }
 
 /* footer */
 .footer { background: var(--navy-2); color: #9fb0cc; font-size: 15px; }
