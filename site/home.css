@@ -64,7 +64,13 @@ p { margin: 0; }
 .nav-links a:hover { color: var(--navy); }
 .nav-actions { display: flex; gap: 8px; }
 @media (max-width: 900px) { .nav-links { display: none; } }
-@media (max-width: 520px) { .nav-actions .btn-ghost { display: none; } .brand small { display: none; } }
+@media (max-width: 520px) {
+  .brand small { display: none; }
+  .nav-actions { gap: 6px; }
+  .nav-actions .btn-small { min-height: 36px; padding: 7px 11px; font-size: 14px; }
+}
+/* phones: keep both header buttons, so the brand shows as the R. mark only */
+@media (max-width: 420px) { .brand span { display: none; } }
 
 /* ------------------------------------------------------------ hero */
 .hero { position: relative; overflow: hidden; color: var(--white); background: radial-gradient(70% 60% at 85% 10%, rgba(36, 68, 249, .28), transparent 70%), var(--navy); }
@@ -275,6 +281,7 @@ p { margin: 0; }
   .footer .contact .ig { gap: 6px; white-space: nowrap; }
   .footer .contact svg { width: 16px; height: 16px; }
 }
+@media (max-width: 360px) { .footer .contact { flex-wrap: wrap; } }
 
 /* ------------------------------------------------------------ resources page */
 .ways.soon li { gap: 12px; }
