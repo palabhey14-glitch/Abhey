@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Source+Sans+3:ital,wght@0,400..700;1,400&display=swap">
   <link rel="preload" href="/assets/fonts/montserrat-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/home.css?rev=human-3">
+  <link rel="stylesheet" href="/home.css?rev=film-1">
   <script>
     // Sign-in links from older emails land on this page; pass them to the app.
     if (/access_token=|error_description=/.test(location.hash)) location.replace('/app/' + location.hash);
@@ -99,29 +99,114 @@
         <div class="letter-body reveal">
           <p>Not because you lack discipline. Usually the plan was written for someone with an empty calendar and a different kitchen.</p>
           <p>So I start with your actual week: the hours you work, when you travel, and the food you grew up on, which stays on your plate. Then we set targets you can hit on a normal week, not a perfect one.</p>
-          <p>Each week you log your meals, training and habits in the app. I go through them, and we adjust. Nothing clever. Just the basics, done properly, for twelve weeks.</p>
+          <p>Everything is tailored to your goals and the way you live. You won’t be handed a template and left to work it out. I take you through it step by step: what to train, what to eat, what to log and what changes next.</p>
+          <p>Each week you log your meals, training and habits in the app. I review it with you and adjust your plan, so you always know exactly what to do next, from your first day to week twelve.</p>
           <p class="sign">Abhey</p>
         </div>
       </div>
     </section>
 
     <section class="section" aria-labelledby="how-title">
-      <div class="wrap">
-        <h2 id="how-title" class="reveal">What that looks like.</h2>
-        <ol class="ways">
-          <li class="reveal">
-            <h3>Training you can do anywhere</h3>
-            <p>Three or four sessions a week, 45 to 60 minutes each. Every session has a gym, home and hotel version, so a work trip doesn’t end the week.</p>
-          </li>
-          <li class="reveal">
-            <h3>Food you already eat</h3>
-            <p>Your plan is built from your preferred cultural meals, with clear portions and protein swaps. You don’t need to cook separately from your family.</p>
-          </li>
-          <li class="reveal">
-            <h3>Feedback from me, every week</h3>
-            <p>A voice note each week on how it actually went, a video check-in every fortnight, and WhatsApp Monday to Friday. I reply within 12 business hours.</p>
-          </li>
-        </ol>
+      <div class="wrap film-row">
+        <div class="film-copy reveal">
+          <h2 id="how-title">What that looks like.</h2>
+          <p class="film-lead">Twelve weeks, one step at a time, all in your own Rewired app.</p>
+          <ol class="film-steps" id="film-steps">
+            <li><button type="button" data-scene="0"><b>Built around you</b><span>Your goal, your schedule and your food set the plan.</span></button></li>
+            <li><button type="button" data-scene="1"><b>Train anywhere</b><span>Gym, home and hotel versions. Log every set in seconds.</span></button></li>
+            <li><button type="button" data-scene="2"><b>Eat your food</b><span>Meals from the food you grew up on, or log the macros only.</span></button></li>
+            <li><button type="button" data-scene="3"><b>Hit your habits</b><span>Steps, sleep, water and protein turn green as you go.</span></button></li>
+            <li><button type="button" data-scene="4"><b>Check in weekly</b><span>A reminder on check-in day, photos and measurements in one place.</span></button></li>
+            <li><button type="button" data-scene="5"><b>I adjust your plan</b><span>Feedback every week, so the next week is clear.</span></button></li>
+          </ol>
+        </div>
+        <figure class="film reveal" id="film" aria-label="A 20-second walkthrough of the Rewired app">
+          <div class="film-frame">
+            <div class="film-glow" aria-hidden="true"></div>
+            <div class="film-progress" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+
+            <section class="fs" data-n="01" data-title="Built around you" data-tag="Week 1">
+              <div class="fs-ui ui-home">
+                <div class="u-hero"><small>Monday · Week 1 of 12</small><b>Ready to train, Arjun?</b></div>
+                <div class="u-card u-session"><span class="u-ic">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8v8M18 8v8M3 10v4M21 10v4M6 12h12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></span>
+                  <small>Today’s session</small><b>Upper A · Hotel gym</b><em>45 min · 5 exercises</em></div>
+                <div class="u-pills"><div><small>Steps</small><b>8,400</b><i style="--w:84%"></i></div><div><small>Protein</small><b>92 g</b><i style="--w:58%"></i></div></div>
+                <div class="u-note"><span class="u-r">R<i>.</i></span><p>Biggest lever this week: 160 g protein a day.</p></div>
+              </div>
+              <p class="fs-cap"><small>A plan built around</small>your real week</p>
+            </section>
+
+            <section class="fs" data-n="02" data-title="Train anywhere" data-tag="Gym · Home · Hotel">
+              <div class="fs-ui ui-log">
+                <div class="u-head"><small>Log your workout</small><b>Bench press</b><em>Target 3 × 6–8 · 2 RIR</em></div>
+                <div class="u-set"><span>Set 1</span><i class="u-in" data-type="60">60</i><small>kg</small><i class="u-in" data-type="8">8</i><small>reps</small></div>
+                <div class="u-set"><span>Set 2</span><i class="u-in" data-type="62.5">62.5</i><small>kg</small><i class="u-in" data-type="7">7</i><small>reps</small></div>
+                <div class="u-set"><span>Set 3</span><i class="u-in" data-type="65">65</i><small>kg</small><i class="u-in" data-type="6">6</i><small>reps</small></div>
+                <div class="u-btn">Save workout</div>
+                <div class="u-toast">✓ Training ticked on your habits</div>
+              </div>
+              <p class="fs-cap"><small>Log every set</small>in seconds</p>
+            </section>
+
+            <section class="fs" data-n="03" data-title="Eat your food" data-tag="Macros only">
+              <div class="fs-ui ui-macro">
+                <div class="u-head"><small>Add to dinner</small><b>Dal, rice and roti</b></div>
+                <div class="u-grid">
+                  <div><small>Protein</small><b data-count="38">0</b><em>g</em></div>
+                  <div><small>Carbs</small><b data-count="92">0</b><em>g</em></div>
+                  <div><small>Fat</small><b data-count="18">0</b><em>g</em></div>
+                  <div><small>Fibre</small><b data-count="14">0</b><em>g</em></div>
+                </div>
+                <div class="u-kcal"><span>Calories</span><b data-count="710">0</b><em>kcal</em></div>
+                <div class="u-btn">Add</div>
+              </div>
+              <p class="fs-cap"><small>Keep the food</small>you grew up on</p>
+            </section>
+
+            <section class="fs" data-n="04" data-title="Hit your habits" data-tag="On target">
+              <div class="fs-ui ui-habits">
+                <div class="u-score"><b data-count="7">0</b><span>/7</span><small>habits on target</small></div>
+                <ul>
+                  <li><span>👟</span>Daily steps<em>10,240</em></li>
+                  <li><span>🏋️</span>Training session<em>Trained</em></li>
+                  <li><span>🍗</span>Protein<em>162 g</em></li>
+                  <li><span>🔥</span>Calories<em>2,240</em></li>
+                  <li><span>💧</span>Water<em>3 L</em></li>
+                  <li><span>😴</span>Sleep<em>7.5 h</em></li>
+                </ul>
+              </div>
+              <p class="fs-cap"><small>Watch your habits</small>turn green</p>
+            </section>
+
+            <section class="fs" data-n="05" data-title="Check in weekly" data-tag="Due today" data-alert>
+              <div class="fs-ui ui-checkin">
+                <div class="u-alert"><i></i><div><b>Your check-in is due today</b><small>Week 4: photos, measurements, your week</small></div></div>
+                <div class="u-photos"><div><span>Front</span></div><div><span>Side</span></div><div><span>Back</span></div></div>
+                <div class="u-btn">Send check-in</div>
+              </div>
+              <p class="fs-cap"><small>Check in each week,</small>photos and all</p>
+            </section>
+
+            <section class="fs" data-n="06" data-title="I adjust your plan" data-tag="Every week">
+              <div class="fs-ui ui-coach">
+                <div class="u-week"><small>Week 4 review</small><b>−1.4 kg · waist −3 cm</b></div>
+                <div class="u-msg"><span class="u-r">R<i>.</i></span><p data-typed="Strong week. Lifts are up and your waist is down. Next week: protein to 170 g and one extra walk on Thursday."></p></div>
+                <div class="u-chips"><span>Protein 170 g</span><span>+1 walk</span><span>Same training</span></div>
+              </div>
+              <p class="fs-cap"><small>I review it with you,</small>and we adjust</p>
+            </section>
+
+            <section class="fs fs-end" data-n="" data-title="" data-tag="">
+              <div class="end-mark"><img src="/assets/app-icon.png" alt="" width="64" height="64"><b>Rewired</b></div>
+              <p class="fs-cap"><small>Twelve weeks, one to one.</small>Guided every step.</p>
+            </section>
+
+            <header class="fs-top" aria-hidden="true"><span class="fs-n"></span><span class="fs-dash"></span><span class="fs-title"></span></header>
+            <span class="fs-tag" aria-hidden="true"></span>
+          </div>
+          <button class="film-ctrl" type="button" id="film-toggle">Pause</button>
+        </figure>
       </div>
     </section>
 
@@ -250,6 +335,6 @@
     </div>
   </footer>
 
-  <script src="/home.js?rev=human-3"></script>
+  <script src="/home.js?rev=film-1"></script>
 </body>
 </html>

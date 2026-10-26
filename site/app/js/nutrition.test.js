@@ -122,3 +122,17 @@ const saved = N.planForSave(ep);
 assert.deepEqual(Object.keys(saved.days[0].meals[0].items[0]).sort(), ['amount', 'food_id', 'id', 'portion']);
 
 console.log('nutrition tests passed');
+
+// Macros only: Calories from macros, stored as a food plus an amount
+assert.equal(N.macroKcal({ p: 40, c: 60, f: 20, fibre: 10 }), 40 * 4 + 60 * 4 + 20 * 9 + 10 * 2);
+assert.equal(N.macroKcal({ p: 30 }), 120);
+{
+  const small = N.macroOnlyFood({ p: 40, c: 60, f: 20, fibre: 10 });
+  assert.equal(small.amount, 100, 'an ordinary meal is stored as 100 g');
+  assert.equal(small.per100.kcal, 600);
+  const big = N.macroOnlyFood({ p: 90, c: 250, f: 80, fibre: 20 });
+  assert.ok(big.amount > 100, 'a big meal grows the amount to stay within per-100 g limits');
+  for (const [k, lim] of Object.entries({ kcal: 1000, p: 100, c: 130, f: 100, fibre: 100 })) assert.ok(big.per100[k] <= lim, k);
+  assert.ok(Math.abs((big.per100.c * big.amount) / 100 - 250) < 0.5, 'totals survive the round trip');
+  assert.ok(Math.abs((big.per100.kcal * big.amount) / 100 - N.macroKcal({ p: 90, c: 250, f: 80, fibre: 20 })) < 1);
+}

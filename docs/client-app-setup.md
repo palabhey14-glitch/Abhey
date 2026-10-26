@@ -98,6 +98,12 @@ into a new query and click **Run**. Safe to run twice. Clients can then log the
 weight and reps of each set on the Training page, and saving a workout ticks
 Training on their Habits page. Until you run it, the form shows but can't save.
 
+### 2g. Run the meal names update
+Paste [`supabase/migrations/2026-10-26-meal-names.sql`](../supabase/migrations/2026-10-26-meal-names.sql)
+into a new query and click **Run**. Safe to run twice. Clients can then rename
+their meals (the pencil next to each meal name), and you see their names on
+their food log. "Macros only" logging needs no SQL.
+
 ### 3. Only let people you invite sign in
 1. Open **Authentication** → **Sign In / Providers** (may be called "Providers").
 2. Under **Email**: keep it **enabled**, and turn **Allow new users to sign up** **off**.

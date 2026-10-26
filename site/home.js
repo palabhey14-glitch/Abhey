@@ -29,6 +29,7 @@
   if (engine) startEngine();
   startReveal();
   startPhone();
+  startFilm();
 
   function startEngine() {
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -262,6 +263,102 @@
       i = (i + 1) % screens.length;
       screens[i].classList.add('on'); dots[i].classList.add('on');
     }, 3600);
+  }
+
+  // "What that looks like": a looping walkthrough built from the app's UI.
+  // Plays only while on screen; reduced motion shows each step still, chosen
+  // from the list beside it.
+  function startFilm() {
+    const film = document.getElementById('film');
+    if (!film) return;
+    const frame = film.querySelector('.film-frame');
+    const scenes = [...film.querySelectorAll('.fs')];
+    const bars = [...film.querySelectorAll('.film-progress i')];
+    const steps = [...document.querySelectorAll('#film-steps [data-scene]')];
+    const top = film.querySelector('.fs-top'), tag = film.querySelector('.fs-tag');
+    const toggle = document.getElementById('film-toggle');
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const LENGTH = [3200, 3600, 3400, 3200, 3200, 4200, 2600];
+    let i = 0, start = 0, elapsed = 0, playing = !reduce, visible = false, timers = [];
+
+    const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+    const clear = () => { timers.forEach(clearTimeout); timers = []; };
+
+    // The little things that happen inside a scene: typing, counting.
+    function play(scene) {
+      clear();
+      scene.querySelectorAll('[data-count]').forEach((el, k) => {
+        const to = Number(el.dataset.count);
+        if (reduce) { el.textContent = to.toLocaleString(); return; }
+        el.textContent = '0';
+        const t0 = performance.now() + 500 + k * 160, dur = 900;
+        const tick = (t) => {
+          const p = Math.min(Math.max((t - t0) / dur, 0), 1);
+          el.textContent = Math.round(to * (1 - Math.pow(1 - p, 3))).toLocaleString();
+          if (p < 1 && scene.classList.contains('on')) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      });
+      const inputs = [...scene.querySelectorAll('[data-type]')];
+      inputs.forEach((el, k) => {
+        if (reduce) { el.textContent = el.dataset.type; return; }
+        el.textContent = '';
+        later(() => {
+          el.classList.add('typing');
+          [...el.dataset.type].forEach((ch, c) => later(() => { el.textContent += ch; }, c * 70));
+          later(() => el.classList.remove('typing'), el.dataset.type.length * 70 + 120);
+        }, 450 + k * 230);
+      });
+      const typed = scene.querySelector('[data-typed]');
+      if (typed) {
+        const text = typed.dataset.typed;
+        if (reduce) { typed.textContent = text; return; }
+        typed.textContent = '';
+        typed.classList.add('typing');
+        [...text].forEach((ch, c) => later(() => { typed.textContent += ch; }, 600 + c * 22));
+        later(() => typed.classList.remove('typing'), 600 + text.length * 22 + 300);
+      }
+    }
+
+    function show(n) {
+      i = (n + scenes.length) % scenes.length;
+      const s = scenes[i];
+      scenes.forEach((x) => x.classList.toggle('on', x === s));
+      frame.classList.add('swap');
+      setTimeout(() => {
+        top.querySelector('.fs-n').textContent = s.dataset.n;
+        top.querySelector('.fs-title').textContent = s.dataset.title;
+        tag.textContent = s.dataset.tag;
+        tag.classList.toggle('alert', s.hasAttribute('data-alert'));
+        frame.classList.toggle('at-end', !s.dataset.n);
+        frame.classList.remove('swap');
+      }, reduce ? 0 : 200);
+      steps.forEach((b) => b.setAttribute('aria-current', String(Number(b.dataset.scene) === i)));
+      bars.forEach((b, k) => b.style.setProperty('--p', k < i ? 1 : 0));
+      start = performance.now();
+      elapsed = 0;
+      play(s);
+    }
+
+    function frameLoop(t) {
+      if (playing && visible) {
+        elapsed = t - start;
+        if (bars[i]) bars[i].style.setProperty('--p', Math.min(elapsed / LENGTH[i], 1));
+        if (elapsed >= LENGTH[i]) show(i + 1);
+      } else start = t - elapsed;
+      requestAnimationFrame(frameLoop);
+    }
+
+    steps.forEach((b) => b.addEventListener('click', () => show(Number(b.dataset.scene))));
+    toggle.addEventListener('click', () => {
+      playing = !playing;
+      toggle.textContent = playing ? 'Pause' : 'Play';
+    });
+    if (reduce) toggle.textContent = 'Play';
+    if ('IntersectionObserver' in window) new IntersectionObserver(([e]) => { visible = e.isIntersecting; }, { threshold: .35 }).observe(frame);
+    else visible = true;
+    show(0);
+    requestAnimationFrame(frameLoop);
   }
 
   function startReveal() {
