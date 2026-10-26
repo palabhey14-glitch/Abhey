@@ -1496,3 +1496,64 @@ svg.mx text { fill: #7a879b; font: 600 9px var(--font); letter-spacing: 0.06em; 
 .tp-custom-list { display: grid; gap: 8px; }
 @media (max-width: 900px) { .tp-custom-grid { grid-template-columns: 1fr 1fr; } .tp-custom-grid label:first-child { grid-column: 1 / -1; } }
 @media (max-width: 560px) { .tp-custom-grid { grid-template-columns: 1fr; } }
+
+/* ------------------------------------------------------- client workout log */
+.wl { display: grid; gap: 14px; }
+.wl h2 { margin: 0 0 6px; }
+.wl-done { color: var(--good); }
+.wl-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.wl-ex { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; min-width: 0; }
+.wl-ex-head { display: flex; gap: 12px; align-items: flex-start; min-width: 0; }
+.wl-ex-head > div:last-child { display: grid; gap: 2px; min-width: 0; }
+.wl-ex-head small { color: var(--muted); font-size: 13px; }
+.wl-ex-map svg.mx { width: 54px; }
+.wl-ex-map:empty { display: none; }
+.wl-prev { color: #4a5a70 !important; }
+.wl-sets { display: grid; gap: 8px; }
+.wl-set { display: grid; grid-template-columns: 52px minmax(0, 1fr) minmax(0, 1fr); gap: 8px; align-items: center; }
+.wl-n { font-size: 13px; font-weight: 700; color: var(--navy); }
+.wl-set label { margin: 0; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.wl-set label span { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.wl-set input { min-width: 0; width: 100%; text-align: center; }
+.wl-set input::placeholder { color: #b4bfcf; }
+.wl-add { justify-self: start; background: none; border: 0; padding: 4px 0; color: var(--brand-blue); font-weight: 700; cursor: pointer; }
+.wl-history details { border-top: 1px solid var(--line); padding: 10px 0; }
+.wl-history summary { display: flex; justify-content: space-between; gap: 10px; cursor: pointer; }
+.wl-history summary span { color: var(--muted); font-size: 14px; }
+.wl-history ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.wl-history li { display: grid; gap: 2px; font-size: 14px; }
+.wl-history li span { color: #4a5a70; }
+
+/* Extra meals a client adds on the meal plan page */
+.extra-meal { margin-bottom: 12px; }
+.xm-tag { font-size: 12px; font-weight: 700; color: #8a5a00; background: #fff4dd; border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
+.xm-new { display: grid; gap: 8px; }
+.xm-form { display: grid; gap: 10px; padding: 14px; border: 1.5px dashed #c6d0e2; border-radius: 14px; }
+.xm-form[hidden] { display: none; }
+.xm-form label { margin: 0; }
+.xm-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* Home: check-in button and alert */
+.hero-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 10px; }
+.checkin-btn { position: relative; }
+.checkin-btn.due { border-color: var(--bad); color: var(--bad); }
+.checkin-btn.due span { background: #fde8e6; color: var(--bad); }
+.checkin-btn .red-dot { position: absolute; top: -3px; right: -3px; width: 12px; height: 12px; border-radius: 50%; background: var(--bad); border: 2px solid var(--white); }
+.checkin-btn.locked { opacity: 0.55; filter: grayscale(1); cursor: not-allowed; box-shadow: none; }
+.checkin-alert { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding: 12px 14px; border-radius: 16px; background: #fde8e6; border: 1.5px solid var(--bad); color: var(--bad); text-decoration: none; }
+.checkin-alert.soon { background: #fff4dd; border-color: #e0a43a; color: #8a5a00; }
+.checkin-alert > span:nth-child(2) { flex: 1; min-width: 0; }
+.checkin-alert b, .checkin-alert small { display: block; }
+.checkin-alert b { font-size: 15px; }
+.checkin-alert small { font-size: 13px; color: var(--ink-2); }
+.ca-dot { flex: none; width: 12px; height: 12px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 4px rgba(180, 35, 24, 0.18); animation: ca-pulse 1.6s ease-in-out infinite; }
+.checkin-alert.soon .ca-dot { box-shadow: 0 0 0 4px rgba(224, 164, 58, 0.25); }
+@keyframes ca-pulse { 50% { transform: scale(0.75); } }
+@media (prefers-reduced-motion: reduce) { .ca-dot { animation: none; } }
+
+/* Check-in page: photo prompt */
+.photo-prompt { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--navy); border: 1.5px solid #e0a43a; background: #fffaf0; }
+.photo-prompt.done { border-color: var(--hair); background: var(--white); }
+.photo-prompt > span:nth-child(2) { flex: 1; min-width: 0; }
+.photo-prompt b, .photo-prompt small { display: block; }
+.photo-prompt small { color: var(--ink-2); font-size: 13px; }

@@ -88,6 +88,16 @@ exercise picker. Until you run it, the picker uses the same built-in list but
 can't save new exercises. To change the starter list, edit
 `site/app/js/exercises.js` and run `node tools/exercises/build-sql.js`.
 
+### 2e. Run the check-in day update
+Paste [`supabase/migrations/2026-10-26-checkin-day.sql`](../supabase/migrations/2026-10-26-checkin-day.sql)
+into a new query and click **Run**. It lets you pick each client's check-in day.
+
+### 2f. Run the workout log update
+Paste [`supabase/migrations/2026-10-26-workout-logs.sql`](../supabase/migrations/2026-10-26-workout-logs.sql)
+into a new query and click **Run**. Safe to run twice. Clients can then log the
+weight and reps of each set on the Training page, and saving a workout ticks
+Training on their Habits page. Until you run it, the form shows but can't save.
+
 ### 3. Only let people you invite sign in
 1. Open **Authentication** → **Sign In / Providers** (may be called "Providers").
 2. Under **Email**: keep it **enabled**, and turn **Allow new users to sign up** **off**.
