@@ -79,6 +79,15 @@ How it works:
   snacks are logged below. Clients on macro targets get a normal food log.
   The day's totals fill the daily check-in automatically.
 
+### 2d. Run the exercise library update (training plan builder)
+Open **SQL Editor** → **New query**, paste
+[`supabase/migrations/2026-10-26-exercises.sql`](../supabase/migrations/2026-10-26-exercises.sql)
+and click **Run**. It is safe to run twice. It adds 128 starter exercises, each
+tagged with the muscles it works, and lets you save your own from the
+exercise picker. Until you run it, the picker uses the same built-in list but
+can't save new exercises. To change the starter list, edit
+`site/app/js/exercises.js` and run `node tools/exercises/build-sql.js`.
+
 ### 3. Only let people you invite sign in
 1. Open **Authentication** → **Sign In / Providers** (may be called "Providers").
 2. Under **Email**: keep it **enabled**, and turn **Allow new users to sign up** **off**.
