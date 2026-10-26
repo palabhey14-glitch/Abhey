@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Source+Sans+3:ital,wght@0,400..700;1,400&display=swap">
   <link rel="preload" href="/assets/fonts/montserrat-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/home.css?rev=film-2">
+  <link rel="stylesheet" href="/home.css?rev=film-3">
   <script>
     // Sign-in links from older emails land on this page; pass them to the app.
     if (/access_token=|error_description=/.test(location.hash)) location.replace('/app/' + location.hash);
@@ -212,6 +212,7 @@
             <span class="fs-tag" aria-hidden="true"></span>
           </div>
           <button class="film-ctrl" type="button" id="film-toggle">Pause</button>
+          <figcaption class="film-note">App screens with example numbers.</figcaption>
         </figure>
       </div>
     </section>
@@ -258,52 +259,7 @@
       </div>
     </section>
 
-    <section class="section soft" id="app" aria-labelledby="app-title">
-      <div class="wrap app-row">
-        <div class="app-copy reveal">
-          <h2 id="app-title">It all lives in one app.</h2>
-          <p>Your sessions, meals, habits and check-ins in one place. Each habit goes green when you hit it, amber when you’re close, and red when it’s worth a chat.</p>
-          <p><a class="text-link" href="/app/">Client login</a></p>
-          <p class="fine">Screens from the Rewired app, with example numbers.</p>
-        </div>
-        <div class="phone-stage" aria-label="Preview of the Rewired client app: home, meal plan and habits screens">
-          <div class="phone" id="phone">
-            <div class="ph-top"><span>9:41</span><span class="ph-logo"><img src="/assets/app-icon.png" alt="" width="18" height="18">Rewired</span><span>●●●</span></div>
-            <div class="ph-screens">
-              <section class="ph-screen on" aria-label="Home">
-                <div class="ph-hero"><small>Thursday · Week 6 of 12</small><b>Good morning, Abhey</b>
-                  <div class="ph-score"><strong>86</strong><span>Weekly score</span></div></div>
-                <div class="ph-card"><small>Up next</small><b>Upper A · Hotel gym</b><span>45 min · 5 exercises</span></div>
-                <div class="ph-tiles"><div><small>Protein</small><b>150<i>/160 g</i></b><em style="--w:94%"></em></div><div><small>Steps</small><b>11,240</b><em style="--w:100%"></em></div></div>
-              </section>
-              <section class="ph-screen" aria-label="Meal plan">
-                <div class="ph-head"><small>Meal plan</small><b>Breakfast · 7:30</b></div>
-                <ul class="ph-meal">
-                  <li><i style="--c:#f4c77d"></i>Egg omelette<span>3 eggs</span></li>
-                  <li><i style="--c:#d9a352"></i>Wholegrain toast<span>2 slices</span></li>
-                  <li><i style="--c:#a9bcff"></i>Greek yoghurt<span>170 g</span></li>
-                </ul>
-                <div class="ph-actions"><span class="on">Ate as planned</span><span>Something different</span></div>
-                <div class="ph-macros"><div><small>Protein</small><b>44 g</b></div><div><small>Carbs</small><b>31 g</b></div><div><small>Fat</small><b>17 g</b></div></div>
-              </section>
-              <section class="ph-screen" aria-label="Habits">
-                <div class="ph-head"><small>Habits</small><b>Today</b></div>
-                <ul class="ph-habits">
-                  <li>Protein<span class="g">150 / 160 g</span></li>
-                  <li>Steps<span class="g">11,240</span></li>
-                  <li>Water<span class="a">2.4 / 3 L</span></li>
-                  <li>Sleep<span class="r">5.4 / 7.5 h</span></li>
-                </ul>
-                <p class="ph-tip">Green when you hit it. Amber when you’re close. Red means we talk about it.</p>
-              </section>
-            </div>
-            <div class="ph-dots"><i class="on"></i><i></i><i></i></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" aria-labelledby="promise-title">
+    <section class="section soft" aria-labelledby="promise-title">
       <div class="wrap">
         <div class="promise reveal">
           <p class="promise-label">The Week 8 Progress Promise</p>
@@ -341,6 +297,6 @@
     </div>
   </footer>
 
-  <script src="/home.js?rev=film-2"></script>
+  <script src="/home.js?rev=film-3"></script>
 </body>
 </html>

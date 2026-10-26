@@ -28,7 +28,6 @@
   const engine = $('engine');
   if (engine) startEngine();
   startReveal();
-  startPhone();
   startFilm();
 
   function startEngine() {
@@ -251,18 +250,6 @@
       requestAnimationFrame(frame);
     }
     document.fonts && document.fonts.ready.then(() => { layout(); render(now()); });
-  }
-
-  // App preview: rotate the three phone screens; a still first screen with reduced motion.
-  function startPhone() {
-    const screens = document.querySelectorAll('.ph-screen'), dots = document.querySelectorAll('.ph-dots i');
-    if (!screens.length || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    let i = 0;
-    setInterval(() => {
-      screens[i].classList.remove('on'); dots[i].classList.remove('on');
-      i = (i + 1) % screens.length;
-      screens[i].classList.add('on'); dots[i].classList.add('on');
-    }, 3600);
   }
 
   // "What that looks like": a looping promo built from the app's own UI, in
