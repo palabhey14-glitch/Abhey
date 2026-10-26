@@ -1078,6 +1078,21 @@
     return { week: win.week, dueToday: win.due === now, due: win.due };
   }
 
+  // The check-in button on Home: live while the window is open, ticked once
+  // this window's check-in is sent, otherwise greyed out until it opens.
+  function checkinButtonHTML(ctx, due) {
+    const now = S.today();
+    const short = (iso) => niceDate(iso, { weekday: 'short', day: 'numeric', month: 'short' });
+    if (due) {
+      return `<a class="log-btn checkin-btn due" href="#checkin/${due.week}"><span aria-hidden="true">${ICONS.checkin}</span>${due.dueToday ? 'Check-in due today' : 'Check-in open'}<i class="red-dot" aria-hidden="true"></i></a>`;
+    }
+    const win = S.openCheckin(ctx.profile.start_date, checkinDay(ctx), now);
+    if (win) return `<a class="log-btn done checkin-btn" href="#checkin/${win.week}"><span aria-hidden="true">${STATE_ICONS.good}</span>Check-in sent</a>`;
+    const next = ctx.profile.start_date ? S.nextCheckin(ctx.profile.start_date, checkinDay(ctx), now) : null;
+    const when = next ? `opens ${short(next.opens)}` : ctx.profile.start_date ? 'all done' : 'not set yet';
+    return `<span class="log-btn checkin-btn locked" role="link" aria-disabled="true" title="Your check-in opens the day before your check-in day"><span aria-hidden="true">${ICONS.checkin}</span>Check-in · ${esc(when)}</span>`;
+  }
+
   // Smooth weekly-average bodyweight line with the latest week highlighted.
   function trendChart(d) {
     const pts = d.weeks.filter((w) => w.week <= Math.max(d.thisWeek, 1));
@@ -1135,7 +1150,8 @@
     const label = day === now ? 'Today' : day === S.addDays(now, -1) ? 'Yesterday' : niceDate(day, { weekday: 'short' });
     const first = p.full_name ? esc(p.full_name.split(' ')[0]) : 'there';
     const d = S.dashboard(ctx);
-    const due = day === now ? checkinDue(ctx) : null;
+    const homeDue = checkinDue(ctx);
+    const due = day === now ? homeDue : null;
     const exercises = session && Array.isArray(session.exercises) ? session.exercises.length : 0;
     const greet = !session ? `Good to see you,<br>${first}.` : session.is_rest_day ? `Recovery day,<br>${first}.` : `Ready to train,<br>${first}?`;
 
@@ -1162,6 +1178,10 @@
       `Hi ${first}`,
       '',
       `
+      ${homeDue ? `<a class="checkin-alert${homeDue.dueToday ? '' : ' soon'}" href="#checkin/${homeDue.week}" id="checkin-alert">
+        <span class="ca-dot" aria-hidden="true"></span>
+        <span><b>${homeDue.dueToday ? 'Your check-in is due today' : `Check-in open · due ${esc(S.DAY_NAMES[checkinDay(ctx)])}`}</b><small>Week ${homeDue.week}: photos, measurements and how the week went.</small></span>
+        <span class="chev" aria-hidden="true">›</span></a>` : ''}
       <section class="hero">
         <p class="hero-meta">${ICONS.sun}<span>${niceDate(day, { weekday: 'long' })}${week ? ` · Week ${week} of 12` : ''}</span></p>
         <h1>${greet}</h1>
@@ -1172,7 +1192,10 @@
           <small>${session ? (session.is_rest_day ? 'Walk, stretch and recover' : `Day ${session.cycle_day} of your cycle${exercises ? ` · ${exercises} exercises` : ''}`) : `${esc(COACH)} adds your program after kickoff`}</small>
           ${session && !session.is_rest_day ? '<a class="btn-dark" href="#training">Workout details</a>' : ''}
         </div>
-        <a class="log-btn${log.id ? ' done' : ''}" href="#log/${day}"><span aria-hidden="true">${log.id ? STATE_ICONS.good : ICONS.log}</span>${log.id ? 'Logged · update' : `Log ${day === now ? 'today' : 'this day'}`}</a>
+        <div class="hero-actions">
+          <a class="log-btn${log.id ? ' done' : ''}" href="#log/${day}"><span aria-hidden="true">${log.id ? STATE_ICONS.good : ICONS.log}</span>${log.id ? 'Logged · update' : `Log ${day === now ? 'today' : 'this day'}`}</a>
+          ${checkinButtonHTML(ctx, homeDue)}
+        </div>
       </section>
 
       <section class="score">
@@ -1488,6 +1511,18 @@
     } catch (_) { /* offline or blocked: the coach still sees it in Check-ins */ }
   }
 
+  // Nudge on the check-in page to upload this week's front, side and back photos.
+  function photoPromptHTML(ctx, week, winState) {
+    const have = POSES.filter((pose) => ctx.photos.some((x) => x.week_number === week && x.pose === pose));
+    const done = have.length === POSES.length;
+    if (winState === 'closed' && !have.length) return '';
+    return `<a class="card photo-prompt${done ? ' done' : ''}" href="#photos/${week}">
+      <span class="habit-icon" aria-hidden="true">${done ? STATE_ICONS.good : ICONS.photos}</span>
+      <span><b>${done ? `Week ${week} photos uploaded` : `Upload your week ${week} check-in photos`}</b>
+      <small>${done ? 'Front, side and back are in. Tap to view or replace.' : `${have.length} of 3 done. Front, side and back, same spot and lighting each week.`}</small></span>
+      <span class="chev" aria-hidden="true">›</span></a>`;
+  }
+
   async function renderCheckin(weekParam) {
     const ctx = await loadCtx(state.me.id);
     const p = ctx.profile;
@@ -1524,6 +1559,7 @@
         <p class="hint" style="margin-top:0">Worked out from your daily logs.</p>
         ${weekSummaryHTML(ctx, week)}
       </section>
+      ${photoPromptHTML(ctx, week, winState)}
       <form id="checkin-form" class="card" novalidate>
         <p class="kicker">How was week ${week}?</p>
         <p class="checkin-window ${winState}">${windowNote}</p>
@@ -1570,7 +1606,8 @@
         must(await sb.from('weekly_checkins').upsert({ ...data, user_id: state.me.id, week_number: week }, { onConflict: 'user_id,week_number' }));
         if (!c.submitted_at) await notifyCheckin(ctx, week);
         invalidate(state.me.id);
-        toast(`Check-in sent to ${COACH}.`);
+        const photos = POSES.filter((pose) => ctx.photos.some((x) => x.week_number === week && x.pose === pose)).length;
+        toast(photos < POSES.length ? `Check-in sent to ${COACH}. Now upload your week ${week} photos.` : `Check-in sent to ${COACH}.`);
         renderCheckin(week);
       });
     });
