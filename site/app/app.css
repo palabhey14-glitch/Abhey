@@ -1523,3 +1523,12 @@ svg.mx text { fill: #7a879b; font: 600 9px var(--font); letter-spacing: 0.06em; 
 .wl-history ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
 .wl-history li { display: grid; gap: 2px; font-size: 14px; }
 .wl-history li span { color: #4a5a70; }
+
+/* Extra meals a client adds on the meal plan page */
+.extra-meal { margin-bottom: 12px; }
+.xm-tag { font-size: 12px; font-weight: 700; color: #8a5a00; background: #fff4dd; border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
+.xm-new { display: grid; gap: 8px; }
+.xm-form { display: grid; gap: 10px; padding: 14px; border: 1.5px dashed #c6d0e2; border-radius: 14px; }
+.xm-form[hidden] { display: none; }
+.xm-form label { margin: 0; }
+.xm-actions { display: flex; justify-content: flex-end; gap: 8px; }

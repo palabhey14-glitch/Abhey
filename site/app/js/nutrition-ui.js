@@ -535,6 +535,34 @@
 
   const SLOTS = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
 
+  // Extra meals a client adds themself (overate, or ate a meal that isn't on
+  // the plan). Stored as ordinary food log entries whose slot is "Meal: <name>".
+  const EXTRA_MEAL = 'Meal: ';
+  const isExtraMeal = (e) => typeof e.slot === 'string' && e.slot.startsWith(EXTRA_MEAL);
+  const extraMealName = (slot) => slot.slice(EXTRA_MEAL.length);
+
+  function extraMealsHTML(entries, canLog, opts = {}) {
+    const meals = [];
+    for (const e of entries.filter(isExtraMeal)) {
+      let m = meals.find((x) => x.slot === e.slot);
+      if (!m) meals.push((m = { slot: e.slot, list: [] }));
+      m.list.push(e);
+    }
+    const cards = meals.map((m) => {
+      const sum = N.sum(m.list.map(N.entryNutrition));
+      return `<div class="meal-card fl-slot extra-meal" data-slot="${esc(m.slot)}"><div class="ml-head"><div><h3>${esc(extraMealName(m.slot))}</h3><small>${kcal(sum.kcal)}</small></div>${opts.tag ? '<span class="xm-tag">Added by client</span>' : ''}</div>
+        ${entryListHTML(m.list, canLog)}${canLog ? `<button type="button" class="add-row" data-add-extra="${esc(m.slot)}">+ Add to ${esc(extraMealName(m.slot).toLowerCase())}</button>` : ''}</div>`;
+    }).join('');
+    const next = `Extra meal ${meals.length + 1}`;
+    const add = canLog ? `<div class="xm-new">
+        <button type="button" class="add-row" data-new-meal>+ Add another meal</button>
+        <form class="xm-form" data-new-meal-form hidden novalidate>
+          <label>Meal name<input type="text" maxlength="30" value="${esc(next)}" data-meal-name></label>
+          <div class="xm-actions"><button type="button" class="ml-btn" data-new-meal-cancel>Cancel</button><button type="submit" class="btn">Add food</button></div>
+        </form></div>` : '';
+    return { count: meals.length, html: cards + add };
+  }
+
   async function clientMeals(dayParam) {
     const now = S.today();
     const tomorrow = S.addDays(now, 1);
@@ -565,6 +593,7 @@
     const t = r.actualTotal;
     const kst = S.habitStatus('calories', t.items ? t.kcal : null, target && target.calories);
     let main;
+    const xm = extraMealsHTML(r.extras, canLog);
     if (r.isPlan) {
       const meals = r.meals.map((m) => mealCardHTML(m, { canLog })).join('');
       const earlier = r.earlier.length
@@ -573,17 +602,18 @@
       main = `<section><h2 class="sec-title">Your meals</h2><p class="sec-sub">${esc(a.name)} · set by ${esc(h.COACH)}. Tap what happened at each meal.</p>
           ${r.meals.length ? `<div class="ml-list">${meals}</div>` : `<div class="plan-empty"><div><b>No set meals today</b><p>Your plan has nothing set for ${esc(N.WEEKDAY_NAMES[N.weekdayKey(day)])}. Log what you eat below.</p></div></div>`}</section>
         ${earlier}
+        ${xm.html ? `<section><h2 class="sec-title">Extra meals</h2><p class="sec-sub">Ate more than planned, or had a meal that isn't on your plan? Add it as its own meal.</p>${xm.html}</section>` : ''}
         <section><h2 class="sec-title">Extras and snacks</h2><p class="sec-sub">Anything you ate that isn't in the plan.</p>
-          <div class="meal-card fl-slot" data-slot="Extras">${entryListHTML(r.extras, canLog)}${canLog ? '<button type="button" class="add-row" data-add-extra="Extras">+ Add food or snack</button>' : r.extras.length ? '' : '<p class="hint">Nothing logged.</p>'}</div></section>`;
+          <div class="meal-card fl-slot" data-slot="Extras">${entryListHTML(r.extras.filter((e) => !isExtraMeal(e)), canLog)}${canLog ? '<button type="button" class="add-row" data-add-extra="Extras">+ Add food or snack</button>' : r.extras.some((e) => !isExtraMeal(e)) ? '' : '<p class="hint">Nothing logged.</p>'}</div></section>`;
     } else {
-      const bySlot = (s) => r.extras.filter((e) => (SLOTS.includes(e.slot) ? e.slot : 'Snacks') === s);
+      const bySlot = (s) => r.extras.filter((e) => !isExtraMeal(e) && (SLOTS.includes(e.slot) ? e.slot : 'Snacks') === s);
       main = `<section><h2 class="sec-title">Food log</h2><p class="sec-sub">${a ? `Daily targets from ${esc(h.COACH)}: ${esc(a.name)}.` : 'Log what you eat and land close to your targets.'}</p>
         ${SLOTS.map((s) => {
           const list = bySlot(s);
           const sum = N.sum(list.map(N.entryNutrition));
           return `<div class="meal-card fl-slot" data-slot="${s}"><div class="ml-head"><div><h3>${s}</h3>${list.length ? `<small>${kcal(sum.kcal)}</small>` : ''}</div></div>
             ${entryListHTML(list, canLog)}${canLog ? `<button type="button" class="add-row" data-add-extra="${s}">+ Add to ${s.toLowerCase()}</button>` : ''}</div>`;
-        }).join('')}</section>`;
+        }).join('')}${xm.html}</section>`;
     }
 
     h.shell(
@@ -790,17 +820,42 @@
     root.querySelectorAll('[data-add-extra]').forEach((b) =>
       b.addEventListener('click', async () => {
         const slot = b.dataset.addExtra;
-        const pick = await pickFood({ title: slot === 'Extras' ? 'Add an extra' : `Add to ${slot.toLowerCase()}`, country });
-        if (!pick) return;
-        run(b, async () => {
-          h.must(await sb.from('food_log_entries').insert({
-            day, slot, food_id: pick.food.id, amount: pick.amount,
-            // The database copies these from the food; sent only to satisfy the column rules.
-            name: pick.food.name, source: pick.food.source, quality: pick.food.quality, unit: pick.food.basis,
-          }));
-        }, `${pick.food.name} added.`);
+        const label = slot.startsWith(EXTRA_MEAL) ? extraMealName(slot) : slot;
+        addToSlot(b, slot, slot === 'Extras' ? 'Add an extra' : `Add to ${label.toLowerCase()}`);
       }),
     );
+    async function addToSlot(button, slot, title) {
+      const pick = await pickFood({ title, country });
+      if (!pick) return;
+      run(button, async () => {
+        h.must(await sb.from('food_log_entries').insert({
+          day, slot, food_id: pick.food.id, amount: pick.amount,
+          // The database copies these from the food; sent only to satisfy the column rules.
+          name: pick.food.name, source: pick.food.source, quality: pick.food.quality, unit: pick.food.basis,
+        }));
+      }, `${pick.food.name} added.`);
+    }
+    const newMeal = root.querySelector('[data-new-meal]');
+    const newMealForm = root.querySelector('[data-new-meal-form]');
+    if (newMeal && newMealForm) {
+      const nameInput = newMealForm.querySelector('[data-meal-name]');
+      newMeal.addEventListener('click', () => {
+        newMeal.hidden = true;
+        newMealForm.hidden = false;
+        nameInput.focus();
+        nameInput.select();
+      });
+      newMealForm.querySelector('[data-new-meal-cancel]').addEventListener('click', () => {
+        newMealForm.hidden = true;
+        newMeal.hidden = false;
+      });
+      newMealForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = nameInput.value.replace(/\s+/g, ' ').trim().slice(0, 30);
+        if (!name) return h.toast('Give the meal a name.', true);
+        addToSlot(newMealForm.querySelector('[type="submit"]'), EXTRA_MEAL + name, `Add to ${name.toLowerCase()}`);
+      });
+    }
     root.querySelectorAll('[data-entry]').forEach((li) => {
       const entry = ctx.foodEntries.find((e) => e.id === li.dataset.entry);
       const del = li.querySelector('[data-entry-del]');
@@ -1105,8 +1160,9 @@
       ])}
       ${unknownNote(t, 'coach')}
       ${r.isPlan ? `<h2 class="crm-sub">Planned vs eaten</h2><div class="ml-grid">${r.meals.map((m) => mealCardHTML(m, {})).join('')}${r.earlier.map((m) => mealCardHTML(m, {})).join('')}</div>` : ''}
+      ${(() => { const xm = extraMealsHTML(r.extras, false, { tag: true }); return xm.count ? `<h2 class="crm-sub">Extra meals</h2><div class="ml-grid">${xm.html}</div>` : ''; })()}
       <h2 class="crm-sub">${r.isPlan ? 'Extras and snacks' : 'Food log'}</h2>
-      <div class="meal-card">${entryListHTML(r.extras, false) || '<p class="hint">Nothing logged.</p>'}</div>
+      <div class="meal-card">${entryListHTML(r.extras.filter((e) => !isExtraMeal(e)), false) || '<p class="hint">Nothing logged.</p>'}</div>
       <h2 class="crm-sub">Last 7 days</h2>
       <div class="card table-card"><div class="table-wrap"><table class="crm-table"><thead><tr><th>Day</th><th>Calories</th><th>Protein</th><th>Meals on plan</th><th>Missing values</th><th>Self-reported</th></tr></thead><tbody>${weekRows.join('')}</tbody></table></div></div>
       <p class="hint">Adherence counts meals logged as planned, plus "different amount" meals within 10% of the planned Calories. Totals only include what was logged.</p>`,
