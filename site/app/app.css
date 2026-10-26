@@ -1470,3 +1470,29 @@ svg.mx text { fill: #7a879b; font: 600 9px var(--font); letter-spacing: 0.06em; 
   .tp-preview { display: none; }
   .tp-results { max-height: 46vh; }
 }
+
+/* ------------------------------------------------------------ check-in day */
+.checkin-day-card { display: grid; grid-template-columns: minmax(0, 1fr) 180px; gap: 10px 16px; align-items: end; }
+.checkin-day-card .kicker { margin-bottom: 4px; }
+.checkin-day-pick { margin: 0; }
+.checkin-next { grid-column: 1 / -1; margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--sky); color: var(--navy); font-size: 14px; font-weight: 600; }
+.checkin-window { margin: 0 0 14px; padding: 10px 12px; border-radius: 10px; font-size: 14px; font-weight: 600; }
+.checkin-window.open { background: var(--hit-soft); color: var(--good); }
+.checkin-window.upcoming { background: var(--sky); color: var(--navy); }
+.checkin-window.closed { background: #eef1f5; color: #4a5a70; }
+.checkin-fields { margin: 0; padding: 0; border: 0; min-width: 0; }
+.checkin-fields[disabled] { opacity: 0.6; }
+@media (max-width: 560px) {
+  .checkin-day-card { grid-template-columns: 1fr; }
+}
+
+/* "Add custom exercise" card under the training plan */
+.tp-custom-card { display: grid; gap: 12px; }
+.tp-custom-card .kicker { margin: 0; }
+.tp-custom-grid { display: grid; grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr)); gap: 10px; }
+.tp-custom-grid label { margin: 0; }
+.tp-custom-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.tp-custom-map svg.mx { width: 76px; }
+.tp-custom-list { display: grid; gap: 8px; }
+@media (max-width: 900px) { .tp-custom-grid { grid-template-columns: 1fr 1fr; } .tp-custom-grid label:first-child { grid-column: 1 / -1; } }
+@media (max-width: 560px) { .tp-custom-grid { grid-template-columns: 1fr; } }

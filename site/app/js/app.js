@@ -1058,15 +1058,21 @@
     return sessions.find((r) => r.cycle_day === (S.daysBetween(start, day) % len) + 1) || null;
   }
 
-  // The week's check-in is flagged on Home from Saturday until it is sent.
-  // On Monday it is still shown (as overdue) for the week that ended Sunday.
+  // The coach picks each client's check-in day (targets.checkin_day,
+  // 0 = Sunday). The check-in opens the day before and closes at the end of
+  // that day; see checkinWindow in stats.js.
+  function checkinDay(ctx) {
+    const d = Number(ctx.targets && ctx.targets.checkin_day);
+    return Number.isInteger(d) && d >= 0 && d <= 6 ? d : 0;
+  }
+
+  // The week's check-in is flagged on Home while its window is open and it
+  // has not been sent.
   function checkinDue(ctx) {
     const now = S.today();
-    const dow = new Date(`${now}T12:00:00`).getDay();
-    if (dow !== 6 && dow !== 0 && dow !== 1) return null;
-    const week = S.weekOf(ctx.profile.start_date, dow === 1 ? S.addDays(now, -1) : now);
-    if (!week || ctx.checkins.some((c) => c.week_number === week)) return null;
-    return { week, overdue: dow === 1 };
+    const win = S.openCheckin(ctx.profile.start_date, checkinDay(ctx), now);
+    if (!win || ctx.checkins.some((c) => c.week_number === win.week)) return null;
+    return { week: win.week, dueToday: win.due === now, due: win.due };
   }
 
   // Smooth weekly-average bodyweight line with the latest week highlighted.
@@ -1194,7 +1200,7 @@
 
       ${due ? `<section class="due-card" id="checkin-due">
         <span class="due-ic" aria-hidden="true">${ICONS.checkin}</span>
-        <div><p class="kicker">${due.overdue ? 'Overdue' : 'Due tonight'}</p><h2>Week ${due.week} check-in</h2>
+        <div><p class="kicker">${due.dueToday ? 'Due today' : `Open now · due ${esc(S.DAY_NAMES[checkinDay(ctx)])}`}</p><h2>Week ${due.week} check-in</h2>
         <p>Photos, measurements and how the week went. About 5 minutes, then ${esc(COACH)} reviews it.</p></div>
         <a class="btn-dark" href="#checkin/${due.week}">Start check-in</a>
       </section>` : ''}`,
@@ -1211,9 +1217,11 @@
     const ctx = await loadCtx(state.me.id);
     const week = S.currentWeek(ctx.profile.start_date);
     const latest = ctx.checkins.filter((c) => c.coach_feedback).sort((a, b) => b.week_number - a.week_number)[0];
-    const done = ctx.checkins.some((c) => c.week_number === week);
+    const next = S.nextCheckin(ctx.profile.start_date, checkinDay(ctx), S.today());
+    const nextSent = next && ctx.checkins.some((c) => c.week_number === next.week);
     const items = [
-      ['#checkin', ICONS.checkin, 'Weekly check-in', week ? (done ? `Week ${week} sent` : `Week ${week} due Sunday night`) : 'Opens in week 1'],
+      ['#checkin', ICONS.checkin, 'Weekly check-in', !week || !next ? 'Opens in week 1'
+        : nextSent ? `Week ${next.week} sent` : `Week ${next.week} due ${niceDate(next.due, { weekday: 'long', day: 'numeric', month: 'short' })}`],
       ['#photos', ICONS.photos, 'Progress photos', 'Front, side and back each week'],
       ['#supps', ICONS.supps, 'Supplements', ctx.supplements.length ? `${ctx.supplements.length} from ${COACH}` : 'Your plan and the general guide'],
       ['#profile', ICONS.profile, 'Profile and targets', 'Your details and 12-week goals'],
@@ -1327,12 +1335,42 @@
     return `<table><tbody>${rows.map(([k, v]) => `<tr><th scope="row">${k}</th><td>${v}</td></tr>`).join('')}</tbody></table>`;
   }
 
+  // Emails the coach through the "checkin-complete" Netlify form (declared in
+  // app/index.html); Netlify's form notification sends it to the coach inbox.
+  // A failed notice never blocks the check-in itself.
+  async function notifyCheckin(ctx, week) {
+    const name = ctx.profile.full_name || (state.session && state.session.user && state.session.user.email) || 'A client';
+    const body = new URLSearchParams({
+      'form-name': 'checkin-complete',
+      subject: `Check-in complete for ${name}`,
+      client_name: name,
+      client_email: (state.session && state.session.user && state.session.user.email) || '',
+      week: `Week ${week}`,
+      sent_at: new Date().toLocaleString('en-AU', { dateStyle: 'medium', timeStyle: 'short' }),
+      review_link: `${location.origin}/app/#client/${ctx.profile.id}/checkins`,
+    });
+    try {
+      await fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString() });
+    } catch (_) { /* offline or blocked: the coach still sees it in Check-ins */ }
+  }
+
   async function renderCheckin(weekParam) {
     const ctx = await loadCtx(state.me.id);
     const p = ctx.profile;
     const thisWeek = S.currentWeek(p.start_date);
-    const week = Math.min(Math.max(Number(weekParam) || thisWeek || 1, 1), 12);
+    const day = checkinDay(ctx);
+    const dayName = S.DAY_NAMES[day];
+    const openWin = S.openCheckin(p.start_date, day, S.today());
+    const week = Math.min(Math.max(Number(weekParam) || (openWin && openWin.week) || thisWeek || 1, 1), 12);
     const c = ctx.checkins.find((x) => x.week_number === week) || {};
+    const win = p.start_date ? S.checkinWindow(p.start_date, week, day) : null;
+    const winState = S.checkinState(win, S.today());
+    const long = (iso) => niceDate(iso, { weekday: 'long', day: 'numeric', month: 'long' });
+    const windowNote = !win ? `Your check-in opens once ${esc(COACH)} sets your start date.`
+      : winState === 'open' ? `Open now until the end of ${long(win.due)}.`
+        : winState === 'upcoming' ? `Opens ${long(win.opens)}, the day before your check-in day (${dayName}).`
+          : c.submitted_at ? `Sent ${niceDate(c.submitted_at.slice(0, 10))}. This check-in closed at the end of ${long(win.due)}.`
+            : `This check-in closed at the end of ${long(win.due)} without being sent.`;
     const evenWeek = week % 2 === 0 ? week : week - 1;
     const mWeek = Number(new URLSearchParams(location.hash.split('?')[1] || '').get('m') || evenWeek);
     const m = ctx.measurements.find((x) => x.week_number === mWeek) || {};
@@ -1340,7 +1378,7 @@
 
     shell(
       'Weekly check-in',
-      'Fill in every Sunday night',
+      `Every ${dayName} · opens the day before`,
       `
       <div class="card">
         <label for="week-pick">Week</label>
@@ -1354,6 +1392,8 @@
       </section>
       <form id="checkin-form" class="card" novalidate>
         <p class="kicker">How was week ${week}?</p>
+        <p class="checkin-window ${winState}">${windowNote}</p>
+        <fieldset class="checkin-fields"${winState === 'open' ? '' : ' disabled'}>
         ${numberField('sleep_hours', 'Sleep (hours a night, on average)', c.sleep_hours, { decimal: true, max: 14 })}
         <p class="hint" style="margin:-6px 0 12px">Rate 1 to 10, where 10 is best (low stress = 10).</p>
         ${choiceField('stress', 'Stress', scale, c.stress, 'scale')}
@@ -1362,7 +1402,8 @@
         ${choiceField('digestion', 'Digestion', scale, c.digestion, 'scale')}
         <div class="field"><label for="f-win">Biggest win</label><textarea id="f-win" name="biggest_win" maxlength="1000">${esc(c.biggest_win || '')}</textarea></div>
         <div class="field"><label for="f-struggle">Biggest struggle</label><textarea id="f-struggle" name="biggest_struggle" maxlength="1000">${esc(c.biggest_struggle || '')}</textarea></div>
-        <button class="btn" type="submit" style="width:100%">${c.submitted_at ? 'Update' : 'Send'} check-in</button>
+        ${winState === 'open' ? `<button class="btn" type="submit" style="width:100%">${c.submitted_at ? 'Update' : 'Send'} check-in</button>` : ''}
+        </fieldset>
       </form>
       <form id="measure-form" class="card" novalidate>
         <p class="kicker">Body measurements (cm) · every 2 weeks</p>
@@ -1389,9 +1430,11 @@
     const form = document.getElementById('checkin-form');
     form.addEventListener('submit', (e) => {
       e.preventDefault();
+      if (S.checkinState(win, S.today()) !== 'open') return toast(`This check-in is closed. Your check-in day is ${dayName}.`, true);
       const data = readForm(form);
-      withBusy(form.querySelector('button'), async () => {
+      withBusy(form.querySelector('button[type="submit"]'), async () => {
         must(await sb.from('weekly_checkins').upsert({ ...data, user_id: state.me.id, week_number: week }, { onConflict: 'user_id,week_number' }));
+        if (!c.submitted_at) await notifyCheckin(ctx, week);
         invalidate(state.me.id);
         toast(`Check-in sent to ${COACH}.`);
         renderCheckin(week);
@@ -1866,6 +1909,9 @@
       sb.from('daily_logs').select('user_id, day, weight_kg, steps, trained, calories, meal_plan').gte('day', since).order('day'),
       sb.from('weekly_checkins').select('user_id, week_number, coach_feedback'),
     ]).then((rs) => rs.map(must));
+    // Check-in days arrive with migrations/2026-10-26-checkin-day.sql.
+    const days = await sb.from('targets').select('client_id, checkin_day');
+    const dayOf = new Map((days.error ? [] : days.data).map((t) => [t.client_id, t.checkin_day]));
 
     const now = S.today();
     const cards = clients.map((c) => {
@@ -1881,7 +1927,9 @@
       if (!c.consent_at) flags.push('Not signed in yet');
       else if (!c.start_date) flags.push('No start date');
       if (week && (daysSince === null || daysSince >= 2)) flags.push(daysSince === null ? 'No logs yet' : `No log for ${daysSince} days`);
-      if (week > 1 && !mineCheckins.some((x) => x.week_number === week - 1)) flags.push(`Week ${week - 1} check-in missing`);
+      const lastClosed = [week, week - 1].map((w) => (w >= 1 ? S.checkinWindow(c.start_date, w, dayOf.get(c.id) || 0) : null))
+        .find((win) => win && S.checkinState(win, now) === 'closed');
+      if (lastClosed && !mineCheckins.some((x) => x.week_number === lastClosed.week)) flags.push(`Week ${lastClosed.week} check-in missing`);
       const needsFeedback = mineCheckins.filter((x) => !x.coach_feedback).length;
       if (needsFeedback) flags.push(`${needsFeedback} check-in${needsFeedback > 1 ? 's' : ''} to reply to`);
       return { c, flags, week, st, prevSt, last, daysSince };
@@ -2039,7 +2087,39 @@
         </section>`,
       )
       .join('');
-    shell(title, sub, `${nav}${items || '<div class="card"><p>No check-ins yet.</p></div>'}`);
+    const day = checkinDay(ctx);
+    const now = S.today();
+    const next = p.start_date ? S.nextCheckin(p.start_date, day, now) : null;
+    const nextText = !p.start_date ? 'Set a start date in Client settings to schedule check-ins.'
+      : !next ? 'All 12 check-ins are behind them.'
+        : `${S.checkinState(next, now) === 'open' ? 'Open now' : `Opens ${niceDate(next.opens, { weekday: 'long', day: 'numeric', month: 'short' })}`} · Week ${next.week}, due ${niceDate(next.due, { weekday: 'long', day: 'numeric', month: 'short' })}`;
+    const picker = `<section class="card checkin-day-card">
+        <div><p class="kicker">Check-in day</p>
+        <p class="hint" style="margin:0">Their check-in opens 24 hours before this day and closes at the end of it. You get an email when they send it.</p></div>
+        <label class="checkin-day-pick">Day<select id="checkin-day">${S.DAY_NAMES.map((d, i) => `<option value="${i}"${i === day ? ' selected' : ''}>${d}</option>`).join('')}</select></label>
+        <p class="checkin-next" id="checkin-next">${esc(nextText)}</p>
+      </section>`;
+    shell(title, sub, `${nav}${picker}${items || '<div class="card"><p>No check-ins yet.</p></div>'}`);
+    root.querySelector('#checkin-day').addEventListener('change', async (e) => {
+      const sel = e.target;
+      const value = Number(sel.value);
+      sel.disabled = true;
+      try {
+        const res = await sb.from('targets').update({ checkin_day: value }).eq('client_id', p.id).select('checkin_day');
+        if (res.error && /checkin_day|column|schema cache/i.test(res.error.message || '')) {
+          throw new Error('Run supabase/migrations/2026-10-26-checkin-day.sql in Supabase first, then try again.');
+        }
+        if (!must(res).length) throw new Error('Not saved. Check you are signed in as the coach.');
+        invalidate(p.id);
+        toast(`Check-in day set to ${S.DAY_NAMES[value]}.`);
+        renderClient(p.id, 'checkins');
+      } catch (err) {
+        sel.value = String(day);
+        toast(friendlyError(err), true);
+      } finally {
+        sel.disabled = false;
+      }
+    });
     root.querySelectorAll('.feedback-form').forEach((form) => {
       form.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -2209,6 +2289,19 @@
         <p class="hint">To schedule a different start date, create a new program version.</p>
         <div class="tp-days">${sessions.map((row) => trainingDayHTML(row, lib.list)).join('')}</div>
         <div class="tp-save"><button class="btn" type="submit">Save training plan</button></div>
+      </form>
+      <form id="custom-exercise" class="card tp-custom-card" novalidate>
+        <p class="kicker">Add custom exercise</p>
+        <p class="hint" style="margin-top:0">Saved to your exercise library, so it shows in the dropdown for every client from now on.</p>
+        <div class="tp-custom-grid">
+          <label>Exercise name<input name="name" maxlength="120" placeholder="e.g. Seated cable hip abduction" required></label>
+          <label>Main muscle<select name="primary" required><option value="">Choose a muscle</option>${Object.entries(X.MUSCLES).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('')}</select></label>
+          <label>Also works (optional)<select name="secondary"><option value="">None</option>${Object.entries(X.MUSCLES).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('')}</select></label>
+          <label>Equipment (optional)<select name="equipment"><option value="">Choose</option>${X.EQUIPMENT.map((e) => `<option>${esc(e)}</option>`).join('')}</select></label>
+        </div>
+        <div class="tp-custom-foot"><div class="tp-custom-map" data-custom-map aria-hidden="true">${X.bodyDiagram([], [], { small: true })}</div>
+          <button class="btn" type="submit">Add to exercise library</button></div>
+        <div class="tp-custom-list" data-custom-list></div>
       </form>
       ${latest.length && !newPlan ? `<section class="coach-preview"><p class="kicker">Client preview</p>${trainingHTML(ctx)}</section>` : ''}`);
 
@@ -2463,6 +2556,42 @@
     });
     form.addEventListener('input', (e) => {
       if (e.target.matches('[data-session-name]')) refreshDay(e.target.closest('[data-training-day]'));
+    });
+
+    // ---- "Add custom exercise" card under the plan.
+    const cform = root.querySelector('#custom-exercise');
+    const customList = () => {
+      const mine = lib.list.filter((ex) => ex.custom);
+      cform.querySelector('[data-custom-list]').innerHTML = mine.length
+        ? `<p class="tp-c-label">Your custom exercises (${mine.length})</p><div class="mx-chips">${mine.map((ex) => `<span class="mx-chip s">${esc(ex.name)}</span>`).join('')}</div>`
+        : '';
+    };
+    customList();
+    cform.addEventListener('change', () => {
+      const primary = cform.elements.primary.value;
+      const secondary = cform.elements.secondary.value;
+      cform.querySelector('[data-custom-map]').innerHTML = X.bodyDiagram(primary ? [primary] : [], secondary && secondary !== primary ? [secondary] : [], { small: true });
+    });
+    cform.addEventListener('submit', (e) => {
+      e.preventDefault();
+      withBusy(cform.querySelector('[type="submit"]'), async () => {
+        const name = cform.elements.name.value.trim().replace(/\s+/g, ' ');
+        const primary = cform.elements.primary.value;
+        const secondary = cform.elements.secondary.value;
+        const equipment = cform.elements.equipment.value || null;
+        if (!name) throw new Error('Give the exercise a name.');
+        if (!primary) throw new Error('Choose the main muscle it targets.');
+        if (lib.list.some((ex) => X.normalise(ex.name) === X.normalise(name))) throw new Error(`${name} is already in your library.`);
+        if (!lib.ready) throw new Error('Run supabase/migrations/2026-10-26-exercises.sql in Supabase first, then try again.');
+        const sec = secondary && secondary !== primary ? [secondary] : [];
+        const saved = must(await sb.from('exercises').insert({ name, primary_muscles: [primary], secondary_muscles: sec, equipment, is_custom: true }).select('id').single());
+        lib.list.push({ id: saved.id, name, primary: [primary], secondary: sec, equipment, custom: true });
+        lib.list.sort((a, b) => a.name.localeCompare(b.name));
+        cform.reset();
+        cform.querySelector('[data-custom-map]').innerHTML = X.bodyDiagram([], [], { small: true });
+        customList();
+        toast(`${name} added. Pick it from the exercise dropdown on any day.`);
+      });
     });
 
     form.addEventListener('submit', (e) => {

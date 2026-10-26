@@ -226,6 +226,54 @@
     return m ? Number(m[0]) : null;
   }
 
+  // ------------------------------------------------------------ check-ins
+  // The coach picks each client's check-in day (0 = Sunday ... 6 = Saturday).
+  // The check-in for a week opens the day before that day and closes at the
+  // end of it. A week's check-in day is the one whose day-before falls in that
+  // week, so a Monday check-in reviews the week that just finished.
+  const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  function weekday(iso) {
+    return new Date(parseISO(iso)).getUTCDay();
+  }
+
+  function checkinWindow(startDate, week, checkinDay) {
+    if (!startDate || !week) return null;
+    const dayNum = Number.isInteger(Number(checkinDay)) ? ((Number(checkinDay) % 7) + 7) % 7 : 0;
+    const first = addDays(startDate, (week - 1) * 7 + 1);
+    const due = addDays(first, (dayNum - weekday(first) + 7) % 7);
+    return { week, opens: addDays(due, -1), due };
+  }
+
+  // 'upcoming' before the window, 'open' during it, 'closed' after it.
+  function checkinState(win, day) {
+    if (!win) return 'upcoming';
+    const d = day || today();
+    if (d < win.opens) return 'upcoming';
+    if (d > win.due) return 'closed';
+    return 'open';
+  }
+
+  // The week whose check-in window is open on this day, if any.
+  function openCheckin(startDate, checkinDay, day) {
+    const d = day || today();
+    for (const week of [weekOf(startDate, addDays(d, -1)), weekOf(startDate, d)]) {
+      const win = week ? checkinWindow(startDate, week, checkinDay) : null;
+      if (win && checkinState(win, d) === 'open') return win;
+    }
+    return null;
+  }
+
+  // The next window that has not closed yet (for "opens Saturday" messages).
+  function nextCheckin(startDate, checkinDay, day) {
+    const d = day || today();
+    for (let week = 1; week <= WEEKS; week++) {
+      const win = checkinWindow(startDate, week, checkinDay);
+      if (win && win.due >= d) return win;
+    }
+    return null;
+  }
+
   const api = {
     WEEKS,
     toISO,
@@ -244,6 +292,12 @@
     HABIT_BANDS,
     habitStatus,
     parseLitres,
+    DAY_NAMES,
+    weekday,
+    checkinWindow,
+    checkinState,
+    openCheckin,
+    nextCheckin,
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

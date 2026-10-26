@@ -59,6 +59,7 @@ create table public.targets (
   sleep_target_h   numeric(3, 1) not null default 7,
   whole_foods_pct  int not null default 80 check (whole_foods_pct between 0 and 100),
   coach_note       text,  -- "biggest lever for next week", shown on the dashboard
+  checkin_day      smallint not null default 0 check (checkin_day between 0 and 6),  -- 0 = Sunday
   updated_at       timestamptz not null default now()
 );
 
