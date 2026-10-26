@@ -303,7 +303,27 @@
     };
   }
 
+  // Calories from macros (Australian label factors: fibre counts 2 kcal/g
+  // because carbs here exclude fibre).
+  function macroKcal(m) {
+    return Math.round(((Number(m.p) || 0) * 4 + (Number(m.c) || 0) * 4 + (Number(m.f) || 0) * 9 + (Number(m.fibre) || 0) * 2) * 10) / 10;
+  }
+
+  // A "macros only" meal is stored as a food plus an amount whose product is
+  // the totals typed in. The amount grows past 100 g only when a total would
+  // break the per-100 g limits foods are held to.
+  const PER100_LIMITS = { kcal: 1000, p: 100, c: 130, f: 100, fibre: 100 };
+  function macroOnlyFood(m) {
+    const totals = { kcal: macroKcal(m), p: Number(m.p) || 0, c: Number(m.c) || 0, f: Number(m.f) || 0, fibre: Number(m.fibre) || 0 };
+    const need = Math.max(...Object.keys(PER100_LIMITS).map((k) => totals[k] / PER100_LIMITS[k]));
+    const amount = Math.max(100, Math.ceil(need * 100));
+    const per100 = {};
+    for (const k of Object.keys(totals)) per100[k] = Math.round((totals[k] * 10000) / amount) / 100;
+    return { amount, per100, totals };
+  }
+
   const api = {
+    macroKcal, macroOnlyFood,
     NUTRIENTS, WEEKDAYS, WEEKDAY_NAMES, QUALITY, SOURCES, STATUS, ENTRY_UNITS,
     toBase, entryUnitsFor, formatAmount, formatKcal, formatGrams,
     per100Of, forAmount, sum, entryNutrition, itemNutrition, mealPlanned,

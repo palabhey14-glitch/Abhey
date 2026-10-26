@@ -1564,3 +1564,20 @@ svg.mx text { fill: #7a879b; font: 600 9px var(--font); letter-spacing: 0.06em; 
 .wl-meta input[type="date"]::-webkit-date-and-time-value { text-align: left; }
 .wl-meta select { text-overflow: ellipsis; }
 @media (max-width: 560px) { .wl-meta { grid-template-columns: 1fr; } }
+
+/* Meal names the client can change, and the "Macros only" entry */
+.ml-head h3 { display: flex; align-items: center; gap: 6px; }
+.ml-rename { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 8px; background: var(--bg-app); color: var(--ink-2); cursor: pointer; }
+.ml-rename:hover { background: var(--sky); color: var(--brand-blue); }
+.ml-rename-form { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 4px; }
+.ml-rename-form input { flex: 1 1 160px; min-width: 0; min-height: 40px; }
+.ml-orig { display: block; color: var(--muted); font-size: 12px; }
+.fp-tabs.four { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 560px) { .fp-tabs.four { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.fp-kcal { display: flex; justify-content: space-between; align-items: baseline; margin: 4px 0 0; padding: 12px 14px; border-radius: 12px; background: var(--sky); color: var(--navy); }
+.fp-kcal span { font-size: 14px; font-weight: 600; }
+.fp-kcal b { font: 700 22px var(--display); }
+.fb.q-macro { background: var(--sky); color: var(--brand-blue); }
+.ml-btn.primary { background: var(--brand-blue); border-color: var(--brand-blue); color: var(--white); }
+.fb.q-macro { border-color: transparent; }
+.ml-btn.primary:hover { color: var(--white); filter: brightness(1.08); }

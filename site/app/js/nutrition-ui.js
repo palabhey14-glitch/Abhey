@@ -199,10 +199,11 @@
     const o = { title: 'Add a food', country: 'AU', start: 'search', amount: true, ...opts };
     return new Promise((resolve) => {
       let done = false;
-      const sheet = openSheet(o.title, `<div class="fp-tabs" role="tablist">
+      const sheet = openSheet(o.title, `<div class="fp-tabs${o.macros ? ' four' : ''}" role="tablist">
           <button type="button" role="tab" data-tab="search">Search</button>
           <button type="button" role="tab" data-tab="barcode">Barcode number</button>
           <button type="button" role="tab" data-tab="create">Type it in</button>
+          ${o.macros ? '<button type="button" role="tab" data-tab="macros">Macros only</button>' : ''}
         </div><div class="fp-pane"></div>`);
       sheet.onClose(() => {
         if (!done) resolve(null);
@@ -221,6 +222,7 @@
         tabs.querySelectorAll('[data-tab]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
         if (t === 'barcode') barcodePane(prefill);
         else if (t === 'create') createPane(prefill);
+        else if (t === 'macros') macroPane();
         else searchPane();
       }
       tabs.addEventListener('click', (e) => {
@@ -368,6 +370,67 @@
         form.querySelector('[name=name]').focus();
       }
 
+      // Macros only: the client types the protein, carbs, fat and fibre of
+      // what they ate and the Calories are worked out. Saved as a private,
+      // self-reported food the caller retires once it is logged.
+      function macroPane() {
+        const field = (k, l) => `<label class="fp-num"><span>${l}</span><input name="${k}" type="number" inputmode="decimal" min="0" max="1000" step="any"></label>`;
+        pane.innerHTML = `<form class="fp-form" novalidate>
+            <label for="fp-mname">What did you eat? <span class="hint">(optional)</span></label>
+            <input id="fp-mname" name="name" maxlength="120" value="${esc(o.macroName || '')}" placeholder="e.g. Chicken curry and rice">
+            <div class="fp-nums">${field('p', 'Protein (g)')}${field('c', 'Carbs (g)')}${field('f', 'Fat (g)')}${field('fibre', 'Fibre (g)')}</div>
+            <p class="fp-kcal" aria-live="polite"><span>Calories</span><b data-kcal>0 kcal</b></p>
+            <p class="hint">Calories = protein × 4 + carbs × 4 + fat × 9 + fibre × 2. Enter the totals for the whole meal.</p>
+            <p class="form-msg" data-msg role="alert"></p>
+            <button type="submit" class="btn-dark wide">Add</button>
+          </form>`;
+        const form = pane.querySelector('form');
+        const read = () => {
+          const v = (k) => {
+            const raw = form.querySelector(`[name=${k}]`).value.trim();
+            return raw === '' ? 0 : Number(raw);
+          };
+          const m = { p: v('p'), c: v('c'), f: v('f'), fibre: v('fibre') };
+          return { ...m, kcal: N.macroKcal(m) };
+        };
+        const update = () => {
+          const m = read();
+          form.querySelector('[data-kcal]').textContent = Number.isFinite(m.kcal) ? kcal(m.kcal) : '–';
+        };
+        form.addEventListener('input', update);
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const msg = form.querySelector('[data-msg]');
+          const m = read();
+          if (['p', 'c', 'f', 'fibre'].some((k) => !Number.isFinite(m[k]) || m[k] < 0 || m[k] > 1000)) {
+            msg.textContent = 'Each amount must be between 0 and 1000 g.';
+            return;
+          }
+          if (!(m.p + m.c + m.f + m.fibre > 0)) {
+            msg.textContent = 'Enter at least one of protein, carbs, fat or fibre.';
+            return;
+          }
+          const name = (form.querySelector('[name=name]').value.trim() || o.macroName || 'Meal').slice(0, 120);
+          const built = N.macroOnlyFood(m);
+          const btn = form.querySelector('button[type=submit]');
+          btn.disabled = true;
+          try {
+            const food = h.must(await sb.from('foods').insert({
+              name, brand: MACRO_ONLY, basis: 'g', countries: [o.country || 'AU'],
+              kcal: built.per100.kcal, protein_g: built.per100.p, carbs_g: built.per100.c, fat_g: built.per100.f, fibre_g: built.per100.fibre,
+              source: 'client', quality: 'self_reported', shared: false, needs_review: false,
+              notes: { macro_only: { protein_g: m.p, carbs_g: m.c, fat_g: m.f, fibre_g: m.fibre, kcal: Math.round(m.kcal) } },
+            }).select().single());
+            finish({ food, amount: built.amount, macroOnly: true });
+          } catch (err) {
+            msg.textContent = h.friendlyError(err);
+          } finally {
+            btn.disabled = false;
+          }
+        });
+        form.querySelector('[name=p]').focus();
+      }
+
       function amountPane(food) {
         tabs.hidden = true;
         const units = N.entryUnitsFor(food.basis);
@@ -493,7 +556,7 @@
   function mealCardHTML(m, opts) {
     const o = opts || {};
     const meal = m.meal;
-    const head = `<div class="ml-head"><div><h3>${esc(meal.name)}</h3><small>${meal.time ? `${esc(meal.time)} · ` : ''}Planned ${kcal(m.planned.kcal)}</small></div>
+    const head = `<div class="ml-head"><div>${mealTitleHTML(o.names, `plan:${meal.id}`, meal.name, Boolean(o.canLog))}<small>${meal.time ? `${esc(meal.time)} · ` : ''}Planned ${kcal(m.planned.kcal)}</small></div>
       ${m.log ? `<span class="ml-chip ${STATUS_CHIP[m.log.status]}">${esc(statusLabel(m.log))}</span>` : ''}</div>`;
     let body;
     if (!m.log) body = `<ul class="fi-list">${plannedItemsHTML(meal)}</ul>${meal.note ? `<p class="ml-note">${esc(meal.note)}</p>` : ''}`;
@@ -523,10 +586,11 @@
     return `<ul class="fi-list">${entries
       .map((e) => {
         const n = N.entryNutrition(e);
-        const tag = e.quality === 'self_reported' ? ' · <span class="fb q-self_reported">Self-reported</span>' : e.needs_review ? ' · <span class="fb warn">Incomplete</span>' : '';
-        return `<li data-entry="${e.id}"><span class="fi-name"><b>${esc(e.name)}</b><small>${esc(N.formatAmount(e.amount, e.unit))}${tag}</small></span>
-          <span class="fi-mac">${n.kcal === null ? '<span class="unknown">kcal unknown</span>' : kcal(n.kcal)}<small>${esc(pcf(n))}</small></span>
-          ${canEdit ? `<span class="fi-tools"><button type="button" class="ml-btn small" data-entry-edit>Edit</button><button type="button" class="ml-btn small x" data-entry-del aria-label="Remove ${esc(e.name)}">×</button></span>` : ''}</li>`;
+        const macroOnly = e.brand === MACRO_ONLY;
+        const tag = macroOnly ? '<span class="fb q-macro">Macros only</span>' : e.quality === 'self_reported' ? ' · <span class="fb q-self_reported">Self-reported</span>' : e.needs_review ? ' · <span class="fb warn">Incomplete</span>' : '';
+        return `<li data-entry="${e.id}"><span class="fi-name"><b>${esc(e.name)}</b><small>${macroOnly ? '' : esc(N.formatAmount(e.amount, e.unit))}${tag}</small></span>
+          <span class="fi-mac">${n.kcal === null ? '<span class="unknown">kcal unknown</span>' : kcal(n.kcal)}<small>${esc(pcf(n))}${macroOnly && n.fibre ? ` · Fibre ${fmt(n.fibre)}` : ''}</small></span>
+          ${canEdit ? `<span class="fi-tools">${macroOnly ? '' : '<button type="button" class="ml-btn small" data-entry-edit>Edit</button>'}<button type="button" class="ml-btn small x" data-entry-del aria-label="Remove ${esc(e.name)}">×</button></span>` : ''}</li>`;
       })
       .join('')}</ul>`;
   }
@@ -535,13 +599,29 @@
 
   const SLOTS = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
 
+  // Foods saved from "Macros only" carry this brand so their log entries can
+  // show the macros instead of a weight.
+  const MACRO_ONLY = 'Macros only';
+
+  // Clients can rename their meals. profiles.meal_names maps a meal key
+  // (a food log slot such as "Breakfast", or "plan:<meal id>") to their name.
+  const mealNameOf = (names, key, fallback) => {
+    const v = names && typeof names[key] === 'string' ? names[key].trim() : '';
+    return v || fallback;
+  };
+  const PENCIL = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+  function mealTitleHTML(names, key, fallback, renamable) {
+    const name = mealNameOf(names, key, fallback);
+    return `<h3 data-title-for="${esc(key)}">${esc(name)}${renamable ? ` <button type="button" class="ml-rename" data-rename="${esc(key)}" data-default="${esc(fallback)}" aria-label="Rename ${esc(name)}">${PENCIL}</button>` : ''}</h3>${!renamable && name !== fallback ? `<small class="ml-orig">Was ${esc(fallback)}</small>` : ''}`;
+  }
+
   // Extra meals a client adds themself (overate, or ate a meal that isn't on
   // the plan). Stored as ordinary food log entries whose slot is "Meal: <name>".
   const EXTRA_MEAL = 'Meal: ';
   const isExtraMeal = (e) => typeof e.slot === 'string' && e.slot.startsWith(EXTRA_MEAL);
   const extraMealName = (slot) => slot.slice(EXTRA_MEAL.length);
 
-  function extraMealsHTML(entries, canLog, opts = {}) {
+  function extraMealsHTML(entries, canLog, opts = {}, names) {
     const meals = [];
     for (const e of entries.filter(isExtraMeal)) {
       let m = meals.find((x) => x.slot === e.slot);
@@ -550,8 +630,9 @@
     }
     const cards = meals.map((m) => {
       const sum = N.sum(m.list.map(N.entryNutrition));
-      return `<div class="meal-card fl-slot extra-meal" data-slot="${esc(m.slot)}"><div class="ml-head"><div><h3>${esc(extraMealName(m.slot))}</h3><small>${kcal(sum.kcal)}</small></div>${opts.tag ? '<span class="xm-tag">Added by client</span>' : ''}</div>
-        ${entryListHTML(m.list, canLog)}${canLog ? `<button type="button" class="add-row" data-add-extra="${esc(m.slot)}">+ Add to ${esc(extraMealName(m.slot).toLowerCase())}</button>` : ''}</div>`;
+      const label = mealNameOf(names, m.slot, extraMealName(m.slot));
+      return `<div class="meal-card fl-slot extra-meal" data-slot="${esc(m.slot)}"><div class="ml-head"><div>${mealTitleHTML(names, m.slot, extraMealName(m.slot), canLog)}<small>${kcal(sum.kcal)}</small></div>${opts.tag ? '<span class="xm-tag">Added by client</span>' : ''}</div>
+        ${entryListHTML(m.list, canLog)}${canLog ? `<button type="button" class="add-row" data-add-extra="${esc(m.slot)}" data-label="${esc(label)}">+ Add to ${esc(label.toLowerCase())}</button>` : ''}</div>`;
     }).join('');
     const next = `Extra meal ${meals.length + 1}`;
     const add = canLog ? `<div class="xm-new">
@@ -593,9 +674,10 @@
     const t = r.actualTotal;
     const kst = S.habitStatus('calories', t.items ? t.kcal : null, target && target.calories);
     let main;
-    const xm = extraMealsHTML(r.extras, canLog);
+    const names = p.meal_names || {};
+    const xm = extraMealsHTML(r.extras, canLog, {}, names);
     if (r.isPlan) {
-      const meals = r.meals.map((m) => mealCardHTML(m, { canLog })).join('');
+      const meals = r.meals.map((m) => mealCardHTML(m, { canLog, names })).join('');
       const earlier = r.earlier.length
         ? `<section><h2 class="sec-title">Logged on an earlier plan</h2><p class="sec-sub">${esc(h.COACH)} updated your plan after you logged these. They still count.</p>${r.earlier.map((m) => mealCardHTML(m, {})).join('')}</section>`
         : '';
@@ -611,8 +693,9 @@
         ${SLOTS.map((s) => {
           const list = bySlot(s);
           const sum = N.sum(list.map(N.entryNutrition));
-          return `<div class="meal-card fl-slot" data-slot="${s}"><div class="ml-head"><div><h3>${s}</h3>${list.length ? `<small>${kcal(sum.kcal)}</small>` : ''}</div></div>
-            ${entryListHTML(list, canLog)}${canLog ? `<button type="button" class="add-row" data-add-extra="${s}">+ Add to ${s.toLowerCase()}</button>` : ''}</div>`;
+          const label = mealNameOf(names, s, s);
+          return `<div class="meal-card fl-slot" data-slot="${s}"><div class="ml-head"><div>${mealTitleHTML(names, s, s, canLog)}${list.length ? `<small>${kcal(sum.kcal)}</small>` : ''}</div></div>
+            ${entryListHTML(list, canLog)}${canLog ? `<button type="button" class="add-row" data-add-extra="${s}" data-label="${esc(label)}">+ Add to ${esc(label.toLowerCase())}</button>` : ''}</div>`;
         }).join('')}${xm.html}</section>`;
     }
 
@@ -820,12 +903,12 @@
     root.querySelectorAll('[data-add-extra]').forEach((b) =>
       b.addEventListener('click', async () => {
         const slot = b.dataset.addExtra;
-        const label = slot.startsWith(EXTRA_MEAL) ? extraMealName(slot) : slot;
-        addToSlot(b, slot, slot === 'Extras' ? 'Add an extra' : `Add to ${label.toLowerCase()}`);
+        const label = b.dataset.label || (slot.startsWith(EXTRA_MEAL) ? extraMealName(slot) : slot);
+        addToSlot(b, slot, slot === 'Extras' ? 'Add an extra' : `Add to ${label.toLowerCase()}`, slot === 'Extras' ? 'Snack' : label);
       }),
     );
-    async function addToSlot(button, slot, title) {
-      const pick = await pickFood({ title, country });
+    async function addToSlot(button, slot, title, macroName) {
+      const pick = await pickFood({ title, country, macros: true, macroName });
       if (!pick) return;
       run(button, async () => {
         h.must(await sb.from('food_log_entries').insert({
@@ -833,8 +916,56 @@
           // The database copies these from the food; sent only to satisfy the column rules.
           name: pick.food.name, source: pick.food.source, quality: pick.food.quality, unit: pick.food.basis,
         }));
+        // A macros-only food is a one-off: keep it out of future searches.
+        if (pick.macroOnly) await sb.from('foods').update({ retired_at: new Date().toISOString() }).eq('id', pick.food.id);
       }, `${pick.food.name} added.`);
     }
+
+    // Rename a meal (client only). Saved to profiles.meal_names.
+    root.querySelectorAll('[data-rename]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const key = b.dataset.rename;
+        const fallback = b.dataset.default;
+        const title = b.closest('h3');
+        const current = mealNameOf(ctx.profile.meal_names, key, fallback);
+        const box = document.createElement('form');
+        box.className = 'ml-rename-form';
+        box.noValidate = true;
+        box.innerHTML = `<input type="text" maxlength="30" value="${esc(current)}" aria-label="Meal name">
+          <button type="submit" class="ml-btn small primary">Save</button>
+          ${current !== fallback ? `<button type="button" class="ml-btn small" data-reset>Reset to ${esc(fallback)}</button>` : ''}
+          <button type="button" class="ml-btn small" data-cancel>Cancel</button>`;
+        title.hidden = true;
+        title.after(box);
+        const input = box.querySelector('input');
+        input.focus();
+        input.select();
+        const save = (button, value) => {
+          const next = { ...(ctx.profile.meal_names || {}) };
+          const v = (value || '').replace(/\s+/g, ' ').trim().slice(0, 30);
+          if (!v || v === fallback) delete next[key];
+          else next[key] = v;
+          run(button, async () => {
+            const res = await sb.from('profiles').update({ meal_names: next }).eq('id', me().id);
+            if (res.error && /meal_names/.test(res.error.message || '')) throw new Error(`Renaming meals switches on once ${h.COACH} finishes the app update.`);
+            h.must(res);
+            ctx.profile.meal_names = next;
+            if (h.state.me && h.state.me.id === ctx.profile.id) h.state.me.meal_names = next;
+          }, v && v !== fallback ? `Renamed to ${v}.` : `Back to ${fallback}.`);
+        };
+        box.addEventListener('submit', (e) => {
+          e.preventDefault();
+          save(box.querySelector('[type=submit]'), input.value);
+        });
+        box.addEventListener('click', (e) => {
+          if (e.target.closest('[data-reset]')) save(e.target, '');
+          if (e.target.closest('[data-cancel]')) {
+            box.remove();
+            title.hidden = false;
+          }
+        });
+      }),
+    );
     const newMeal = root.querySelector('[data-new-meal]');
     const newMealForm = root.querySelector('[data-new-meal-form]');
     if (newMeal && newMealForm) {
@@ -1125,6 +1256,7 @@
     const days = Array.from({ length: 7 }, (_, i) => S.addDays(day, i - 6));
     await ensureRange(ctx, days[0], day);
     const r = report(ctx, day);
+    const names = ctx.profile.meal_names || {};
     const target = dayTarget(ctx, day);
     const t = r.actualTotal;
     const ad = r.adherence;
@@ -1159,10 +1291,13 @@
         { k: 'Carbs · fats · fibre', v: t.items ? `${fmt(t.c)} · ${fmt(t.f)} · ${fmt(t.fibre)}` : '–', s: flags || (target ? `Targets ${fmt(target.carbs_g)} · ${fmt(target.fats_g)} · ${fmt(target.fibre_g)} g` : '') },
       ])}
       ${unknownNote(t, 'coach')}
-      ${r.isPlan ? `<h2 class="crm-sub">Planned vs eaten</h2><div class="ml-grid">${r.meals.map((m) => mealCardHTML(m, {})).join('')}${r.earlier.map((m) => mealCardHTML(m, {})).join('')}</div>` : ''}
-      ${(() => { const xm = extraMealsHTML(r.extras, false, { tag: true }); return xm.count ? `<h2 class="crm-sub">Extra meals</h2><div class="ml-grid">${xm.html}</div>` : ''; })()}
-      <h2 class="crm-sub">${r.isPlan ? 'Extras and snacks' : 'Food log'}</h2>
-      <div class="meal-card">${entryListHTML(r.extras.filter((e) => !isExtraMeal(e)), false) || '<p class="hint">Nothing logged.</p>'}</div>
+      ${r.isPlan ? `<h2 class="crm-sub">Planned vs eaten</h2><div class="ml-grid">${r.meals.map((m) => mealCardHTML(m, { names })).join('')}${r.earlier.map((m) => mealCardHTML(m, { names })).join('')}</div>` : ''}
+      ${(() => { const xm = extraMealsHTML(r.extras, false, { tag: true }, names); return xm.count ? `<h2 class="crm-sub">Extra meals</h2><div class="ml-grid">${xm.html}</div>` : ''; })()}
+      ${r.isPlan ? `<h2 class="crm-sub">Extras and snacks</h2>
+      <div class="meal-card">${entryListHTML(r.extras.filter((e) => !isExtraMeal(e)), false) || '<p class="hint">Nothing logged.</p>'}</div>` : `<h2 class="crm-sub">Food log</h2><div class="ml-grid">${SLOTS.map((s) => {
+        const list = r.extras.filter((e) => !isExtraMeal(e) && (SLOTS.includes(e.slot) ? e.slot : 'Snacks') === s);
+        return `<div class="meal-card fl-slot"><div class="ml-head"><div>${mealTitleHTML(names, s, s, false)}<small>${list.length ? kcal(N.sum(list.map(N.entryNutrition)).kcal) : 'Nothing logged'}</small></div></div>${entryListHTML(list, false)}</div>`;
+      }).join('')}</div>`}
       <h2 class="crm-sub">Last 7 days</h2>
       <div class="card table-card"><div class="table-wrap"><table class="crm-table"><thead><tr><th>Day</th><th>Calories</th><th>Protein</th><th>Meals on plan</th><th>Missing values</th><th>Self-reported</th></tr></thead><tbody>${weekRows.join('')}</tbody></table></div></div>
       <p class="hint">Adherence counts meals logged as planned, plus "different amount" meals within 10% of the planned Calories. Totals only include what was logged.</p>`,

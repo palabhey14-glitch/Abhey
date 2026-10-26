@@ -40,6 +40,8 @@ create table public.profiles (
   work_schedule          text,
   wake_sleep             text,
   consent_at             timestamptz,  -- when the client agreed to the privacy notice
+  meal_names             jsonb not null default '{}'::jsonb
+                         check (jsonb_typeof(meal_names) = 'object' and pg_column_size(meal_names) <= 4000),  -- client's own meal names
   created_at             timestamptz not null default now()
 );
 
@@ -294,7 +296,7 @@ grant select, insert, update, delete on public.supplement_plan to authenticated;
 -- can only be changed from the SQL editor. Clients edit their own details.
 revoke insert, update, delete on public.profiles from authenticated;
 grant update (full_name, phone, start_date, age, height_cm, dream_outcome, training_days_per_week,
-  training_experience, nutrition_tracking, injuries, work_schedule, wake_sleep, consent_at)
+  training_experience, nutrition_tracking, injuries, work_schedule, wake_sleep, consent_at, meal_names)
   on public.profiles to authenticated;
 
 -- Targets rows are created by the trigger; the coach only updates them.
