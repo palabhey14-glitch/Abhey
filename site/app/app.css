@@ -1496,3 +1496,30 @@ svg.mx text { fill: #7a879b; font: 600 9px var(--font); letter-spacing: 0.06em; 
 .tp-custom-list { display: grid; gap: 8px; }
 @media (max-width: 900px) { .tp-custom-grid { grid-template-columns: 1fr 1fr; } .tp-custom-grid label:first-child { grid-column: 1 / -1; } }
 @media (max-width: 560px) { .tp-custom-grid { grid-template-columns: 1fr; } }
+
+/* ------------------------------------------------------- client workout log */
+.wl { display: grid; gap: 14px; }
+.wl h2 { margin: 0 0 6px; }
+.wl-done { color: var(--good); }
+.wl-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.wl-ex { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; min-width: 0; }
+.wl-ex-head { display: flex; gap: 12px; align-items: flex-start; min-width: 0; }
+.wl-ex-head > div:last-child { display: grid; gap: 2px; min-width: 0; }
+.wl-ex-head small { color: var(--muted); font-size: 13px; }
+.wl-ex-map svg.mx { width: 54px; }
+.wl-ex-map:empty { display: none; }
+.wl-prev { color: #4a5a70 !important; }
+.wl-sets { display: grid; gap: 8px; }
+.wl-set { display: grid; grid-template-columns: 52px minmax(0, 1fr) minmax(0, 1fr); gap: 8px; align-items: center; }
+.wl-n { font-size: 13px; font-weight: 700; color: var(--navy); }
+.wl-set label { margin: 0; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.wl-set label span { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.wl-set input { min-width: 0; width: 100%; text-align: center; }
+.wl-set input::placeholder { color: #b4bfcf; }
+.wl-add { justify-self: start; background: none; border: 0; padding: 4px 0; color: var(--brand-blue); font-weight: 700; cursor: pointer; }
+.wl-history details { border-top: 1px solid var(--line); padding: 10px 0; }
+.wl-history summary { display: flex; justify-content: space-between; gap: 10px; cursor: pointer; }
+.wl-history summary span { color: var(--muted); font-size: 14px; }
+.wl-history ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.wl-history li { display: grid; gap: 2px; font-size: 14px; }
+.wl-history li span { color: #4a5a70; }

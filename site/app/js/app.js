@@ -204,9 +204,12 @@
     const habitsReady = !habits.error && !habitEntries.error;
     // Same for migrations/2026-10-25-nutrition.sql (plans and food logs).
     const nutrition = await NUI.load(id);
+    // Same for migrations/2026-10-26-workout-logs.sql (sets and reps).
+    const workouts = await sb.from('workout_logs').select('*').eq('user_id', id).order('day', { ascending: false }).limit(60);
     const ctx = {
       profile, targets: targets || {}, macros, training, supplements, logs, checkins, measurements, photos,
       habits: habitsReady ? habits.data : [], habitEntries: habitsReady ? habitEntries.data : [], habitsReady,
+      workouts: workouts.error ? [] : workouts.data, workoutsReady: !workouts.error,
       ...nutrition,
     };
     state.ctx[id] = ctx;
@@ -1278,9 +1281,140 @@
     return `${header}<div class="training-days">${cards}</div>`;
   }
 
-  async function renderTraining() {
+  // ------------------------------------------------- client: workout log
+  // The client logs kg and reps for each set of a session. Saving also marks
+  // the day "Trained: Yes" on daily_logs, which ticks Training on Habits.
+  function programFor(ctx, day) {
+    const starts = [...new Set(ctx.training.map((r) => r.program_start_date))].sort().reverse();
+    const start = starts.find((d) => d <= day) || starts[starts.length - 1];
+    const sessions = ctx.training.filter((r) => r.program_start_date === start).sort((a, b) => a.cycle_day - b.cycle_day);
+    const len = sessions.length ? Math.max(...sessions.map((r) => r.cycle_day)) : 0;
+    const scheduled = start && start <= day && len ? (S.daysBetween(start, day) % len) + 1 : null;
+    return { start, sessions, scheduled };
+  }
+
+  function setsText(sets) {
+    return (sets || []).filter((x) => x.reps).map((x) => `${x.kg != null ? `${fmt(x.kg, 1)} kg × ` : ''}${fmt(x.reps)}`).join(', ');
+  }
+
+  // The last time this exercise was logged before the given day.
+  function lastSets(ctx, name, before) {
+    for (const w of ctx.workouts) {
+      if (w.day >= before) continue;
+      const hit = (w.exercises || []).find((e) => X.normalise(e.name) === X.normalise(name) && (e.sets || []).some((x) => x.reps));
+      if (hit) return { day: w.day, sets: hit.sets };
+    }
+    return null;
+  }
+
+  function workoutFormHTML(ctx, day, cycleDay) {
+    const prog = programFor(ctx, day);
+    const training = prog.sessions.filter((r) => !r.is_rest_day);
+    const existing = ctx.workouts.find((w) => w.day === day);
+    const chosen = cycleDay || (existing && existing.cycle_day) || (training.some((r) => r.cycle_day === prog.scheduled) ? prog.scheduled : training[0] && training[0].cycle_day);
+    const session = prog.sessions.find((r) => r.cycle_day === chosen);
+    const scheduledRest = prog.sessions.find((r) => r.cycle_day === prog.scheduled && r.is_rest_day);
+    const sameSession = existing && existing.cycle_day === chosen;
+    const rows = session && !session.is_rest_day ? session.exercises.map((ex, i) => {
+      const logged = sameSession ? (existing.exercises || []).find((e) => e.index === i || X.normalise(e.name) === X.normalise(ex.name)) : null;
+      const prev = lastSets(ctx, ex.name, day);
+      const count = Math.max(Number(ex.sets) || 1, logged ? logged.sets.length : 0);
+      const reps = ex.reps_min === ex.reps_max ? fmt(ex.reps_min) : `${fmt(ex.reps_min)}–${fmt(ex.reps_max)}`;
+      const sets = Array.from({ length: count }, (_, n) => {
+        const v = logged && logged.sets[n] ? logged.sets[n] : {};
+        const p = prev && prev.sets[n] ? prev.sets[n] : {};
+        return `<div class="wl-set"><span class="wl-n">Set ${n + 1}</span>
+          <label><span>kg</span><input data-kg type="number" inputmode="decimal" step="0.5" min="0" max="500" value="${esc(v.kg ?? '')}" placeholder="${esc(p.kg ?? '')}"></label>
+          <label><span>reps</span><input data-reps type="number" inputmode="numeric" min="0" max="100" value="${esc(v.reps ?? '')}" placeholder="${esc(p.reps ?? '')}"></label></div>`;
+      }).join('');
+      return `<li class="wl-ex" data-wl-ex="${i}" data-name="${esc(ex.name)}">
+        <div class="wl-ex-head"><div class="wl-ex-map" aria-hidden="true">${(withMuscles(ex).primary || []).length ? X.bodyDiagram(withMuscles(ex).primary, withMuscles(ex).secondary, { small: true }) : ''}</div>
+          <div><strong>${esc(ex.name)}</strong><small>Target: ${fmt(ex.sets)} sets × ${esc(reps)} reps${ex.rir && ex.rir_target != null ? ` · ${fmt(ex.rir_target)} RIR` : ''}</small>
+          ${prev ? `<small class="wl-prev">Last time (${esc(niceDate(prev.day))}): ${esc(setsText(prev.sets))}</small>` : ''}</div></div>
+        <div class="wl-sets" data-sets>${sets}</div>
+        <button type="button" class="wl-add" data-add-set>+ Add set</button>
+      </li>`;
+    }).join('') : '';
+    return `<form id="workout-log" class="card wl" novalidate>
+      <div class="wl-top"><div><p class="kicker">Log your workout</p>
+        <h2>${existing ? 'Workout logged <span class="wl-done">✓</span>' : scheduledRest && !cycleDay ? 'Rest day today' : 'How did it go?'}</h2>
+        <p class="hint" style="margin-top:0">${scheduledRest && !existing ? 'Rest day on your plan. Trained anyway? Pick the session below.' : 'Enter the weight and reps you did for each set. Grey numbers are from last time.'}</p></div></div>
+      <div class="grid-2">
+        <label>Date<input type="date" id="wl-day" value="${esc(day)}" max="${esc(S.today())}" min="${esc(S.addDays(S.today(), -14))}"></label>
+        <label>Session<select id="wl-session">${training.map((r) => `<option value="${r.cycle_day}"${r.cycle_day === chosen ? ' selected' : ''}>Day ${r.cycle_day} · ${esc(r.session_name)}${r.cycle_day === prog.scheduled ? ' (today)' : ''}</option>`).join('')}</select></label>
+      </div>
+      ${rows ? `<ol class="wl-list">${rows}</ol>` : '<p>No exercises in this session.</p>'}
+      <label>Notes (optional)<textarea id="wl-note" maxlength="2000" placeholder="How it felt, anything to tell ${esc(COACH)}">${esc((sameSession && existing.note) || '')}</textarea></label>
+      ${ctx.workoutsReady ? `<button class="btn" type="submit" style="width:100%">${existing ? 'Update workout' : 'Save workout'}</button>` : `<p class="hint">Workout logging switches on once ${esc(COACH)} finishes the app update.</p>`}
+    </form>`;
+  }
+
+  function workoutHistoryHTML(ctx, limit) {
+    const list = ctx.workouts.slice(0, limit || 6);
+    if (!list.length) return '';
+    return `<section class="card wl-history"><p class="kicker">Recent workouts</p>
+      ${list.map((w) => `<details><summary><b>${esc(niceDate(w.day, { weekday: 'short', day: 'numeric', month: 'short' }))}</b><span>${esc(w.session_name || 'Workout')} · ${(w.exercises || []).reduce((n, e) => n + (e.sets || []).filter((x) => x.reps).length, 0)} sets</span></summary>
+        <ul>${(w.exercises || []).filter((e) => (e.sets || []).some((x) => x.reps)).map((e) => `<li><strong>${esc(e.name)}</strong><span>${esc(setsText(e.sets))}</span></li>`).join('')}</ul>
+        ${w.note ? `<p class="exercise-note">${esc(w.note)}</p>` : ''}</details>`).join('')}
+    </section>`;
+  }
+
+  async function renderTraining(day, cycleDay) {
     const ctx = await loadCtx(state.me.id, true);
-    shell('Training', 'Your program', trainingHTML(ctx), 'training');
+    const d = day || S.today();
+    const log = ctx.training.length ? workoutFormHTML(ctx, d, cycleDay) : '';
+    shell('Training', 'Your program', `${log}${workoutHistoryHTML(ctx)}${trainingHTML(ctx)}`, 'training');
+    const form = root.querySelector('#workout-log');
+    if (!form) return;
+    form.querySelector('#wl-day').addEventListener('change', (e) => {
+      const v = e.target.value;
+      if (v && v <= S.today()) renderTraining(v);
+    });
+    form.querySelector('#wl-session').addEventListener('change', (e) => renderTraining(form.querySelector('#wl-day').value, Number(e.target.value)));
+    form.addEventListener('click', (e) => {
+      const add = e.target.closest('[data-add-set]');
+      if (!add) return;
+      const box = add.closest('[data-wl-ex]').querySelector('[data-sets]');
+      const n = box.children.length + 1;
+      box.insertAdjacentHTML('beforeend', `<div class="wl-set"><span class="wl-n">Set ${n}</span>
+        <label><span>kg</span><input data-kg type="number" inputmode="decimal" step="0.5" min="0" max="500"></label>
+        <label><span>reps</span><input data-reps type="number" inputmode="numeric" min="0" max="100"></label></div>`);
+      box.lastElementChild.querySelector('[data-kg]').focus();
+    });
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      withBusy(form.querySelector('[type="submit"]'), async () => {
+        const dayValue = form.querySelector('#wl-day').value;
+        if (!dayValue || dayValue > S.today()) throw new Error('Pick today or an earlier day.');
+        const prog = programFor(ctx, dayValue);
+        const cd = Number(form.querySelector('#wl-session').value);
+        const session = prog.sessions.find((r) => r.cycle_day === cd);
+        const exercises = [...form.querySelectorAll('[data-wl-ex]')].map((li) => ({
+          index: Number(li.dataset.wlEx),
+          name: li.dataset.name,
+          sets: [...li.querySelectorAll('.wl-set')].map((row) => {
+            const kg = row.querySelector('[data-kg]').value.trim();
+            const reps = row.querySelector('[data-reps]').value.trim();
+            return { kg: kg === '' ? null : Number(kg), reps: reps === '' ? null : Number(reps) };
+          }).filter((x) => x.reps !== null || x.kg !== null),
+        }));
+        for (const ex of exercises) {
+          for (const x of ex.sets) {
+            if (x.reps === null) throw new Error(`${ex.name}: add the reps for each set you entered a weight for.`);
+            if (!Number.isFinite(x.reps) || x.reps < 0 || x.reps > 100 || (x.kg !== null && (!Number.isFinite(x.kg) || x.kg < 0 || x.kg > 500))) throw new Error(`${ex.name}: check the numbers.`);
+          }
+        }
+        if (!exercises.some((ex) => ex.sets.some((x) => x.reps > 0))) throw new Error('Add the reps for at least one set.');
+        must(await sb.from('workout_logs').upsert({
+          user_id: state.me.id, day: dayValue, program_start_date: prog.start || null, cycle_day: cd,
+          session_name: session ? session.session_name : null, exercises, note: form.querySelector('#wl-note').value.trim() || null,
+        }, { onConflict: 'user_id,day' }));
+        must(await sb.from('daily_logs').upsert({ user_id: state.me.id, day: dayValue, trained: 'Yes' }, { onConflict: 'user_id,day' }));
+        invalidate(state.me.id);
+        toast('Workout saved. Training is ticked on your Habits.');
+        renderTraining(dayValue);
+      });
+    });
   }
 
   // ------------------------------------------------------ client: supplements
@@ -2303,6 +2437,7 @@
           <button class="btn" type="submit">Add to exercise library</button></div>
         <div class="tp-custom-list" data-custom-list></div>
       </form>
+      ${ctx.workouts && ctx.workouts.length ? workoutHistoryHTML(ctx, 10) : ''}
       ${latest.length && !newPlan ? `<section class="coach-preview"><p class="kicker">Client preview</p>${trainingHTML(ctx)}</section>` : ''}`);
 
     if (root.querySelector('#new-training-plan')) root.querySelector('#new-training-plan').addEventListener('click', () => renderCoachTraining(ctx, nav, title, sub, true));
