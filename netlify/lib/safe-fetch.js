@@ -91,7 +91,7 @@ function requestOnce(u, target, { timeoutMs, maxBytes, signal }) {
       u,
       {
         method: 'GET',
-        headers: { 'User-Agent': 'RewiredCoachingRecipeImport/1.0 (+https://cerulean-jalebi-4e172d.netlify.app)', Accept: 'text/html,application/xhtml+xml,application/ld+json;q=0.9' },
+        headers: { 'User-Agent': 'RewiredCoachingRecipeImport/1.0 (+https://rewiredbyabhey.com)', Accept: 'text/html,application/xhtml+xml,application/ld+json;q=0.9' },
         // Connect to the address we already checked, whatever DNS says now.
         lookup: (_h, o, cb) => (o && o.all ? cb(null, [{ address: target.address, family: target.family }]) : cb(null, target.address, target.family)),
         timeout: timeoutMs,

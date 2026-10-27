@@ -6,3 +6,9 @@ document.querySelectorAll('[data-book]').forEach((a) => {
   a.target = '_blank';
   a.rel = 'noopener';
 });
+
+// The Stripe payment link behind every "Join now" button (data-join).
+window.REWIRED_JOIN_URL = 'https://buy.stripe.com/5kQcMZ6qd8yr6TvgvX0Ny00';
+document.querySelectorAll('[data-join]').forEach((a) => {
+  a.href = window.REWIRED_JOIN_URL;
+});
