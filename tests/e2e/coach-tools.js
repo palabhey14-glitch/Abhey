@@ -175,6 +175,65 @@ function seed() {
   await client.screenshot({ path: `${OUT}/client-training.png` });
   check(client.errors.length === 0, 'no script errors for the client', client.errors);
 
+  // ------------------------------------------------ coach: nutrition restructure
+  console.log('Coach: Nutrition, Goals, coach note');
+  sql(`update profiles set diet_requirement = null where id = '${A}'`);
+  await go(coach, `#client/${A}/nutrition`);
+  const menu = await coach.locator('.crm-sections').innerText();
+  check(/Goals/.test(menu) && !/Meal plan/.test(menu), 'menu has Goals and no separate Meal plan', menu);
+  check(/Meal plan/.test(await coach.locator('.crm-head .crm-badge').first().innerText()), 'Nutrition header shows the plan type');
+  const tabs = await coach.locator('.crm-tabs').innerText();
+  check(/Daily intake/.test(tabs) && /Nutrition builder/.test(tabs) && /Current nutrition/.test(tabs), 'Nutrition has Daily intake, Nutrition builder and Current nutrition', tabs);
+
+  await go(coach, `#client/${A}/nutrition/builder`);
+  check(await coach.locator('#t-goal_weight_kg').count() === 0 && await coach.locator('#t-coach_note').count() === 0, 'goals and coach note are no longer in Nutrition');
+  await coach.selectOption('#t-diet_requirement', 'Halal');
+  await coach.click('#nut-setup [type=submit]');
+  await coach.locator('.toast').filter({ hasText: /Nutrition setup saved/ }).first().waitFor({ timeout: 5000 });
+  check(sql(`select diet_requirement from profiles where id = '${A}'`) === 'Halal', 'diet requirement saved');
+  await coach.waitForTimeout(500);
+  check(/Halal/.test(await coach.locator('.crm-head').innerText()), 'diet requirement shows in the header');
+  check(await coach.locator('[data-build-plan]').count() === 1, 'meal plan client gets the meal plan builder');
+  await coach.screenshot({ path: `${OUT}/coach-nutrition-builder.png`, fullPage: true });
+  await coach.click('[data-build-plan]');
+  await coach.locator('.build-for').waitFor({ timeout: 8000 });
+  const bf = await coach.locator('.build-for').innerText();
+  check(/Building for Arjun/i.test(bf) && /Halal/.test(bf), 'builder shows who the plan is for and their diet', bf);
+  const tplId = coach.url().split('/').slice(-2)[0];
+  await coach.locator('.build-for a.btn').first().click();
+  await coach.locator('#assign-form').waitFor({ timeout: 8000 });
+  check(await coach.locator('#as-template').inputValue() === tplId, 'Assign opens with the new plan picked');
+  check(/nutrition\/assign/.test(coach.url()), 'assigning happens inside Nutrition');
+
+  await go(coach, `#client/${A}/nutrition/current`);
+  check(await coach.locator('.cn-day').count() === 1, 'Current nutrition shows today');
+  await coach.selectOption('#cn-view', 'week');
+  await coach.waitForTimeout(600);
+  check(await coach.locator('.cn-day').count() === 7, 'Week ahead shows 7 days');
+  await coach.screenshot({ path: `${OUT}/coach-current-nutrition.png`, fullPage: true });
+  await coach.selectOption('#cn-view', 'date');
+  await coach.waitForTimeout(400);
+  await coach.fill('#cn-date', sql('select current_date + 3'));
+  await coach.dispatchEvent('#cn-date', 'change');
+  await coach.waitForTimeout(600);
+  check(coach.url().endsWith(sql('select current_date + 3')) && await coach.locator('.cn-day').count() === 1, 'choosing a date shows that day');
+
+  await go(coach, `#client/${A}/goals`);
+  check(await coach.locator('#t-goal_weight_kg').count() === 1 && await coach.locator('#t-steps_target').count() === 1, 'Goals has the 12-week and weekly targets');
+  await coach.fill('#t-goal_weight_kg', '78');
+  await coach.click('#targets-form [type=submit]');
+  await coach.waitForTimeout(700);
+  check(sql(`select goal_weight_kg from targets where client_id = '${A}'`) === '78.0', 'goals save');
+
+  await go(coach, `#client/${A}/overview`);
+  await coach.fill('#t-coach_note', 'Protein first, every day.');
+  await coach.click('#note-form [type=submit]');
+  await coach.waitForTimeout(700);
+  check(sql(`select coach_note from targets where client_id = '${A}'`) === 'Protein first, every day.', 'coach note saves from Overview');
+  await go(coach, `#client/${A}/meals/assign`);
+  check(/nutrition|meals/.test(coach.url()) && await coach.locator('#assign-form').count() === 1, 'old Meal plan links still work');
+  check(coach.errors.length === 0, 'no script errors in the nutrition pages', coach.errors);
+
   await browser.close();
   console.log(`\n${passed} passed, ${failures.length} failed`);
   if (failures.length) process.exit(1);

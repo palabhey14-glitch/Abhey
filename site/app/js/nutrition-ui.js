@@ -1057,14 +1057,22 @@
 
   // ------------------------------------------------------ coach: client plan
 
-  async function coachMeals(ctx, title, sub, arg) {
+  // The client's assigned plan, inside Nutrition → Nutrition builder.
+  // opts.tabs: the Nutrition tabs; opts.before: the builder's setup cards
+  // (shown above the plan); opts.showPlan: false for flexible-macro clients
+  // with nothing assigned; opts.bind: wires up opts.before once drawn.
+  async function coachMeals(ctx, title, sub, arg, opts) {
+    opts = opts || {};
     const id = ctx.profile.id;
+    const tabs = opts.tabs || '';
+    const before = opts.before || '';
+    const done = () => opts.bind && opts.bind();
     if (!ctx.nutritionReady) {
-      return h.shell(title, sub, '<div class="card"><p class="kicker">One step first</p><p>Run <b>supabase/migrations/2026-10-25-nutrition.sql</b> in the Supabase SQL Editor, then reload this page.</p></div>');
+      h.shell(title, sub, `${tabs}${before}<div class="card"><p class="kicker">One step first</p><p>Run <b>supabase/migrations/2026-10-25-nutrition.sql</b> in the Supabase SQL Editor, then reload this page.</p></div>`);
+      return done();
     }
-    const view = arg === 'assign' || arg === 'history' || /^v\d+$/.test(arg || '') ? (arg === 'assign' ? 'assign' : 'history') : 'current';
-    const tabs = h.sectionTabs(id, 'meals', [['current', 'Current plan'], ['assign', 'Assign a new version'], ['history', 'History']], view);
-    if (view === 'assign') return coachAssign(ctx, title, sub, tabs);
+    const view = arg === 'assign' ? 'assign' : arg === 'history' || /^v\d+$/.test(arg || '') ? 'history' : 'current';
+    if (view === 'assign') return coachAssign(ctx, title, sub, tabs, opts.template);
     if (view === 'history') return coachHistory(ctx, title, sub, tabs, arg);
 
     const today = S.today();
@@ -1076,18 +1084,30 @@
           <h2>${esc(cur.name)}</h2>
           ${cur.protein_g !== null ? targetsLineHTML(cur) : '<p class="hint">Daily targets: the plan’s own totals.</p>'}
           ${cur.coach_note ? `<p class="plan-note">${esc(cur.coach_note)}</p>` : ''}
-          <div class="row-actions"><a class="btn btn-small" href="#client/${id}/meals/assign">Assign a new version</a><button type="button" class="btn btn-ghost btn-small" data-end>End this plan</button></div>
+          <div class="row-actions"><a class="btn btn-small" href="#client/${id}/nutrition/assign">Assign a new version</a><button type="button" class="btn btn-ghost btn-small" data-end>End this plan</button><a class="btn btn-ghost btn-small" href="#client/${id}/nutrition/history">History</a></div>
           <form class="end-form" hidden novalidate><label for="end-day">Last day of this plan</label><input id="end-day" type="date" value="${today}" min="${S.addDays(today, -1)}"><div class="row-actions"><button type="submit" class="btn btn-small">End plan</button></div>
             <p class="hint">${esc(ctx.profile.full_name || 'The client')} goes back to the weekly macro targets${weekly ? ` (${fmt(weekly.calories)} kcal)` : ''}. Their logs and this version stay in the history.</p></form>
         </section>`
-      : `<div class="plan-empty"><span class="qt-ic" aria-hidden="true">${h.ICONS.meals}</span><div><b>No meal plan or daily targets assigned</b><p>${weekly ? `The weekly macro targets apply (${fmt(weekly.calories)} kcal). ` : ''}<a href="#client/${id}/meals/assign">Assign a template or daily macro targets</a>.</p></div></div>`;
+      : `<div class="plan-empty"><span class="qt-ic" aria-hidden="true">${h.ICONS.meals}</span><div><b>No meal plan or daily targets assigned</b><p>${weekly ? `The weekly macro targets apply (${fmt(weekly.calories)} kcal). ` : ''}<a href="#client/${id}/nutrition/assign">Assign a template or daily macro targets</a>.</p></div></div>`;
+    const build = `<div class="build-plan card"><div><p class="kicker">Meal plan builder</p><p>Build a plan for ${esc(ctx.profile.full_name || 'this client')} from the food database${ctx.profile.diet_requirement ? ` (${esc(ctx.profile.diet_requirement)})` : ''}, then assign it here.</p></div>
+        <div class="row-actions"><button type="button" class="btn btn-small" data-build-plan>Build a new meal plan</button><a class="btn btn-ghost btn-small" href="#client/${id}/nutrition/assign">Assign an existing template</a></div></div>`;
+    const showPlan = opts.showPlan !== false || cur || next;
     h.shell(
       title,
       sub,
-      `${tabs}${curCard}
+      `${tabs}${before}${showPlan ? `<h2 class="crm-sub">${opts.showPlan === false ? 'Assigned plan' : 'Meal plan'}</h2>${curCard}${opts.showPlan === false ? '' : build}` : ''}
       ${next ? `<div class="note-card"><span class="note-mark" aria-hidden="true">R<i>.</i></span><div><p class="kicker">Coming up</p><p>Version ${next.version}, <b>${esc(next.name)}</b>, starts ${h.niceDate(next.starts_on)}.</p></div></div>` : ''}
-      ${cur && cur.kind === 'meal_plan' ? `<h2 class="crm-sub">What ${esc(ctx.profile.full_name || 'the client')} sees</h2><div id="plan-preview">${planPreviewHTML(cur.plan)}</div>` : ''}`,
+      ${showPlan && cur && cur.kind === 'meal_plan' ? `<h2 class="crm-sub">What ${esc(ctx.profile.full_name || 'the client')} sees</h2><div id="plan-preview">${planPreviewHTML(cur.plan)}</div>` : ''}
+      ${opts.after || ''}`,
     );
+    done();
+    const buildBtn = h.root.querySelector('[data-build-plan]');
+    if (buildBtn) buildBtn.addEventListener('click', () => h.withBusy(buildBtn, async () => {
+      const name = `${(ctx.profile.full_name || 'Client').split(' ')[0]}'s plan`;
+      const notes = ctx.profile.diet_requirement ? `Diet: ${ctx.profile.diet_requirement}` : null;
+      const row = h.must(await sb.from('plan_templates').insert({ name, notes, plan: N.planForSave(N.emptyPlan('daily')) }).select().single());
+      location.hash = `#library/template/${row.id}/${id}`;
+    }));
     const pv = h.root.querySelector('#plan-preview');
     if (pv) bindPreviewDays(pv, cur.plan);
     const endBtn = h.root.querySelector('[data-end]');
@@ -1100,13 +1120,13 @@
           h.must(await sb.rpc('end_nutrition', { p_client: id, p_last_day: form.querySelector('input').value }));
           h.invalidate(id);
           h.toast('Plan ended. It stays in the history.');
-          location.hash = `#client/${id}/meals/history`;
+          location.hash = `#client/${id}/nutrition/history`;
         });
       });
     }
   }
 
-  async function coachAssign(ctx, title, sub, tabs) {
+  async function coachAssign(ctx, title, sub, tabs, preselect) {
     const id = ctx.profile.id;
     const today = S.today();
     const latest = ctx.assignments[ctx.assignments.length - 1];
@@ -1125,13 +1145,13 @@
       title,
       sub,
       `${tabs}<form id="assign-form" class="card" novalidate>
-        <p class="kicker">New version ${latest ? latest.version + 1 : 1}</p>
+        <p class="kicker">New version ${latest ? latest.version + 1 : 1}${ctx.profile.diet_requirement ? ` · Diet: ${esc(ctx.profile.diet_requirement)}` : ''}</p>
         <fieldset class="seg"><legend class="sr-only">Type</legend>
           <label><input type="radio" name="kind" value="meal_plan"${templates.length ? ' checked' : ' disabled'}> Meal plan from a template</label>
           <label><input type="radio" name="kind" value="macros"${templates.length ? '' : ' checked'}> Daily macro targets only</label>
         </fieldset>
         <div data-for="meal_plan">
-          <div class="field"><label for="as-template">Template</label><select id="as-template" name="template">${templates.map((t) => `<option value="${t.id}">${esc(t.name)}</option>`).join('')}</select>
+          <div class="field"><label for="as-template">Template</label><select id="as-template" name="template">${templates.map((t) => `<option value="${t.id}"${t.id === preselect ? ' selected' : ''}>${esc(t.name)}</option>`).join('')}</select>
           <p class="hint" data-tpl-info></p><p class="hint"><a href="#library/templates">Create or edit templates in Foods &amp; plans</a></p></div>
         </div>
         ${templates.length ? '' : '<p class="hint">No templates yet. <a href="#library/templates">Create one in Foods &amp; plans</a> to assign set meals.</p>'}
@@ -1183,7 +1203,7 @@
         }));
         h.invalidate(id);
         h.toast(`Version ${row.version} assigned from ${h.niceDate(row.starts_on)}.`);
-        location.hash = `#client/${id}/meals`;
+        location.hash = `#client/${id}/nutrition/builder`;
       });
     });
   }
@@ -1229,7 +1249,7 @@
         const replacedEarly = a.ends_on && a.ends_on < a.starts_on;
         return `<tr${shown && shown.id === a.id ? ' class="on"' : ''}><td><b>${a.version}</b></td><td class="wrap-text">${esc(a.name)}</td><td>${esc(KIND[a.kind])}</td>
           <td>${h.niceDate(a.starts_on)}</td><td>${replacedEarly ? 'Replaced before it began' : a.ends_on ? h.niceDate(a.ends_on) : 'Open'}</td>
-          <td>${a.calories ? `${fmt(a.calories)} kcal` : 'Plan totals'}</td><td>${a.kind === 'meal_plan' ? `<a href="#client/${id}/meals/v${a.version}">View</a>` : ''}</td></tr>`;
+          <td>${a.calories ? `${fmt(a.calories)} kcal` : 'Plan totals'}</td><td>${a.kind === 'meal_plan' ? `<a href="#client/${id}/nutrition/v${a.version}">View</a>` : ''}</td></tr>`;
       });
     h.shell(
       title,
@@ -1242,6 +1262,77 @@
     );
     const pv = h.root.querySelector('#plan-preview');
     if (pv) bindPreviewDays(pv, shown.plan);
+  }
+
+  // ------------------------------------------------- coach: current nutrition
+  // What the client is set to eat: one day, or the week ahead from a date.
+  // mode: undefined (today), 'YYYY-MM-DD' (that day) or 'week' / 'week-YYYY-MM-DD'.
+  function coachCurrent(ctx, title, sub, tabs, mode) {
+    const id = ctx.profile.id;
+    const today = S.today();
+    const m = /^(week)?-?(\d{4}-\d{2}-\d{2})?$/.exec(mode || '') || [];
+    const week = m[1] === 'week';
+    const from = m[2] || today;
+    const pick = week ? 'week' : m[2] ? 'date' : 'today';
+    const days = week ? Array.from({ length: 7 }, (_, i) => S.addDays(from, i)) : [from];
+    const names = ctx.profile.meal_names || {};
+    const macroLine = (n) => `P ${fmt(n.p)} · C ${fmt(n.c)} · F ${fmt(n.f)}${n.fibre ? ` · fibre ${fmt(n.fibre)}` : ''}`;
+
+    const perDay = days.map((d) => {
+      const a = ctx.nutritionReady ? N.assignmentFor(ctx.assignments, d) : null;
+      const meals = a && a.kind === 'meal_plan' ? N.planMeals(a.plan, d) : [];
+      const total = N.sum(meals.map(N.mealPlanned).map((x) => ({ kcal: x.kcal, p: x.p, c: x.c, f: x.f, fibre: x.fibre })));
+      return { d, a, meals, total, target: dayTarget(ctx, d) };
+    });
+
+    const dayHTML = ({ d, a, meals, total, target }) => {
+      const head = `<div class="cn-day-head"><h3>${d === today ? 'Today' : h.niceDate(d, { weekday: 'long' })}<small>${h.niceDate(d, { day: 'numeric', month: 'long' })}</small></h3>
+        <div class="cn-tot">${meals.length ? `<b>${kcal(total.kcal)}</b><span>${macroLine(total)}</span>` : target ? `<b>${fmt(target.calories)} kcal</b><span>P ${fmt(target.protein_g)} · C ${fmt(target.carbs_g)} · F ${fmt(target.fats_g)}</span>` : '<span>No targets set</span>'}</div></div>`;
+      const plan = a ? `${esc(KIND[a.kind])}: ${esc(a.name)} (version ${a.version})` : 'Weekly macro targets';
+      const body = meals.length
+        ? `<ul class="cn-meals">${meals.map((meal) => {
+            const n = N.mealPlanned(meal);
+            return `<li><details${week ? '' : ' open'}><summary><span class="cn-meal">${esc(mealNameOf(names, `plan:${meal.id}`, meal.name))}${meal.time ? ` <small>${esc(meal.time)}</small>` : ''}</span><span class="cn-mk"><b>${kcal(n.kcal)}</b> ${macroLine(n)}</span></summary>
+              <ul class="fi-list">${plannedItemsHTML(meal) || '<li><span class="hint">No foods</span></li>'}</ul></details></li>`;
+          }).join('')}</ul>`
+        : `<p class="hint cn-flex">${a && a.kind === 'meal_plan' ? 'No meals planned on this day.' : 'No set meals: the client eats to these targets and logs what they eat.'}${d <= today ? ` <a href="#client/${id}/foodlog/${d}">See what was logged ›</a>` : ''}</p>`;
+      const off = target && meals.length && target.from === 'targets' && Math.abs(total.kcal - target.calories) > target.calories * 0.05
+        ? `<p class="unknown-note">Planned meals add up to ${kcal(total.kcal)}, against a ${fmt(target.calories)} kcal target.</p>` : '';
+      return `<section class="card cn-day">${head}<p class="cn-plan">${plan}</p>${body}${off}${total.incomplete ? `<p class="unknown-note">${total.incomplete} food${total.incomplete === 1 ? ' has' : 's have'} missing values, so the totals are higher than shown.</p>` : ''}</section>`;
+    };
+
+    let summary = '';
+    if (week) {
+      const planned = perDay.filter((x) => x.meals.length);
+      const avg = (k) => (planned.length ? planned.reduce((s2, x) => s2 + x.total[k], 0) / planned.length : null);
+      const tg = perDay.map((x) => x.target).filter(Boolean);
+      summary = h.statCards([
+        { k: 'Days with set meals', v: `${planned.length} / 7`, s: planned.length ? '' : 'Flexible macros all week' },
+        { k: 'Average planned calories', v: planned.length ? `${fmt(avg('kcal'))} kcal` : '–', s: tg.length ? `Target about ${fmt(tg.reduce((s2, x) => s2 + (x.calories || 0), 0) / tg.length)} kcal` : '' },
+        { k: 'Average protein', v: planned.length ? `${fmt(avg('p'))} g` : '–', s: tg.length ? `Target about ${fmt(tg.reduce((s2, x) => s2 + (x.protein_g || 0), 0) / tg.length)} g` : '' },
+        { k: 'Average carbs · fats', v: planned.length ? `${fmt(avg('c'))} · ${fmt(avg('f'))} g` : '–' },
+      ]);
+    }
+
+    h.shell(
+      title,
+      sub,
+      `${tabs}
+      <div class="card cn-bar">
+        <div class="field"><label for="cn-view">View</label><select id="cn-view"><option value="today"${pick === 'today' ? ' selected' : ''}>Today</option><option value="date"${pick === 'date' ? ' selected' : ''}>Choose a date</option><option value="week"${pick === 'week' ? ' selected' : ''}>Week ahead</option></select></div>
+        <div class="field"${pick === 'today' ? ' hidden' : ''}><label for="cn-date">${week ? 'Starting' : 'Date'}</label><input id="cn-date" type="date" value="${from}"></div>
+      </div>
+      ${ctx.nutritionReady ? '' : '<div class="card muted-box">Meal plans switch on once supabase/migrations/2026-10-25-nutrition.sql has been run.</div>'}
+      ${summary}
+      <div class="${week ? 'cn-week' : ''}">${perDay.map(dayHTML).join('')}</div>`,
+    );
+    const go = () => {
+      const v = h.root.querySelector('#cn-view').value;
+      const d = h.root.querySelector('#cn-date').value || today;
+      location.hash = `#client/${id}/nutrition/current/${v === 'today' ? '' : v === 'week' ? `week-${d}` : d}`.replace(/\/$/, '');
+    };
+    h.root.querySelector('#cn-view').addEventListener('change', go);
+    h.root.querySelector('#cn-date').addEventListener('change', go);
   }
 
   // ------------------------------------------------------ coach: food log
@@ -1317,11 +1408,11 @@
     h.shell(title, sub, body);
   }
 
-  async function library(view, arg) {
+  async function library(view, arg, forClient) {
     if (!isCoach()) return clientRecipes(view, arg);
     const ready = await sb.from('plan_templates').select('id').limit(1);
     if (missingTable(ready)) return libShell('Foods & plans', '', '<div class="card"><p class="kicker">One step first</p><p>Run <b>supabase/migrations/2026-10-25-nutrition.sql</b> in the Supabase SQL Editor, then reload this page.</p></div>');
-    if (view === 'template' && arg) return templateEditor(arg);
+    if (view === 'template' && arg) return templateEditor(arg, forClient);
     if (view === 'recipe' && arg) return recipeEditor(arg, '#library');
     if (view === 'recipe-import') return recipeImport('#library');
     if (view === 'recipes') return recipeList('#library');
@@ -1357,8 +1448,10 @@
     );
   }
 
-  async function templateEditor(id) {
+  async function templateEditor(id, forClient) {
     const t = h.must(await sb.from('plan_templates').select('*').eq('id', id).single());
+    // Opened from a client's Nutrition builder: show who it's for and the way back.
+    const client = forClient ? (await sb.from('profiles').select('id, full_name, diet_requirement, nutrition_tracking').eq('id', forClient).maybeSingle()).data : null;
     const plan = JSON.parse(JSON.stringify(t.plan));
     let day = plan.days[0].day;
     let name = t.name;
@@ -1367,6 +1460,9 @@
       'Edit template',
       '',
       `${libTabs('templates')}
+      ${client ? `<div class="build-for card"><div><p class="kicker">Building for ${esc(client.full_name || 'client')}</p>
+        <p>${client.diet_requirement ? `Diet requirement: <b>${esc(client.diet_requirement)}</b>. Pick foods that fit it.` : 'No diet requirements set.'} Changes save as you go.</p></div>
+        <div class="row-actions"><a class="btn btn-small" href="#client/${client.id}/nutrition/assign/${id}">Assign to ${esc((client.full_name || 'client').split(' ')[0])} ›</a><a class="btn btn-ghost btn-small" href="#client/${client.id}/nutrition/builder">Back</a></div></div>` : ''}
       <div class="tp-head card">
         <input class="tp-name" id="tp-name" value="${esc(name)}" maxlength="120" aria-label="Template name">
         <textarea id="tp-notes" rows="2" maxlength="2000" placeholder="Notes for you (who it suits, swaps you allow…)">${esc(notes)}</textarea>
@@ -1945,6 +2041,6 @@
 
   window.RewiredNutritionUI = {
     init, load, ensureRange, dayTarget, hasMealPlan, pickFood,
-    clientMeals, checkinFoodHTML, coachMeals, coachFoodLog, library, COUNTRIES,
+    clientMeals, checkinFoodHTML, coachMeals, coachCurrent, coachFoodLog, library, COUNTRIES,
   };
 })();

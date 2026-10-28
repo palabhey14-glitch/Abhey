@@ -1642,3 +1642,43 @@ svg.mx text { fill: #7a879b; font: 600 9px var(--font); letter-spacing: 0.06em; 
   .ha-row { grid-template-columns: auto minmax(0, 1fr); }
   .ha-actions { grid-column: 1 / -1; flex-direction: row; margin-top: 0; }
 }
+
+/* Coach: plan type badge in the header */
+.crm-badge { align-self: center; padding: 4px 10px; border-radius: 999px; background: var(--sky); color: var(--navy); font-size: 12.5px; font-weight: 700; white-space: nowrap; }
+.crm-badge + .crm-badge { background: #fff4e0; color: #8a5a00; }
+
+/* Coach note on Overview */
+.coach-note { display: block; }
+.coach-note .kicker { display: block; margin-bottom: 8px; }
+.coach-note textarea { width: 100%; min-height: 64px; }
+.coach-note .row-actions { align-items: center; margin-top: 8px; }
+.coach-note .hint { margin: 0; }
+
+/* Nutrition builder: build a plan */
+.build-plan, .build-for { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.build-plan p, .build-for p { margin: 0; }
+.build-plan .kicker, .build-for .kicker { margin-bottom: 4px; }
+.build-for { border: 1.5px solid var(--brand-blue); }
+
+/* Current nutrition */
+.cn-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+.cn-bar .field { margin: 0; min-width: 180px; }
+.cn-week { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+.cn-week > .card { margin: 0; }
+.cn-day-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.cn-day-head h3 { margin: 0; font-size: 17px; }
+.cn-day-head h3 small { display: block; font-size: 12.5px; font-weight: 500; color: var(--ink-2); }
+.cn-tot { text-align: right; }
+.cn-tot b { display: block; font-size: 18px; }
+.cn-tot span { font-size: 12px; color: var(--ink-2); }
+.cn-plan { margin: 6px 0 8px; font-size: 12.5px; color: var(--ink-2); }
+.cn-meals { list-style: none; margin: 0; padding: 0; }
+.cn-meals > li { border-top: 1px solid #edf2fb; }
+.cn-meals summary { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 10px 0; cursor: pointer; list-style: none; }
+.cn-meals summary::-webkit-details-marker { display: none; }
+.cn-meal { font-weight: 700; }
+.cn-meal small { font-weight: 500; color: var(--ink-2); }
+.cn-mk { font-size: 12.5px; color: var(--ink-2); text-align: right; }
+.cn-mk b { color: var(--navy); margin-right: 4px; }
+.cn-meals .fi-list { margin: 0 0 10px; }
+.cn-flex { margin: 4px 0 0; }
