@@ -41,28 +41,32 @@ def contacts(color, sep_color):
     ])
 
 
+def lockup(white=False):
+    """The site header logo: R mark, Rewired Coaching, WITH ABHEY PAL."""
+    f = "logo-full-white.png" if white else "logo-full.png"
+    return (f'<a href="{SITE}"><img src="{IMG}/{f}" width="197" height="36" alt="Rewired Coaching with Abhey Pal" '
+            f'style="display:block;border:0;width:197px;height:36px;"></a>')
+
+
 def classic():
-    """Clean light. R mark, amber rule, blue call button."""
+    """Clean light. Header logo, amber rule, blue call button."""
     return f"""<table cellpadding="0" cellspacing="0" border="0" role="presentation" style="font-family:{SANS};color:{NAVY};max-width:480px;">
-<tr>
-<td valign="top" style="padding:2px 16px 0 0;"><a href="{SITE}"><img src="{IMG}/r-mark.png" width="64" height="64" alt="Rewired Coaching" style="display:block;border:0;width:64px;height:64px;"></a></td>
-<td valign="top" style="border-left:2px solid {SAND};padding:0 0 0 16px;">
+<tr><td style="padding:0 0 14px 0;">{lockup()}</td></tr>
+<tr><td style="border-left:2px solid {SAND};padding:0 0 0 14px;">
 <div style="font-family:{SERIF};font-size:22px;line-height:26px;color:{NAVY};">Abhey Pal</div>
-<div style="font-size:11px;line-height:18px;letter-spacing:1.5px;color:{BLUE};font-weight:bold;padding-top:2px;">REWIRED COACHING</div>
 <div style="font-size:13px;line-height:19px;color:{GREY};padding-bottom:8px;">12 Week Premium Designer Coaching</div>
 <div style="font-size:12px;line-height:18px;padding-bottom:12px;">{contacts(NAVY, SAND)}</div>
 {button("Book a Strategy Call &rarr;", BLUE, "#ffffff")}
 <div style="font-size:10px;line-height:16px;color:#9fb0cc;padding-top:10px;">{ABN}</div>
-</td>
-</tr>
+</td></tr>
 </table>"""
 
 
 def navy():
-    """Bold navy card, like the site hero. White logo, sand button."""
+    """Bold navy card, like the site hero. White header logo, sand button."""
     return f"""<table cellpadding="0" cellspacing="0" border="0" role="presentation" bgcolor="{NAVY}" style="background:{NAVY};border-radius:12px;font-family:{SANS};max-width:440px;">
 <tr><td style="padding:20px 22px 18px 22px;">
-<a href="{SITE}"><img src="{IMG}/logo-full-white.png" width="200" height="37" alt="Rewired Coaching with Abhey Pal" style="display:block;border:0;width:200px;height:37px;"></a>
+{lockup(white=True)}
 <div style="height:2px;width:36px;background:{SAND};line-height:2px;font-size:0;margin:16px 0 14px 0;">&nbsp;</div>
 <div style="font-family:{SERIF};font-size:21px;line-height:25px;color:#ffffff;">Abhey Pal</div>
 <div style="font-size:13px;line-height:19px;color:#adc5ff;padding-bottom:10px;">12 Week Premium Designer Coaching</div>
@@ -74,22 +78,18 @@ def navy():
 
 
 def hook():
-    """Sales-led. Plain details on top, the site's hook in a sky panel below."""
+    """Sales-led. Header logo and details on top, the site's hook in a sky panel below."""
     return f"""<table cellpadding="0" cellspacing="0" border="0" role="presentation" style="font-family:{SANS};color:{NAVY};max-width:480px;">
+<tr><td style="padding:0 0 12px 0;">{lockup()}</td></tr>
 <tr><td style="padding:0 0 12px 0;">
 <div style="font-family:{SERIF};font-size:22px;line-height:26px;color:{NAVY};">Abhey Pal</div>
-<div style="font-size:13px;line-height:19px;color:{GREY};">Coach, Rewired Coaching<span style="color:{SAND};">&nbsp;&middot;&nbsp;</span>12 Week Premium Designer Coaching</div>
+<div style="font-size:13px;line-height:19px;color:{GREY};">Coach<span style="color:{SAND};"> &middot; </span>12 Week Premium Designer Coaching</div>
 <div style="font-size:12px;line-height:18px;padding-top:4px;">{contacts(BLUE, SAND)}</div>
 </td></tr>
 <tr><td bgcolor="{SKY}" style="background:{SKY};border-left:3px solid {BLUE};border-radius:0 8px 8px 0;padding:14px 16px;">
-<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="100%"><tr>
-<td valign="middle" style="padding-right:12px;">
 <div style="font-family:{SERIF};font-size:17px;line-height:22px;color:{NAVY};">Skinny fat at 30 isn't a life sentence.</div>
 <div style="font-size:12px;line-height:18px;color:{GREY};padding-top:3px;">Build muscle and lose fat at the same time, with a coach who's done it for 15 years.</div>
 <div style="font-size:13px;line-height:18px;padding-top:8px;">{link(BOOK, "Book a Strategy Call &rarr;", BLUE, bold=True)}</div>
-</td>
-<td valign="middle" width="44" style="width:44px;"><a href="{SITE}"><img src="{IMG}/r-mark.png" width="44" height="44" alt="Rewired Coaching" style="display:block;border:0;width:44px;height:44px;"></a></td>
-</tr></table>
 </td></tr>
 <tr><td style="font-size:10px;line-height:16px;color:#9fb0cc;padding-top:8px;">{ABN}</td></tr>
 </table>"""
