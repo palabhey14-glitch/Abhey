@@ -17,6 +17,12 @@
     Cache-Control = "no-cache"
     X-Robots-Tag = "noindex"
 
+# Belly check quiz is shared by link only: keep it out of search engines.
+[[headers]]
+  for = "/belly-check/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
 # Server functions (barcode lookup, recipe import). They read SUPABASE_URL,
 # SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY from the Netlify environment.
 [functions]
