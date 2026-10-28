@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b2545">
+<meta name="description" content="A 5-minute check for busy men who have lost weight but are not happy with their belly. Find the 3 things to check before cutting more calories.">
+<title>Stubborn Belly Check | Rewired Coaching</title>
+<style>*,*::before,*::after{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&family=Source+Sans+3:ital,wght@0,400..700;1,400&family=Montserrat:wght@600;700&family=Caveat:wght@600&display=swap">
+<style>
+/* Layout: one narrow left-aligned column in the Rewired look: paper page, navy hero panels, sand italic accent word.
+   The progress bar is drawn as a sand-coloured tape measure. */
+:root{
+  --bg:#FDFBF7; --surface:#FFFFFF; --fg:#0B2545; --muted:#4F5D72; --line:#DDE4EF;
+  --track:#E8F1FD; --tick:#AFBCD3; --tape:#F4C77D; --tape-ink:#0B2545;
+  --accent-text:#9A6A1F; --blue:#2444F9; --warn:#B3361B; --ok:#177548; --focus:#2444F9;
+  --btn-bg:#0B2545; --btn-fg:#FFFFFF;
+  --hero-from:#0B2545; --hero-to:#12305A; --hero-fg:#FFFFFF; --hero-soft:rgba(255,255,255,.86); --hero-line:rgba(255,255,255,.2); --sand:#F4C77D;
+  --serif:"Newsreader","Iowan Old Style",Georgia,"Times New Roman",serif;
+  --sans:"Source Sans 3","Segoe UI",-apple-system,BlinkMacSystemFont,Roboto,Arial,sans-serif;
+  --brand:"Montserrat","Avenir Next","Segoe UI",Arial,sans-serif;
+  --hand:"Caveat","Bradley Hand","Segoe Print",cursive;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#071A35; --surface:#0B2545; --fg:#F6F8FC; --muted:#A9B6CC; --line:#1E3B66;
+    --track:#12305A; --tick:#3F5C8C; --tape-ink:#071A35; --accent-text:#F4C77D;
+    --warn:#FF9070; --ok:#4CC58A; --focus:#A9BCFF; --btn-bg:#F6F8FC; --btn-fg:#071A35;
+    --hero-from:#0B2545; --hero-to:#12305A; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#071A35; --surface:#0B2545; --fg:#F6F8FC; --muted:#A9B6CC; --line:#1E3B66;
+  --track:#12305A; --tick:#3F5C8C; --tape-ink:#071A35; --accent-text:#F4C77D;
+  --warn:#FF9070; --ok:#4CC58A; --focus:#A9BCFF; --btn-bg:#F6F8FC; --btn-fg:#071A35;
+  --hero-from:#0B2545; --hero-to:#12305A; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:17px/1.55 var(--sans)}
+.wrap{max-width:620px;margin:0 auto;padding-block:18px 56px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+p{margin:0}
+h1,h2,h3{font-family:var(--serif);font-optical-sizing:auto;font-weight:450;margin:0;text-wrap:balance}
+h1{font-size:clamp(42px,12vw,64px);line-height:1;letter-spacing:-.025em}
+h2{font-size:clamp(28px,7vw,36px);line-height:1.1;letter-spacing:-.015em}
+h3{font-size:23px;line-height:1.2;letter-spacing:-.01em}
+em{font-style:italic}
+[tabindex="-1"]:focus{outline:none}
+
+/* Brand lockup, drawn in CSS to echo the site header */
+.lockup{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+.mark{width:32px;height:32px;border-radius:8px;background:var(--blue);color:#fff;font:700 18px/32px var(--brand);text-align:center;flex:0 0 32px}
+.mark span{color:var(--sand)}
+.wm b{display:block;font:700 15px/1.15 var(--brand);color:var(--fg)}
+.wm small{display:block;font:600 8.5px/1.4 var(--brand);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+
+/* Tape-measure progress */
+.tape,.tape i{background-image:linear-gradient(90deg,var(--tc) 1px,transparent 1px),linear-gradient(90deg,var(--tc) 1px,transparent 1px);
+  background-size:8px 38%,40px 64%;background-repeat:repeat-x;background-position:left bottom,left bottom}
+.tape{position:relative;height:30px;border-radius:6px;background-color:var(--track);--tc:var(--tick);overflow:hidden}
+.tape i{position:absolute;top:0;bottom:0;left:0;width:0;background-color:var(--tape);--tc:var(--tape-ink);transition:width .35s ease}
+.tape.small{height:14px}
+
+.meta{display:flex;justify-content:space-between;gap:12px;font:600 12px/1 var(--sans);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.eyebrow{font:600 13px/1.3 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--accent-text);margin:26px 0 10px}
+.eyebrow.warn{color:var(--warn)}
+.note{color:var(--muted);margin-top:12px;font-size:16px}
+
+/* Navy hero panels, as on the site */
+.hero{background:linear-gradient(135deg,var(--hero-from),var(--hero-to));color:var(--hero-fg);border-radius:12px;padding:28px 22px 26px}
+.hero .kicker{color:var(--sand);font-size:16px;font-weight:500;margin-bottom:14px}
+.hero h1 em,.hero h2 em{color:var(--sand)}
+.hero .lede{color:var(--hero-soft);font-size:18px;line-height:1.5;margin-top:18px;max-width:34em}
+.preview{list-style:none;margin:24px 0 24px;padding:0;border-top:1px solid var(--hero-line)}
+.preview li{display:flex;gap:16px;align-items:baseline;padding:13px 0;border-bottom:1px solid var(--hero-line)}
+.preview b{font:600 12px/1 var(--sans);letter-spacing:.09em;text-transform:uppercase;color:var(--sand);flex:0 0 66px}
+.preview span{font-weight:600;color:var(--hero-fg)}
+.hero .note{color:var(--hero-soft);margin-top:14px;font-size:15px}
+.hero .sign{font:600 30px/1 var(--hand);color:var(--sand);margin-top:16px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font:600 17px/1 var(--sans);min-height:50px;padding:0 22px;border-radius:8px;border:1px solid transparent;cursor:pointer;
+  background:var(--btn-bg);color:var(--btn-fg)}
+.btn.light{background:#fff;color:#0B2545}
+.btn.ghost{background:transparent;color:var(--fg);border-color:var(--line)}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.btn:focus-visible,.opt:has(input:focus-visible),input[type=number]:focus-visible,input[type=email]:focus-visible,input[type=text]:focus-visible,.link:focus-visible,a:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.hero .btn:focus-visible,.hero a:focus-visible{outline-color:#fff}
+.link{background:none;border:0;color:var(--fg);text-decoration:underline;text-underline-offset:3px;font:inherit;cursor:pointer;padding:6px 0}
+
+fieldset{border:0;margin:22px 0 0;padding:0;min-width:0}
+legend{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{position:relative;display:flex;gap:14px;align-items:flex-start;padding:15px 16px;background:var(--surface);border:1px solid var(--line);border-radius:8px;cursor:pointer;min-width:0}
+.opt input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
+.opt .mark2{flex:0 0 20px;height:20px;margin-top:2px;border-radius:50%;border:2px solid var(--muted)}
+.opt .otext{min-width:0;overflow-wrap:anywhere}
+.opt:has(input:checked){border-color:var(--fg);box-shadow:inset 0 0 0 1px var(--fg)}
+.opt:has(input:checked) .mark2{border-color:var(--fg);background:radial-gradient(circle,var(--fg) 0 38%,transparent 42%)}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:22px}
+
+.verdict{margin-top:8px}
+.verdict em{color:var(--accent-text)}
+.verdict-body{margin-top:14px;font-size:18px;max-width:36em}
+.checks{margin-top:34px;border-top:1px solid var(--line)}
+.check{padding:22px 0;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:12px}
+.check-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.tag{font:600 12px/1 var(--sans);letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.tag.first{background:var(--tape);color:#0B2545;padding:5px 8px;border-radius:4px}
+.pill{font:600 12px/1 var(--sans);letter-spacing:.07em;text-transform:uppercase;padding:5px 10px;border-radius:99px;border:1px solid currentColor}
+.pill.fix{color:var(--warn)} .pill.tighten{color:var(--fg)} .pill.ok{color:var(--ok)}
+.check ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:9px}
+.panel{margin-top:30px;padding:20px;background:var(--surface);border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;gap:14px}
+.panel h3{font-size:21px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+input[type=number],input[type=email],input[type=text]{font:inherit;min-height:48px;padding:0 14px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);min-width:0;flex:1 1 150px}
+.out{min-height:1.5em;font-weight:600}
+.cta{margin-top:30px}
+.cta h2{font-size:clamp(26px,6.4vw,32px)}
+.cta p{color:var(--hero-soft);margin:12px 0 20px;max-width:32em}
+.fine{font-size:14px;color:var(--muted);line-height:1.5;margin-top:34px;max-width:40em}
+h2 em{color:var(--accent-text)}
+.lead{display:flex;flex-direction:column;margin-top:18px}
+.field{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.field label{font-weight:600;font-size:16px}
+.lead input{flex:none;width:100%}
+.lead input[aria-invalid="true"]{border-color:var(--warn)}
+.err{color:var(--warn);font-weight:600;font-size:15px;min-height:1.3em;margin:0}
+.lead .btn{margin-top:14px;align-self:stretch}
+.consent{font-size:14px;color:var(--muted);line-height:1.5;margin-top:14px}
+.consent a{color:inherit}
+@media (prefers-reduced-motion: reduce){.tape i{transition:none}}
+</style>
+
+<div class="wrap">
+  <div class="lockup"><span class="mark" aria-hidden="true">R<span>.</span></span><span class="wm"><b>Rewired Coaching</b><small>with Abhey Pal</small></span></div>
+  <form name="belly-check" method="POST" data-netlify="true" netlify-honeypot="bot-field" hidden>
+  <input type="hidden" name="form-name" value="belly-check">
+  <input name="bot-field"><input name="name"><input name="email"><input name="priority"><input name="answers">
+</form>
+<main id="app" tabindex="-1"></main>
+  <p class="fine">This check gives general information for adults. It is not medical advice and cannot diagnose anything. If thinking about food or your body is taking over your day, talk to your GP.</p>
+</div>
+
+<script>
+// ---- Settings ---------------------------------------------------------------
+// "preview" sends nothing (used in the Claude preview). "netlify" posts name, email and result to the
+// Netlify form called belly-check. The standalone index.html is built with "netlify".
+const LEAD_MODE = "netlify";
+// Optional extra: also add the person to Kit. Paste your Kit form subscribe URL, or leave empty.
+// Example shape: "https://app.kit.com/forms/1234567/subscriptions".
+const EMAIL_ENDPOINT = "";
+const CONSENT = "By continuing you agree to get your result and occasional coaching emails from Rewired Coaching. You can unsubscribe at any time.";
+const PRIVACY_URL = "/privacy.html"; // optional: link to your privacy policy
+const BOOKING_URL = "https://calendly.com/coaching-abheyrewired/30min";
+
+// BEGIN LOGIC
+const CHECKS = [
+  { name: "Is it actually stuck?", short: "tracking and consistency" },
+  { name: "Is your food and training protecting muscle?", short: "muscle and fuel" },
+  { name: "What is inflating or hiding the belly?", short: "daily habits" }
+];
+
+const GATE = {
+  id: "gate", check: 0, label: "Safety check",
+  text: "Before you start: have you had any of these in the last 3 months?",
+  note: "Weight loss you did not plan. A belly that feels hard, swollen or painful. Blood in your stool, or black stools. A lasting change in bowel habits. Swollen ankles or new shortness of breath.",
+  options: [{ t: "None of these", p: 0 }, { t: "Yes, at least one", p: 1 }]
+};
+
+const QUESTIONS = [
+  { id: "track", check: 1, text: "How are you checking whether your belly has changed?", options: [
+    { t: "Tape measure and a photo every week or two", p: 0 },
+    { t: "Tape measure now and then", p: 1, tip: "Measure your waist once a week at the same time, first thing in the morning, with the tape level with your navel. One reading means little. Four weeks of readings show the trend." },
+    { t: "Scale weight only", p: 2, tip: "Scale weight does not show where you lost it. Add a weekly waist measurement and a photo in the same spot and light." },
+    { t: "The mirror and how my clothes fit", p: 2, tip: "Mirrors change with lighting, posture and time of day. Take a weekly photo in the same spot and light, and add a waist measurement." }
+  ]},
+  { id: "trend", check: 1, text: "Over the last 3 weeks, what has your waist measurement done?", options: [
+    { t: "Gone down", p: 0 },
+    { t: "Stayed the same", p: 2, tip: "A flat waist for 3 weeks with steady habits is the point where a small change makes sense. Work through the checks below first, then adjust." },
+    { t: "Gone up", p: 3, tip: "A waist that rises while weight falls often comes from bloating, water or posture, or from a gap between what you think you eat and what you eat. Start with Daily habits and the weekend question." },
+    { t: "I have not measured it", p: 2, tip: "You cannot call it stuck without a number. Measure tonight and again in 7 days." }
+  ]},
+  { id: "weekend", check: 1, text: "How do your weekends compare with your weekdays?", options: [
+    { t: "About the same", p: 0 },
+    { t: "A bit looser", p: 1, tip: "Weekend extras can cancel out a weekday deficit. Plan the 1 or 2 meals out you expect instead of leaving them open." },
+    { t: "Very different", p: 3, tip: "If the weekend undoes the week, cutting weekday food further will not fix it. Bring the weekend closer to your weekday plan before you change anything else." },
+    { t: "I eat out, travel or order in most days", p: 2, tip: "Restaurant portions and cooking oils are hard to estimate. Pick 2 or 3 go-to meals with known numbers and repeat them on busy days and trips." }
+  ]},
+  { id: "lift", check: 2, text: "How many times a week do you lift weights or do strength training?", options: [
+    { t: "3 or more", p: 0 },
+    { t: "1 or 2", p: 1, tip: "Aim for 3 strength sessions a week and add load over time. Three 40 minute full-body sessions are enough to start. Strength work helps you keep muscle while you lose fat, and that shows in how your waist looks." },
+    { t: "None", p: 3, tip: "Losing weight without strength training often costs muscle, so the belly looks the same at a lower weight. Start with 3 short full-body sessions a week." }
+  ]},
+  { id: "protein", check: 2, text: "How would you describe your protein intake?", options: [
+    { t: "I track it and hit my target most days", p: 0 },
+    { t: "I have protein at most meals but do not track it", p: 1, tip: "Track protein for 1 week. People often overestimate it. Sports nutrition guidelines for people dieting while training commonly sit around 1.6 to 2.2 g per kg of body weight per day. If you have kidney disease, check with your doctor first." },
+    { t: "I do not think about it", p: 3, tip: "Track protein for 1 week. Sports nutrition guidelines for people dieting while training commonly sit around 1.6 to 2.2 g per kg of body weight per day. If you have kidney disease, check with your doctor first." }
+  ]},
+  { id: "eating", check: 2, text: "Which describes your current eating best?", options: [
+    { t: "I eat enough to feel mostly satisfied", p: 0 },
+    { t: "Fairly strict, and hungry on some days", p: 1, tip: "Hold your intake where it is instead of cutting further. A strict plan is easier to keep when meals are simple and repeatable." },
+    { t: "Very low, hungry most days, skipping meals", p: 3, low: true, tip: "Do not cut further. Eating less than your body needs can cost muscle, sleep, mood and training quality. Speak to your GP or an accredited practising dietitian before changing your intake." }
+  ]},
+  { id: "length", check: 2, text: "How long have you been in a calorie deficit without a break?", options: [
+    { t: "Under 8 weeks", p: 0 },
+    { t: "8 to 16 weeks", p: 1, tip: "Many coaches plan a 1 to 2 week break at maintenance food around the 12 week mark. It helps training quality and makes the next stretch easier." },
+    { t: "More than 16 weeks", p: 3, tip: "A long unbroken deficit often brings lower energy, weaker training and less daily movement. Plan a 1 to 2 week break at maintenance food before you cut again." }
+  ]},
+  { id: "sleep", check: 3, text: "How much do you sleep on a typical night?", options: [
+    { t: "7 hours or more", p: 0 },
+    { t: "6 to 7 hours", p: 1, tip: "Aim for 7 hours or more on most nights. Short sleep raises hunger and makes a plan harder to stick to." },
+    { t: "Under 6 hours", p: 3, tip: "Sleep is the cheapest fix on this list. Move your bedtime 30 minutes earlier for a week, and set a stop time for work messages." }
+  ]},
+  { id: "alcohol", check: 3, text: "How many alcoholic drinks do you have in a typical week?", options: [
+    { t: "0 to 2", p: 0 },
+    { t: "3 to 7", p: 1, tip: "Drinks add calories that are easy to forget, and work dinners and Friday drinks add up. Count them for a week." },
+    { t: "8 or more", p: 3, tip: "At this level alcohol can cancel out a real part of your deficit, and it affects sleep and bloating. Halve it for 4 weeks and compare your waist readings." }
+  ]},
+  { id: "steps", check: 3, text: "What is your average daily step count?", note: "If you do not know, check the health app on your phone.", options: [
+    { t: "8,000 or more", p: 0 },
+    { t: "5,000 to 8,000", p: 1, tip: "Add a 15 to 20 minute walk after your biggest meal, or take calls on foot. Daily steps often drop without you noticing while you diet." },
+    { t: "Under 5,000, or I sit most of the day", p: 3, tip: "Add a 15 to 20 minute walk after your biggest meal, take calls on foot, and build from there. Low daily movement quietly shrinks your deficit." }
+  ]},
+  { id: "bloat", check: 3, text: "How does your belly change over a day?", options: [
+    { t: "About the same size from morning to night", p: 0 },
+    { t: "Bigger by the evening, especially after meals", p: 2, tip: "A belly that grows through the day points to bloating more than body fat. For a week, note what you ate before it swelled. Common triggers are large meals, fizzy drinks, sugar alcohols and eating fast at your desk. If it persists, see your GP." },
+    { t: "Bloated most of the time", p: 3, tip: "Constant bloating is worth a conversation with your GP before you change your diet again." }
+  ]}
+];
+
+const ALL = [GATE].concat(QUESTIONS);
+
+function score(ans) {
+  const out = { gate: false, low: false, checks: [], top: 0, allGood: false };
+  if (ans.gate === 1) { out.gate = true; return out; }
+  CHECKS.forEach((c, i) => out.checks.push({ n: i + 1, name: c.name, short: c.short, sum: 0, max: 0, tips: [] }));
+  QUESTIONS.forEach(q => {
+    const c = out.checks[q.check - 1];
+    c.max += Math.max.apply(null, q.options.map(o => o.p));
+    const sel = q.options[ans[q.id]];
+    if (!sel) return;
+    c.sum += sel.p;
+    if (sel.low) out.low = true;
+    if (sel.p > 0 && sel.tip) c.tips.push({ p: sel.p, tip: sel.tip });
+  });
+  out.checks.forEach(c => {
+    c.pct = c.max ? c.sum / c.max : 0;
+    c.status = c.pct < 0.2 ? "ok" : c.pct < 0.5 ? "tighten" : "fix";
+    c.tips = c.tips.sort((a, b) => b.p - a.p).slice(0, 3).map(t => t.tip);
+  });
+  out.checks.forEach((c, i) => { if (c.pct > out.checks[out.top].pct) out.top = i; });
+  out.allGood = out.checks[out.top].pct < 0.2;
+  return out;
+}
+
+function waistMessage(cm) {
+  if (!(cm >= 40 && cm <= 200)) return "Enter your waist in centimetres, between 40 and 200.";
+  if (cm < 94) return cm + " cm is below the 94 cm threshold used in general guidance for adult men.";
+  if (cm < 102) return cm + " cm sits in the increased-risk range (94 to 101.9 cm) in general guidance for adult men.";
+  return cm + " cm is in the higher-risk range (102 cm or more) in general guidance for adult men. Mention it at your next GP check-up.";
+}
+// Step map: 0..ALL.length-1 are questions, ALL.length is the name and email step, ALL.length+1 is the result.
+// A red-flag answer on the safety question goes straight to the result, ungated.
+function nextStep(step, ans, hasLead) {
+  const q = ALL[step];
+  if (q && q.id === "gate" && ans.gate === 1) return ALL.length + 1;
+  if (step === ALL.length - 1) return hasLead ? ALL.length + 1 : ALL.length;
+  return step + 1;
+}
+
+function validateLead(name, email) {
+  const errs = {};
+  const n = String(name || "").trim().replace(/\s+/g, " ");
+  if (n.length < 3 || !/^\S+(\s\S+)+$/.test(n)) errs.name = "Enter your first and last name.";
+  const e = String(email || "").trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e)) errs.email = "Enter a valid email address, like name@example.com.";
+  return { errs: errs, name: n, email: e };
+}
+
+function splitName(n) {
+  const p = n.split(" ");
+  return { first: p[0], last: p.slice(1).join(" ") };
+}
+
+function priorityLabel(r) {
+  if (r.gate) return "see-gp";
+  if (r.low) return "do-not-cut";
+  if (r.allGood) return "on-track";
+  return r.checks[r.top].short;
+}
+// END LOGIC
+
+const app = document.getElementById("app");
+const state = { step: -1, answers: {}, lead: null };
+const STATUS = { fix: "Fix first", tighten: "Tighten", ok: "On track" };
+
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+function introView() {
+  return '<section class="hero"><p class="kicker">For busy men who have already lost weight</p>' +
+    '<h1>Stubborn belly, <em>checked.</em></h1>' +
+    '<p class="lede">You have lost weight and your belly has not caught up. Answer ' + ALL.length + ' questions between meetings to see which of 3 things to check before you cut calories any further.</p>' +
+    '<ul class="preview">' + CHECKS.map((c, i) => '<li><b>Check ' + (i + 1) + '</b><span>' + esc(c.name) + '</span></li>').join("") + '</ul>' +
+    '<button class="btn light" data-act="start">Start the check</button>' +
+    '<p class="note">About 5 minutes. You add your name and email at the end to see your result.</p></section>';
+}
+
+function questionView() {
+  const q = ALL[state.step];
+  const last = state.step === ALL.length - 1;
+  const chosen = state.answers[q.id];
+  const eyebrow = q.check === 0 ? q.label : "Check " + q.check + " of 3 · " + CHECKS[q.check - 1].name;
+  const pct = Math.round(((state.step + 1) / ALL.length) * 100);
+  return '<div class="meta"><span>Question ' + (state.step + 1) + ' of ' + ALL.length + '</span><span>' + (q.check === 0 ? "Safety" : "Check " + q.check + " of 3") + '</span></div>' +
+    '<div class="tape" role="progressbar" aria-valuemin="0" aria-valuemax="' + ALL.length + '" aria-valuenow="' + (state.step + 1) + '" aria-label="Progress"><i style="width:' + pct + '%"></i></div>' +
+    '<p class="eyebrow">' + esc(eyebrow) + '</p>' +
+    '<h2 id="qtext" tabindex="-1">' + esc(q.text) + '</h2>' +
+    (q.note ? '<p class="note">' + esc(q.note) + '</p>' : '') +
+    '<fieldset><legend>' + esc(q.text) + '</legend><div class="opts">' +
+    q.options.map((o, i) => '<label class="opt"><input type="radio" name="opt" value="' + i + '"' + (chosen === i ? " checked" : "") + '><span class="mark2"></span><span class="otext">' + esc(o.t) + '</span></label>').join("") +
+    '</div></fieldset>' +
+    '<div class="nav"><button class="btn ghost" data-act="back">Back</button>' +
+    '<button class="btn" data-act="next"' + (chosen === undefined ? " disabled" : "") + '>' + (last && !state.lead ? "Continue" : last ? "See my result" : "Next") + '</button></div>';
+}
+
+function checkRows(r) {
+  const order = r.checks.slice().sort((a, b) => b.pct - a.pct || a.n - b.n);
+  return '<div class="checks">' + order.map(c => {
+    const first = !r.allGood && c.n === r.checks[r.top].n;
+    return '<section class="check"><div class="check-head"><span class="tag' + (first ? " first" : "") + '">' + (first ? "Check this first · " : "") + 'Check ' + c.n + '</span><span class="pill ' + c.status + '">' + STATUS[c.status] + '</span></div>' +
+      '<h3>' + esc(c.name) + '</h3>' +
+      '<div class="tape small" aria-hidden="true"><i style="width:' + Math.max(Math.round(c.pct * 100), c.pct > 0 ? 6 : 0) + '%"></i></div>' +
+      (c.tips.length ? '<ul>' + c.tips.map(t => '<li>' + esc(t) + '</li>').join("") + '</ul>' : '<p>Nothing to change here right now.</p>') +
+      '</section>';
+  }).join("") + '</div>';
+}
+
+function waistPanel() {
+  return '<section class="panel"><h3>Optional: put a number on it</h3>' +
+    '<p>Stand relaxed, breathe out, and put the tape level with your navel. Do not pull your stomach in.</p>' +
+    '<div class="row"><input id="waist" type="number" inputmode="decimal" min="40" max="200" step="0.5" placeholder="Waist in cm" aria-label="Waist in centimetres"></div>' +
+    '<p class="out" id="waistOut" aria-live="polite"></p></section>';
+}
+
+function ctaPanel() {
+  return '<section class="hero cta"><h2>Want a second pair of eyes on <em>your result?</em></h2>' +
+    '<p>Book a free 30-minute call and talk it through. Your answers show where to start, and a call turns that into a plan around your job and your week.</p>' +
+    '<a class="btn light" href="' + esc(BOOKING_URL) + '" target="_blank" rel="noopener">Book a free 30-minute call</a>' +
+    '<p class="sign" style="margin-top:18px;color:var(--sand);font:600 30px/1 var(--hand)">Abhey</p></section>';
+}
+
+function leadView() {
+  const l = state.lead || { name: "", email: "" };
+  return '<div class="meta"><span>Last step</span><span>Almost done</span></div>' +
+    '<div class="tape" aria-hidden="true"><i style="width:100%"></i></div>' +
+    '<p class="eyebrow">Your result is ready</p>' +
+    '<h2 id="qtext" tabindex="-1">Add your details to see your <em>result.</em></h2>' +
+    '<p class="note">Your 3 checks are ranked and waiting on the next screen.</p>' +
+    '<form id="leadForm" class="lead" novalidate>' +
+    '<div class="field"><label for="fullname">Full name</label>' +
+    '<input id="fullname" name="name" type="text" autocomplete="name" placeholder="First and last name" value="' + esc(l.name) + '"><p class="err" id="nameErr" aria-live="polite"></p></div>' +
+    '<div class="field"><label for="email">Email</label>' +
+    '<input id="email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" value="' + esc(l.email) + '"><p class="err" id="emailErr" aria-live="polite"></p></div>' +
+    '<button class="btn" type="submit" id="leadBtn">See my result</button>' +
+    '<p class="err" id="leadMsg" role="alert"></p>' +
+    '<p class="consent">' + esc(CONSENT) + (PRIVACY_URL ? ' <a href="' + esc(PRIVACY_URL) + '" target="_blank" rel="noopener">Privacy policy</a>' : '') + '</p>' +
+    (LEAD_MODE === "netlify" ? '' : '<p class="note">Preview mode: your details are not sent anywhere yet.</p>') +
+    '</form>' +
+    '<div class="nav"><button class="btn ghost" data-act="back">Back</button></div>';
+}
+
+function resultView() {
+  const r = score(state.answers);
+  const who = state.lead ? "Result for " + esc(state.lead.name.split(" ")[0]) : "Your result";
+  const head = '<div class="meta"><span>' + who + '</span><span>Done</span></div><div class="tape" aria-hidden="true"><i style="width:100%"></i></div>';
+  const again = '<p style="margin-top:26px"><button class="link" data-act="restart">Start again</button></p>';
+  if (r.gate) {
+    return head + '<p class="eyebrow warn">Talk to a doctor first</p>' +
+      '<h2 class="verdict" id="qtext" tabindex="-1">Book a GP visit before you change your food or <em>training.</em></h2>' +
+      '<p class="verdict-body">At least one thing you ticked can have causes that diet changes will not fix. A GP can look at it properly. This page is general information and cannot assess you.</p>' + again;
+  }
+  const top = r.checks[r.top];
+  let verdict, body;
+  if (r.low) {
+    verdict = 'Do not cut calories <em>further.</em>';
+    body = "You told us you are eating very little and feel hungry most days. A stuck belly in that situation is a reason to hold your intake, not lower it. Speak to your GP or an accredited practising dietitian. The checks below still apply.";
+  } else if (r.allGood) {
+    verdict = 'Not yet. Your basics look <em>solid.</em>';
+    body = "Fat does not come off evenly. For many men the midsection is among the last places to lean out, and you cannot spot-reduce it. Keep your plan, measure your waist weekly, and review after 4 weeks of readings.";
+  } else {
+    verdict = 'Not yet. Start with <em>' + esc(top.short) + '.</em>';
+    body = "Your answers point most strongly to Check " + top.n + ". Fix that first and measure your waist weekly for 4 weeks. If your waist and weight are both flat across those 4 weeks with steady habits, that is the point to consider a small change, ideally with a coach.";
+  }
+  return head + '<p class="eyebrow">Should you eat less?</p><h2 class="verdict" id="qtext" tabindex="-1">' + verdict + '</h2><p class="verdict-body">' + esc(body) + '</p>' +
+    checkRows(r) + waistPanel() + (r.low ? "" : ctaPanel()) + again;
+}
+
+function render() {
+  app.innerHTML = state.step < 0 ? introView()
+    : state.step < ALL.length ? questionView()
+    : state.step === ALL.length ? leadView()
+    : resultView();
+  const f = document.getElementById("qtext") || app;
+  try { f.focus({ preventScroll: true }); } catch (e) {}
+  window.scrollTo(0, 0);
+}
+
+function go(n) { state.step = n; render(); }
+
+app.addEventListener("click", e => {
+  const inp = e.target.closest && e.target.closest('input[name="opt"]');
+  if (inp) {
+    const q = ALL[state.step];
+    state.answers[q.id] = Number(inp.value);
+    const next = app.querySelector('[data-act="next"]');
+    if (next) next.disabled = false;
+    // Pointer and touch clicks have detail > 0, so they advance. Keyboard selection does not.
+    if (e.detail > 0) {
+      const at = state.step;
+      setTimeout(() => { if (state.step === at) advance(); }, 170);
+    }
+    return;
+  }
+  const btn = e.target.closest && e.target.closest("[data-act]");
+  if (!btn) return;
+  const act = btn.getAttribute("data-act");
+  if (act === "start") go(0);
+  else if (act === "back") go(state.step === 0 ? -1 : state.step - 1);
+  else if (act === "next") advance();
+  else if (act === "restart") { state.answers = {}; go(-1); }
+});
+
+function advance() {
+  const q = ALL[state.step];
+  if (state.answers[q.id] === undefined) return;
+  go(nextStep(state.step, state.answers, !!state.lead));
+}
+
+app.addEventListener("input", e => {
+  if (e.target.id === "waist") {
+    const v = parseFloat(e.target.value);
+    document.getElementById("waistOut").textContent = isNaN(v) ? "" : waistMessage(v);
+  }
+});
+
+app.addEventListener("submit", e => {
+  if (e.target.id !== "leadForm") return;
+  e.preventDefault();
+  const nameEl = document.getElementById("fullname");
+  const emailEl = document.getElementById("email");
+  const v = validateLead(nameEl.value, emailEl.value);
+  document.getElementById("nameErr").textContent = v.errs.name || "";
+  document.getElementById("emailErr").textContent = v.errs.email || "";
+  nameEl.setAttribute("aria-invalid", v.errs.name ? "true" : "false");
+  emailEl.setAttribute("aria-invalid", v.errs.email ? "true" : "false");
+  if (v.errs.name) { nameEl.focus(); return; }
+  if (v.errs.email) { emailEl.focus(); return; }
+  const finish = () => { state.lead = { name: v.name, email: v.email }; go(ALL.length + 1); };
+  if (LEAD_MODE !== "netlify") { finish(); return; } // preview mode: nothing is sent
+  const btn = document.getElementById("leadBtn");
+  const msg = document.getElementById("leadMsg");
+  btn.disabled = true; btn.textContent = "Saving...";
+  msg.textContent = "";
+  const res = score(state.answers);
+  const body = new URLSearchParams({
+    "form-name": "belly-check",
+    "bot-field": "",
+    name: v.name,
+    email: v.email,
+    priority: priorityLabel(res),
+    answers: JSON.stringify(state.answers)
+  });
+  fetch("/", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: body.toString() })
+    .then(r => {
+      if (!r.ok) throw new Error("status " + r.status);
+      if (EMAIL_ENDPOINT) { // optional Kit copy, fire and forget
+        const nm = splitName(v.name);
+        const fd = new FormData();
+        fd.append("email_address", v.email);
+        fd.append("first_name", nm.first);
+        fd.append("fields[last_name]", nm.last);
+        fd.append("fields[belly_priority]", priorityLabel(res));
+        fetch(EMAIL_ENDPOINT, { method: "POST", body: fd, mode: "no-cors" }).catch(() => {});
+      }
+      finish();
+    })
+    .catch(() => {
+      btn.disabled = false; btn.textContent = "See my result";
+      msg.textContent = "That did not go through. Check your connection and try again.";
+    });
+});
+
+render();
+</script>
+</body></html>
