@@ -54,7 +54,7 @@ def classic():
 <tr><td style="padding:0 0 14px 0;">{lockup()}</td></tr>
 <tr><td style="border-left:2px solid {SAND};padding:0 0 0 14px;">
 <div style="font-family:{SERIF};font-size:22px;line-height:26px;color:{NAVY};">Abhey Pal</div>
-<div style="font-size:13px;line-height:19px;color:{GREY};padding-bottom:8px;">12 Week Premium Designer Coaching</div>
+<div style="font-size:13px;line-height:19px;color:{GREY};padding-bottom:8px;">Premium Designer Coaching</div>
 <div style="font-size:12px;line-height:18px;padding-bottom:12px;">{contacts(NAVY, SAND)}</div>
 {button("Book a Strategy Call &rarr;", BLUE, "#ffffff")}
 <div style="font-size:10px;line-height:16px;color:#9fb0cc;padding-top:10px;">{ABN}</div>
@@ -69,7 +69,7 @@ def navy():
 {lockup(white=True)}
 <div style="height:2px;width:36px;background:{SAND};line-height:2px;font-size:0;margin:16px 0 14px 0;">&nbsp;</div>
 <div style="font-family:{SERIF};font-size:21px;line-height:25px;color:#ffffff;">Abhey Pal</div>
-<div style="font-size:13px;line-height:19px;color:#adc5ff;padding-bottom:10px;">12 Week Premium Designer Coaching</div>
+<div style="font-size:13px;line-height:19px;color:#adc5ff;padding-bottom:10px;">Premium Designer Coaching</div>
 <div style="font-size:12px;line-height:18px;padding-bottom:14px;">{contacts("#ffffff", SAND)}</div>
 {button("Book a Strategy Call &rarr;", SAND, NAVY)}
 <div style="font-size:10px;line-height:16px;color:#9fb0cc;padding-top:12px;">{ABN}</div>
@@ -83,7 +83,7 @@ def hook():
 <tr><td style="padding:0 0 12px 0;">{lockup()}</td></tr>
 <tr><td style="padding:0 0 12px 0;">
 <div style="font-family:{SERIF};font-size:22px;line-height:26px;color:{NAVY};">Abhey Pal</div>
-<div style="font-size:13px;line-height:19px;color:{GREY};">Coach<span style="color:{SAND};"> &middot; </span>12 Week Premium Designer Coaching</div>
+<div style="font-size:13px;line-height:19px;color:{GREY};">Coach<span style="color:{SAND};"> &middot; </span>Premium Designer Coaching</div>
 <div style="font-size:12px;line-height:18px;padding-top:4px;">{contacts(BLUE, SAND)}</div>
 </td></tr>
 <tr><td bgcolor="{SKY}" style="background:{SKY};border-left:3px solid {BLUE};border-radius:0 8px 8px 0;padding:14px 16px;">
