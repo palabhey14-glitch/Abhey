@@ -16,6 +16,40 @@
         auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
       })
     : null;
+  // ?preview=<client id>: the coach's "Client view". The app opens as that
+  // client, read-only, inside the coach dashboard. Every write is refused here
+  // (and row level security still applies to anything that gets through).
+  const PREVIEW = new URLSearchParams(location.search).get('preview');
+  const PREVIEW_MSG = 'Client view is a preview. Nothing is saved.';
+  if (PREVIEW && sb) {
+    const refused = () => {
+      const r = Promise.resolve({ data: null, error: { message: PREVIEW_MSG } });
+      const chain = new Proxy(function () {}, {
+        get: (_, k) => (k === 'then' || k === 'catch' || k === 'finally' ? r[k].bind(r) : () => chain),
+      });
+      return chain;
+    };
+    // Writes are refused once loadMe has confirmed the coach opened the preview.
+    const on = () => state.preview;
+    const from = sb.from.bind(sb);
+    sb.from = (table) => {
+      const q = from(table);
+      return on() ? Object.assign(q, { insert: refused, upsert: refused, update: refused, delete: refused }) : q;
+    };
+    const bucket = sb.storage.from.bind(sb.storage);
+    sb.storage.from = (name) => {
+      const b = bucket(name);
+      return on() ? Object.assign(b, { upload: refused, remove: refused, update: refused, move: refused }) : b;
+    };
+    const rpc = sb.rpc.bind(sb);
+    sb.rpc = (fn, args) => (on() && fn !== 'food_search' ? refused() : rpc(fn, args));
+    const realFetch = window.fetch.bind(window);
+    window.fetch = (url, opts) => {
+      const same = new URL(String(url && url.url ? url.url : url), location.href).origin === location.origin;
+      if (on() && same && opts && opts.method && opts.method.toUpperCase() !== 'GET') return Promise.reject(new Error(PREVIEW_MSG));
+      return realFetch(url, opts);
+    };
+  }
   const COACH = cfg.coachName || 'your coach';
   const BUCKET = 'progress-photos';
   const POSES = ['front', 'side', 'back'];
@@ -172,6 +206,8 @@
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
     sun:
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+    phone:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/></svg>',
   };
 
   // ------------------------------------------------------------------ data
@@ -179,11 +215,19 @@
   async function loadMe() {
     const uid = state.session.user.id;
     state.me = must(await sb.from('profiles').select('*').eq('id', uid).single());
+    // Client view: only the coach can open it, and it shows that client's app.
+    if (PREVIEW && state.me.role === 'coach' && PREVIEW !== uid) {
+      state.me = { ...must(await sb.from('profiles').select('*').eq('id', PREVIEW).single()), role: 'client' };
+      state.preview = true;
+      document.body.classList.add('is-preview');
+    }
   }
 
   // Everything about one client: the workbook, as rows.
+  // Cached for a minute, so changes the coach makes (habits, targets, plans)
+  // reach an open client app without a reload.
   async function loadCtx(id, force) {
-    if (!force && state.ctx[id]) return state.ctx[id];
+    if (!force && state.ctx[id] && Date.now() - state.ctx[id].loadedAt < 60000) return state.ctx[id];
     const [profile, targets, macros, training, supplements, logs, checkins, measurements, photos] = await Promise.all([
       sb.from('profiles').select('*').eq('id', id).single(),
       sb.from('targets').select('*').eq('client_id', id).maybeSingle(),
@@ -211,6 +255,7 @@
       habits: habitsReady ? habits.data : [], habitEntries: habitsReady ? habitEntries.data : [], habitsReady,
       workouts: workouts.error ? [] : workouts.data, workoutsReady: !workouts.error,
       ...nutrition,
+      loadedAt: Date.now(),
     };
     state.ctx[id] = ctx;
     return ctx;
@@ -246,15 +291,13 @@
     ['overview', 'Overview'],
     ['physique', 'Physique'],
     ['nutrition', 'Nutrition'],
-    ['meals', 'Meal plan'],
+    ['goals', 'Goals'],
     ['foodlog', 'Food log'],
     ['activity', 'Activity'],
     ['recovery', 'Recovery'],
     ['habits', 'Habits'],
     ['training', 'Training'],
     ['supps', 'Supplements'],
-    ['logs', 'Daily logs'],
-    ['photos', 'Gallery'],
     ['checkins', 'Check-ins'],
   ];
 
@@ -297,12 +340,50 @@
           <a class="crm-settings" href="#client/${v.clientId}/settings"${v.section === 'settings' ? ' aria-current="page"' : ''}>⚙ Client settings</a>
         </nav>`
       : '';
+    const preview = v.clientId
+      ? `<button type="button" class="btn btn-ghost btn-small crm-preview" data-client-view>${ICONS.phone}<span>Client view</span></button>`
+      : '';
     root.innerHTML = `<div class="crm${v.clientId ? ' with-sections' : ''}">${rail}${sections}
-      <main class="crm-main"><header class="crm-head"><h1>${esc(title)}</h1>${sub ? `<p>${esc(sub)}</p>` : ''}</header>${body}</main></div>`;
+      <main class="crm-main"><header class="crm-head"><h1>${esc(title)}</h1>${sub ? `<p>${esc(sub)}</p>` : ''}${(v.badges || []).map((b) => `<span class="crm-badge">${esc(b)}</span>`).join('')}${preview}</header>${body}</main></div>`;
     root.querySelector('[data-signout]').addEventListener('click', signOut);
+    const pv = root.querySelector('[data-client-view]');
+    if (pv) pv.addEventListener('click', () => openClientView(v));
     const current = root.querySelector('.crm-sections [aria-current]');
     if (current) current.scrollIntoView({ block: 'nearest', inline: 'center' });
     window.scrollTo(0, 0);
+  }
+
+  // The client's own screen for each coach section, for Client view.
+  const CLIENT_SCREEN = {
+    overview: 'home', physique: 'progress', nutrition: 'meals', goals: 'progress', foodlog: 'meals', activity: 'habits',
+    recovery: 'habits', habits: 'habits/today/all', training: 'training', supps: 'supps', checkins: 'checkin', settings: 'profile',
+  };
+
+  // Client view: the client's phone app, read-only, beside the coach dashboard.
+  function openClientView(v) {
+    const old = document.querySelector('.client-view');
+    if (old) old.remove();
+    let screen = CLIENT_SCREEN[v.section] || 'home';
+    if (v.section === 'physique' && v.view === 'photos') screen = 'photos';
+    screen = screen.replace('today', S.today());
+    const box = document.createElement('div');
+    box.className = 'client-view';
+    box.innerHTML = `<div class="cv-panel" role="dialog" aria-modal="true" aria-label="Client view">
+        <div class="cv-head"><div><b>Client view</b><small>What ${esc(v.clientName)} sees on their phone. Read-only.</small></div>
+          <button type="button" class="btn btn-ghost btn-small" data-cv-close aria-label="Close client view">Close</button></div>
+        <div class="cv-phone"><iframe title="${esc(v.clientName)}'s app" src="./?preview=${encodeURIComponent(v.clientId)}#${screen}"></iframe></div>
+      </div>`;
+    document.body.appendChild(box);
+    const close = () => {
+      box.remove();
+      document.removeEventListener('keydown', onKey);
+      window.removeEventListener('hashchange', close);
+    };
+    const onKey = (e) => e.key === 'Escape' && close();
+    box.addEventListener('click', (e) => (e.target === box || e.target.closest('[data-cv-close]')) && close());
+    document.addEventListener('keydown', onKey);
+    window.addEventListener('hashchange', close);
+    box.querySelector('[data-cv-close]').focus();
   }
 
   function bare(body) {
@@ -422,7 +503,7 @@
   }
 
   // The workbook's Dashboard tab, used by clients and by the coach.
-  function dashboardHTML(ctx) {
+  function dashboardHTML(ctx, opts) {
     const { profile, targets } = ctx;
     const d = S.dashboard(ctx);
     if (!d) return '<div class="card"><p>Add a start date on the Profile tab to see your dashboard.</p></div>';
@@ -478,7 +559,7 @@
         <div class="tile"><div class="k">Latest avg steps</div><div class="v">${fmt(d.latestAvgSteps)}</div></div>
         <div class="tile"><div class="k">Avg adherence</div><div class="v">${pct(d.avgAdherence)}</div></div>
       </div>
-      ${targets.coach_note ? `<div class="card"><p class="kicker">Coach note: biggest lever this week</p><div class="feedback">${esc(targets.coach_note)}</div></div>` : ''}
+      ${targets.coach_note && !(opts && opts.coach) ? `<div class="card"><p class="kicker">Coach note: biggest lever this week</p><div class="feedback">${esc(targets.coach_note)}</div></div>` : ''}
       <section class="card">
         <p class="kicker">${lw ? `Week ${lw.week}` : 'Latest week'} vs target</p>
         <ul class="metrics">${rows.join('')}</ul>
@@ -641,6 +722,8 @@
   }
 
   async function signOut() {
+    // Signing out inside Client view would sign the coach out too.
+    if (state.preview) return toast(PREVIEW_MSG, true);
     await sb.auth.signOut();
     state.me = null;
     state.ctx = {};
@@ -840,12 +923,11 @@
     return v === 'Missed' ? { level: 'bad', label: 'Missed' } : { level: 'good', label: v === 'Yes' ? 'Trained' : 'Planned rest' };
   }
 
-  // Every row on the habit tracker for one day: the targets the coach set
-  // (stored on daily_logs) followed by the client's own habits.
-  function habitRows(ctx, day) {
+  // The coach's target habits for one day, with the coach's own names,
+  // categories and show/hide choices (targets.habit_settings) applied.
+  function builtInHabits(ctx, day) {
     const t = ctx.targets;
     const m = macrosForDay(ctx, day);
-    const log = ctx.logs.find((l) => l.day === day) || {};
     const builtIn = [
       { key: 'steps', field: 'steps', name: 'Daily steps', cat: 'Activity', icon: '👟', unit: 'steps', target: t.steps_target },
       { key: 'training', field: 'trained', name: 'Training session', cat: 'Activity', icon: '🏋️', choice: ['Yes', 'Rest day', 'Missed'] },
@@ -859,8 +941,22 @@
         { key: 'sleep', field: 'sleep_h', name: 'Sleep', cat: 'Recovery', icon: '😴', unit: 'hrs', target: t.sleep_target_h, decimal: true },
       );
     }
-    const rows = builtIn
-      .filter((r) => r.choice || r.target)
+    const settings = t.habit_settings || {};
+    for (const r of builtIn) {
+      const o = settings[r.key] || {};
+      if (o.name) r.name = o.name;
+      if (HABIT_CATEGORIES[o.category]) r.cat = o.category;
+      r.hidden = Boolean(o.hidden);
+    }
+    return builtIn;
+  }
+
+  // Every row on the habit tracker for one day: the targets the coach set
+  // (stored on daily_logs) followed by the client's own habits.
+  function habitRows(ctx, day) {
+    const log = ctx.logs.find((l) => l.day === day) || {};
+    const rows = builtInHabits(ctx, day)
+      .filter((r) => !r.hidden && (r.choice || r.target))
       .map((r) => ({
         ...r, value: log[r.field], status: r.choice ? trainedStatus(log.trained) : S.habitStatus(r.key, log[r.field], r.target),
         fromLog: r.cat === 'Nutrition' && Boolean(log.food_from_log),
@@ -1385,10 +1481,13 @@
   async function renderTraining(day, cycleDay) {
     const ctx = await loadCtx(state.me.id, true);
     const d = day || S.today();
+    state.trainingView = { day: d, cycleDay };
     const log = ctx.training.length ? workoutFormHTML(ctx, d, cycleDay) : '';
     shell('Training', 'Your program', `${log}${workoutHistoryHTML(ctx)}${trainingHTML(ctx)}`, 'training');
     const form = root.querySelector('#workout-log');
     if (!form) return;
+    // Sets typed but not saved yet: the background refresh leaves the page alone.
+    form.addEventListener('input', () => (form.dataset.dirty = '1'));
     form.querySelector('#wl-day').addEventListener('change', (e) => {
       const v = e.target.value;
       if (v && v <= S.today()) renderTraining(v);
@@ -1905,10 +2004,12 @@
 
   // ---------------------------------------------------------------- coach CRM sections
 
-  function renderCoachPhysique(ctx, nav, title, sub, view) {
+  function renderCoachPhysique(ctx, nav, title, sub, view, arg) {
     const id = ctx.profile.id;
-    view = view === 'measurements' ? 'measurements' : 'bodyweight';
-    const tabs = sectionTabs(id, 'physique', [['bodyweight', 'Bodyweight'], ['measurements', 'Measurements']], view);
+    view = ['measurements', 'photos'].includes(view) ? view : 'bodyweight';
+    state.coachView.view = view;
+    const tabs = sectionTabs(id, 'physique', [['bodyweight', 'Bodyweight'], ['measurements', 'Measurements'], ['photos', 'Photos']], view);
+    if (view === 'photos') return renderCoachPhotos(ctx, tabs, title, sub, arg);
     if (view === 'measurements') {
       return shell(title, sub, `${tabs}${measurementsTable(ctx) || '<div class="card"><p>No measurements yet.</p></div>'}`);
     }
@@ -1938,10 +2039,13 @@
     bindPaged();
   }
 
-  function renderCoachNutrition(ctx, nav, title, sub, view) {
+  function renderCoachNutrition(ctx, nav, title, sub, view, arg2) {
     const id = ctx.profile.id;
-    const tabs = sectionTabs(id, 'nutrition', [['daily', 'Daily intake'], ['targets', 'Targets and macros']], view === 'targets' ? 'targets' : 'daily');
-    if (view === 'targets') return renderCoachTargets(ctx, tabs, title, sub);
+    const builderViews = ['builder', 'assign', 'history', 'targets'];
+    const isBuilder = builderViews.includes(view) || /^v\d+$/.test(view || '');
+    const tabs = sectionTabs(id, 'nutrition', [['daily', 'Daily intake'], ['builder', 'Nutrition builder'], ['current', 'Current nutrition']], isBuilder ? 'builder' : view === 'current' ? 'current' : 'daily');
+    if (isBuilder) return renderNutritionBuilder(ctx, tabs, title, sub, view, arg2);
+    if (view === 'current') return NUI.coachCurrent(ctx, title, sub, tabs, arg2);
     const { week, days } = coachWeek(ctx);
     const m = macrosForDay(ctx, S.today());
     const cal = weekValues(ctx, days, 'calories');
@@ -2034,6 +2138,76 @@
     bindPaged();
   }
 
+  // Where each target habit's daily target lives on the targets row.
+  const HABIT_TARGET_FIELDS = {
+    steps: { field: 'steps_target', type: 'number', step: '500', label: 'Daily target (steps)' },
+    fibre: { field: 'fibre_target_g', type: 'number', step: '1', label: 'Daily target (g)', hint: 'An assigned nutrition plan’s fibre wins over this.' },
+    water: { field: 'water_target', type: 'text', label: 'Daily target', hint: 'e.g. 3-4 L. The tracker uses the first number.' },
+    sleep: { field: 'sleep_target_h', type: 'number', step: '0.5', label: 'Daily target (hrs)' },
+  };
+  const HABITS_SQL = 'supabase/migrations/2026-10-28-coach-habits.sql';
+
+  function categoryOptions(selected) {
+    return Object.keys(HABIT_CATEGORIES).map((c) => `<option${c === selected ? ' selected' : ''}>${c}</option>`).join('');
+  }
+
+  function coachHabitEditorHTML(ctx, day) {
+    const id = ctx.profile.id;
+    const first = esc((ctx.profile.full_name || 'the client').split(' ')[0]);
+    const builtIn = builtInHabits(ctx, day).map((r) => {
+      const tf = HABIT_TARGET_FIELDS[r.key];
+      const target = tf
+        ? `<div class="field"><label for="hb-${r.key}-t">${tf.label}</label><input id="hb-${r.key}-t" name="${tf.field}" type="${tf.type}"${
+            tf.type === 'number' ? ` inputmode="decimal" step="${tf.step}" min="0"` : ' maxlength="20"'
+          } value="${esc(ctx.targets[tf.field] ?? '')}">${tf.hint ? `<p class="hint">${tf.hint}</p>` : ''}</div>`
+        : r.choice
+          ? '<div class="field"><span class="label">Daily target</span><p class="ha-note">Yes, Rest day or Missed</p></div>'
+          : `<div class="field"><span class="label">Daily target</span><p class="ha-note">${r.target ? `${fmt(r.target)} ${esc(r.unit)} · ` : ''}<a href="#client/${id}/nutrition/builder">Set in Nutrition</a></p></div>`;
+      return `<li><form class="ha-row${r.hidden ? ' is-hidden' : ''}" data-builtin="${r.key}" novalidate>
+        <span class="habit-icon sm" aria-hidden="true">${r.icon}</span>
+        <div class="ha-fields">
+          <div class="field"><label for="hb-${r.key}-n">Name</label><input id="hb-${r.key}-n" name="name" maxlength="60" value="${esc(r.name)}" required></div>
+          <div class="field"><label for="hb-${r.key}-c">Category</label><select id="hb-${r.key}-c" name="category">${categoryOptions(r.cat)}</select></div>
+          ${target}
+          <label class="check ha-show"><input type="checkbox" name="show"${r.hidden ? '' : ' checked'}> Show on ${first}'s tracker</label>
+        </div>
+        <div class="ha-actions"><button class="btn btn-small" type="submit">Save</button></div>
+      </form></li>`;
+    });
+    const own = ctx.habits.map((h) => `<li><form class="ha-row" data-habit="${esc(h.id)}" novalidate>
+        <span class="habit-icon sm" aria-hidden="true">${h.icon || HABIT_CATEGORIES[h.category]}</span>
+        <div class="ha-fields">
+          <div class="field"><label for="hc-${esc(h.id)}-n">Name</label><input id="hc-${esc(h.id)}-n" name="name" maxlength="60" value="${esc(h.name)}" required></div>
+          <div class="field"><label for="hc-${esc(h.id)}-c">Category</label><select id="hc-${esc(h.id)}-c" name="category">${categoryOptions(h.category)}</select></div>
+          <div class="field"><label for="hc-${esc(h.id)}-t">Daily target</label><input id="hc-${esc(h.id)}-t" name="target" type="number" inputmode="decimal" step="any" min="0.1" value="${esc(h.target)}"></div>
+          <div class="field"><label for="hc-${esc(h.id)}-u">Unit</label><input id="hc-${esc(h.id)}-u" name="unit" maxlength="20" value="${esc(h.unit)}" list="nh-units"></div>
+        </div>
+        <div class="ha-actions"><button class="btn btn-small" type="submit">Save</button><button class="btn btn-ghost btn-small" type="button" data-remove>Remove</button></div>
+      </form></li>`);
+    return `<section class="card habit-admin">
+        <p class="kicker">Edit habits</p>
+        <p class="hint" style="margin-top:0">Rename, recategorise, change targets or hide any habit. ${first} sees the changes on their Habits and Home.</p>
+        <p class="section-label">Coach targets</p><ul class="ha-list">${builtIn.join('')}</ul>
+        <p class="section-label">${first}'s own habits</p>${own.length ? `<ul class="ha-list">${own.join('')}</ul>` : `<p class="hint">${first} hasn't added any yet. You can add one below.</p>`}
+        <datalist id="nh-units"><option>times</option><option>minutes</option><option>pages</option><option>serves</option><option>L</option></datalist>
+      </section>
+      ${ctx.habitsReady ? `<form id="coach-add-habit" class="card" novalidate><p class="kicker">Add a habit for ${first}</p>
+        <div class="grid-2">
+          <div class="field"><label for="ch-name">Habit</label><input id="ch-name" name="name" maxlength="60" placeholder="e.g. 10 minute walk after dinner" required></div>
+          <div class="field"><label for="ch-cat">Category</label><select id="ch-cat" name="category">${categoryOptions('Lifestyle')}</select></div>
+          <div class="field"><label for="ch-target">Daily target</label><input id="ch-target" name="target" type="number" inputmode="decimal" step="any" min="0.1" value="1"></div>
+          <div class="field"><label for="ch-unit">Unit</label><input id="ch-unit" name="unit" maxlength="20" value="times" list="nh-units"></div>
+        </div>
+        <button class="btn" type="submit">Add habit</button></form>` : ''}`;
+  }
+
+  function habitsSqlError(err) {
+    const msg = String((err && err.message) || err);
+    return /habit_settings|row-level security|permission denied|not saved/i.test(msg)
+      ? new Error(`Habit editing needs a one-off database update. Run ${HABITS_SQL} in the Supabase SQL Editor.`)
+      : err;
+  }
+
   function renderCoachHabits(ctx, nav, title, sub, day) {
     const now = S.today();
     if (!day || day > now) day = now;
@@ -2049,10 +2223,76 @@
       </div>
       ${statCards([
         { k: 'On target today', v: `${rows.filter((r) => r.status.level === 'good').length} / ${rows.length}`, s: niceDate(day) },
-        { k: 'Own habits', v: String(ctx.habits.length), s: 'Added by the client' },
+        { k: 'Own habits', v: String(ctx.habits.length), s: 'Beyond your targets' },
       ])}
-      <section class="card">${habitWeekHTML(ctx, day)}</section>`,
+      <section class="card">${habitWeekHTML(ctx, day)}</section>
+      ${coachHabitEditorHTML(ctx, day)}`,
     );
+    const done = (msg) => {
+      invalidate(id);
+      toast(msg);
+      return loadCtx(id, true).then((fresh) => renderCoachHabits(fresh, nav, title, sub, day));
+    };
+    root.querySelectorAll('form[data-builtin]').forEach((form) =>
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const key = form.dataset.builtin;
+        const d = readForm(form);
+        if (!d.name) return toast('Give the habit a name.', true);
+        const tf = HABIT_TARGET_FIELDS[key];
+        const update = {
+          habit_settings: { ...(ctx.targets.habit_settings || {}), [key]: { name: d.name, category: d.category, hidden: !d.show } },
+        };
+        if (tf) {
+          const v = d[tf.field];
+          if (v === null) return toast('Set a daily target.', true);
+          if (tf.type === 'number' && (!Number.isFinite(v) || v < 0)) return toast('Enter a target of 0 or more.', true);
+          update[tf.field] = tf.field === 'steps_target' || tf.field === 'fibre_target_g' ? Math.round(v) : v;
+        }
+        withBusy(form.querySelector('[type=submit]'), async () => {
+          const res = await sb.from('targets').update(update).eq('client_id', id).select('client_id');
+          if (res.error || !res.data.length) throw habitsSqlError(res.error || 'not saved');
+          await done(`${d.name} saved.`);
+        });
+      }),
+    );
+    root.querySelectorAll('form[data-habit]').forEach((form) => {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const d = readForm(form);
+        if (!d.name) return toast('Give the habit a name.', true);
+        if (!d.target || d.target <= 0) return toast('Set a daily target above 0.', true);
+        withBusy(form.querySelector('[type=submit]'), async () => {
+          const res = await sb.from('client_habits')
+            .update({ name: d.name, category: d.category, target: d.target, unit: d.unit || 'times', icon: HABIT_CATEGORIES[d.category] })
+            .eq('id', form.dataset.habit).eq('user_id', id).select('id');
+          if (res.error || !res.data.length) throw habitsSqlError(res.error || 'not saved');
+          await done(`${d.name} saved.`);
+        });
+      });
+      const remove = form.querySelector('[data-remove]');
+      remove.addEventListener('click', () => {
+        if (!window.confirm('Remove this habit and its history from the client’s tracker?')) return;
+        withBusy(remove, async () => {
+          const res = await sb.from('client_habits').delete().eq('id', form.dataset.habit).eq('user_id', id).select('id');
+          if (res.error || !res.data.length) throw habitsSqlError(res.error || 'not saved');
+          await done('Habit removed.');
+        });
+      });
+    });
+    const add = document.getElementById('coach-add-habit');
+    if (add)
+      add.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const d = readForm(add);
+        if (!d.name) return toast('Name the habit.', true);
+        if (!d.target || d.target <= 0) return toast('Set a daily target above 0.', true);
+        withBusy(add.querySelector('[type=submit]'), async () => {
+          const res = await sb.from('client_habits').insert({ ...d, unit: d.unit || 'times', user_id: id, icon: HABIT_CATEGORIES[d.category], sort_order: ctx.habits.length });
+          if (res.error) throw habitsSqlError(res.error);
+          await done('Habit added.');
+        });
+      });
   }
 
   async function renderInbox() {
@@ -2143,38 +2383,45 @@
     );
   }
 
-  // Old links (#client/<id>/dashboard, /targets, /profile) still land in the right place.
-  const OLD_SECTIONS = { dashboard: 'overview', targets: 'nutrition', profile: 'settings' };
+  // Old links (#client/<id>/dashboard, /targets, /profile, /logs, /photos)
+  // still land in the right place.
+  const OLD_SECTIONS = { dashboard: 'overview', targets: 'nutrition', profile: 'settings', logs: 'overview', photos: 'physique', meals: 'nutrition' };
 
-  async function renderClient(id, section, arg) {
+  async function renderClient(id, section, arg, arg2) {
     if (OLD_SECTIONS[section]) {
-      if (section === 'targets') arg = 'targets';
+      if (section === 'targets') arg = 'builder';
+      if (section === 'photos') [arg, arg2] = ['photos', arg];
+      if (section === 'meals') arg = !arg || arg === 'current' ? 'builder' : arg;
       section = OLD_SECTIONS[section];
     }
     section = section || 'overview';
     // Overview, meal plan and food log always show the client's latest records.
-    const ctx = await loadCtx(id, ['overview', 'meals', 'foodlog'].includes(section));
+    const ctx = await loadCtx(id, ['overview', 'nutrition', 'foodlog'].includes(section));
     const p = ctx.profile;
     const week = S.currentWeek(p.start_date);
     const name = p.full_name || p.email;
     state.coachView = { clientId: id, clientName: name, section };
+    // Nutrition shows how the client eats beside "Week x of 12".
+    if (section === 'nutrition') {
+      const a = ctx.nutritionReady ? (ctx.assignments || []).filter((x) => x.starts_on <= S.today() && (!x.ends_on || x.ends_on >= S.today())).pop() : null;
+      const plan = p.nutrition_tracking === 'Assigned meal plan' ? 'Meal plan' : p.nutrition_tracking ? 'Flexible macros' : 'Tracking not set';
+      state.coachView.badges = [a && a.kind === 'macros' && plan === 'Meal plan' ? 'Meal plan · macro targets' : plan].concat(p.diet_requirement ? [p.diet_requirement] : []);
+    }
     const label = (COACH_SECTIONS.find(([s]) => s === section) || [, 'Client settings'])[1];
     const title = label;
     const sub = `${name} · ${week ? `Week ${week} of 12` : p.start_date ? `Starts ${niceDate(p.start_date)}` : 'No start date yet'}`;
     const nav = '';
 
-    if (section === 'overview') return shell(title, sub, dashboardHTML(ctx));
-    if (section === 'physique') return renderCoachPhysique(ctx, nav, title, sub, arg);
-    if (section === 'nutrition') return renderCoachNutrition(ctx, nav, title, sub, arg);
+    if (section === 'overview') return renderCoachOverview(ctx, title, sub, Number(arg) || Math.max(week, 1));
+    if (section === 'physique') return renderCoachPhysique(ctx, nav, title, sub, arg, arg2);
+    if (section === 'nutrition') return renderCoachNutrition(ctx, nav, title, sub, arg, arg2);
+    if (section === 'goals') return renderCoachGoals(ctx, title, sub);
     if (section === 'activity') return renderCoachActivity(ctx, nav, title, sub);
     if (section === 'recovery') return renderCoachRecovery(ctx, nav, title, sub);
     if (section === 'habits') return renderCoachHabits(ctx, nav, title, sub, arg);
-    if (section === 'logs') return renderCoachLogs(ctx, nav, title, sub, Number(arg) || Math.max(week, 1));
     if (section === 'checkins') return renderCoachCheckins(ctx, nav, title, sub);
-    if (section === 'photos') return renderCoachPhotos(ctx, nav, title, sub, arg);
     if (section === 'training') return renderCoachTraining(ctx, nav, title, sub);
     if (section === 'supps') return renderCoachSupps(ctx, nav, title, sub);
-    if (section === 'meals') return NUI.coachMeals(ctx, title, sub, arg);
     if (section === 'foodlog') return NUI.coachFoodLog(ctx, title, sub, arg);
     const rows = [
       ['Email', p.email],
@@ -2197,41 +2444,72 @@
       `<section class="card"><table><tbody>${rows
         .map(([k, v]) => `<tr><th scope="row">${k}</th><td class="wrap-text">${esc(v || '–')}</td></tr>`)
         .join('')}</tbody></table></section>
-      <p class="hint">Start date, targets and macros are set under <a href="#client/${id}/nutrition/targets">Nutrition → Targets and macros</a>.</p>`,
+      <p class="hint">Start date and targets are set under <a href="#client/${id}/goals">Goals</a>; macros and meal plans under <a href="#client/${id}/nutrition/builder">Nutrition → Nutrition builder</a>.</p>`,
     );
   }
 
-  function renderCoachLogs(ctx, nav, title, sub, week) {
+  // Overview: the dashboard, with the week's daily logs as a column beside it.
+  function renderCoachOverview(ctx, title, sub, week) {
+    const note = `<form id="note-form" class="card coach-note" novalidate>
+        <label class="kicker" for="t-coach_note">Coach note: biggest lever this week</label>
+        <textarea id="t-coach_note" name="coach_note" rows="2" maxlength="2000" placeholder="e.g. Hit 160 g protein every day before worrying about anything else.">${esc(ctx.targets.coach_note || '')}</textarea>
+        <div class="row-actions"><button class="btn btn-small" type="submit">Save note</button><span class="hint">Shows at the top of ${esc((ctx.profile.full_name || 'the client').split(' ')[0])}'s dashboard.</span></div>
+      </form>`;
+    shell(title, sub, `<div class="ov-grid"><div class="ov-main">${note}${dashboardHTML(ctx, { coach: true })}</div>${dailyLogsColumn(ctx, week)}</div>`);
+    const nf = document.getElementById('note-form');
+    nf.addEventListener('submit', (e) => {
+      e.preventDefault();
+      withBusy(nf.querySelector('button'), async () => {
+        const rows = must(await sb.from('targets').update({ coach_note: nf.coach_note.value.trim() || null }).eq('client_id', ctx.profile.id).select('client_id'));
+        if (!rows.length) throw new Error('Not saved. Check you are signed in as the coach.');
+        invalidate(ctx.profile.id);
+        toast('Coach note saved.');
+      });
+    });
+    const pick = document.getElementById('dl-week');
+    if (pick) pick.addEventListener('change', (e) => (location.hash = `#client/${ctx.profile.id}/overview/${e.target.value}`));
+  }
+
+  function dailyLogsColumn(ctx, week) {
     const p = ctx.profile;
-    if (!p.start_date) return shell(title, sub, `${nav}<div class="card"><p>Set a start date on the Targets tab first.</p></div>`);
+    if (!p.start_date) return '<aside class="card daily-col"><p class="kicker">Daily logs</p><p>Set a start date under Goals first.</p></aside>';
+    week = Math.min(Math.max(week, 1), 12);
+    const t = ctx.targets;
+    const dates = S.weekDates(p.start_date, week);
     const byDay = new Map(ctx.logs.map((l) => [l.day, l]));
-    const rows = S.weekDates(p.start_date, week)
+    const now = S.today();
+    const st = S.weekStats(ctx, week);
+    const mealPlan = p.nutrition_tracking === 'Assigned meal plan';
+    const chip = (v, text, status) => (v === null || v === undefined || v === '' ? '' : `<span class="dl-chip${status && status.level ? ` ${status.level}` : ''}">${text}</span>`);
+    const days = dates
       .map((d) => {
         const l = byDay.get(d) || {};
-        return `<tr><th scope="row">${niceDate(d)}</th><td>${fmt(l.weight_kg, 1)}</td><td>${fmt(l.steps)}</td><td>${fmt(l.cardio_min)}</td><td>${esc(l.trained || '–')}</td><td>${fmt(l.calories)}</td><td>${fmt(l.protein_g)}</td><td>${fmt(l.carbs_g)}</td><td>${fmt(l.fats_g)}</td><td>${fmt(l.fibre_g)}</td>${
-          p.nutrition_tracking === 'Assigned meal plan' ? `<td>${esc(l.meal_plan || '–')}</td>` : ''
-        }<td class="wrap-text">${esc(l.notes || '')}</td></tr>`;
+        const m = macrosForDay(ctx, d) || {};
+        const chips = [
+          chip(l.weight_kg, `${fmt(l.weight_kg, 1)} kg`),
+          chip(l.steps, `${fmt(l.steps)} steps`, S.habitStatus('steps', l.steps, t.steps_target)),
+          chip(l.calories, `${fmt(l.calories)} kcal`, S.habitStatus('calories', l.calories, m.calories)),
+          chip(l.protein_g, `P ${fmt(l.protein_g)}`, S.habitStatus('protein', l.protein_g, m.protein_g)),
+          chip(l.carbs_g, `C ${fmt(l.carbs_g)}`),
+          chip(l.fats_g, `F ${fmt(l.fats_g)}`),
+          chip(l.fibre_g, `Fibre ${fmt(l.fibre_g)}`),
+          chip(l.cardio_min, `${fmt(l.cardio_min)} min cardio`),
+          chip(l.trained, l.trained === 'Yes' ? 'Trained' : esc(l.trained), trainedStatus(l.trained)),
+          chip(l.water_l, `${fmt(l.water_l, 1)} L water`),
+          chip(l.sleep_h, `${fmt(l.sleep_h, 1)} hrs sleep`),
+          mealPlan ? chip(l.meal_plan, `Meal plan: ${esc(l.meal_plan)}`) : '',
+        ].join('');
+        const empty = d > now ? 'Upcoming' : 'Nothing logged';
+        return `<li class="dl-day${chips ? '' : ' empty'}"><div class="dl-date"><b>${niceDate(d, { weekday: 'short' })}</b>${niceDate(d, { day: 'numeric', month: 'short' })}</div>
+          <div>${chips ? `<div class="dl-chips">${chips}</div>` : `<span class="dl-none">${empty}</span>`}${l.notes ? `<p class="dl-note">${esc(l.notes)}</p>` : ''}</div></li>`;
       })
       .join('');
-    shell(
-      title,
-      sub,
-      `${nav}
-      <div class="card"><label for="week-pick">Week</label><select id="week-pick">${weekOptions(12, week)}</select></div>
-      <section class="card">
-        <p class="kicker">Week ${week} targets</p>${targetsLine(ctx, week)}
-      </section>
-      <section class="card"><div class="table-wrap"><table>
-        <thead><tr><th>Day</th><th>Kg</th><th>Steps</th><th>Cardio</th><th>Trained</th><th>Kcal</th><th>P</th><th>C</th><th>F</th><th>Fibre</th>${
-          p.nutrition_tracking === 'Assigned meal plan' ? '<th>Meal plan</th>' : ''
-        }<th>How did today go?</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table></div></section>
-      <section class="card"><p class="kicker">Week ${week} summary</p>${weekSummaryHTML(ctx, week)}</section>`,
-    );
-    document.getElementById('week-pick').addEventListener('change', (e) => {
-      location.hash = `#client/${p.id}/logs/${e.target.value}`;
-    });
+    return `<aside class="card daily-col" aria-label="Daily logs">
+      <div class="dl-head"><p class="kicker">Daily logs</p><select id="dl-week" aria-label="Week">${weekOptions(12, week)}</select></div>
+      ${targetsLine(ctx, dates[0])}
+      <ul class="dl-days">${days}</ul>
+      <p class="dl-sum">${st.logsCount}/7 days logged · ${st.sessions} session${st.sessions === 1 ? '' : 's'} · adherence ${pct(st.adherence)}</p>
+    </aside>`;
   }
 
   function renderCoachCheckins(ctx, nav, title, sub) {
@@ -2330,7 +2608,7 @@
       ${body}`,
     );
     const go = () => {
-      location.hash = `#client/${ctx.profile.id}/photos/${document.getElementById('pa').value}-${document.getElementById('pb').value}`;
+      location.hash = `#client/${ctx.profile.id}/physique/photos/${document.getElementById('pa').value}-${document.getElementById('pb').value}`;
     };
     document.getElementById('pa').addEventListener('change', go);
     document.getElementById('pb').addEventListener('change', go);
@@ -2888,27 +3166,24 @@
     });
   }
 
-  function renderCoachTargets(ctx, nav, title, sub) {
+  const TRACKING = ['Macro-based / Flexible', 'Assigned meal plan'];
+  const DIETS = ['Halal', 'Vegetarian', 'Vegan', 'Pescatarian', 'Gluten free', 'Dairy free', 'Kosher'];
+
+  function targetField(k, l, v, type, extra) {
+    return `<div class="field"><label for="t-${k}">${l}</label><input id="t-${k}" name="${k}" type="${type || 'text'}"${
+      type === 'number' ? ' inputmode="decimal" step="any"' : ''
+    } value="${esc(v === null || v === undefined ? '' : v)}"${extra || ''}></div>`;
+  }
+
+  // Goals: program setup, the 12-week targets and the weekly average targets.
+  function renderCoachGoals(ctx, title, sub) {
     const p = ctx.profile;
     const t = ctx.targets;
-    const text = (k, l, v, type, extra) =>
-      `<div class="field"><label for="t-${k}">${l}</label><input id="t-${k}" name="${k}" type="${type || 'text'}"${
-        type === 'number' ? ' inputmode="decimal" step="any"' : ''
-      } value="${esc(v === null || v === undefined ? '' : v)}"${extra || ''}></div>`;
-    const macroRows = ctx.macros
-      .map(
-        (m) =>
-          `<tr><th scope="row">Week ${m.week_number}</th><td>${m.protein_g}</td><td>${m.carbs_g}</td><td>${m.fats_g}</td><td>${m.fibre_g}</td><td><b>${fmt(m.calories)}</b></td><td><button class="btn btn-ghost btn-small" type="button" data-del-macro="${m.week_number}">Remove</button></td></tr>`,
-      )
-      .join('');
-    const week = Math.max(S.currentWeek(p.start_date), 1);
-    const current = S.macrosForWeek(ctx.macros, week) || {};
-
+    const text = targetField;
     shell(
       title,
       sub,
-      `${nav}
-      <form id="plan-form" class="card" novalidate>
+      `<form id="plan-form" class="card" novalidate>
         <p class="kicker">Program setup</p>
         <div class="grid-2">
           ${text('start_date', 'Start date (a Monday)', p.start_date, 'date')}
@@ -2917,10 +3192,6 @@
               .map((n) => `<option${Number(p.training_days_per_week) === n ? ' selected' : ''}>${n}</option>`)
               .join('')}</select></div>
         </div>
-        <div class="field"><label for="t-nutrition_tracking">Nutrition tracking</label>
-          <select id="t-nutrition_tracking" name="nutrition_tracking"><option value="">–</option>${['Macro-based / Flexible', 'Assigned meal plan']
-            .map((n) => `<option${p.nutrition_tracking === n ? ' selected' : ''}>${n}</option>`)
-            .join('')}</select></div>
         <button class="btn btn-small" type="submit">Save setup</button>
       </form>
       <form id="targets-form" class="card" novalidate>
@@ -2933,7 +3204,7 @@
         ${text('non_scale_goal', 'Non-scale goal', t.non_scale_goal, 'text', ' placeholder="e.g. 7 h sleep, energy at work, old jeans fit"')}
         <div class="field"><label for="t-why">Their why (in their words)</label><textarea id="t-why" name="why">${esc(t.why || '')}</textarea></div>
         ${text('event_date', 'Event / deadline date', t.event_date, 'date')}
-        <p class="kicker" style="margin-top:12px">Weekly average targets</p>
+        <p class="kicker" style="margin-top:12px">Weekly targets</p>
         <div class="grid-2">
           ${text('steps_target', 'Daily steps', t.steps_target, 'number')}
           ${text('sleep_target_h', 'Sleep (hours)', t.sleep_target_h, 'number')}
@@ -2941,13 +3212,60 @@
           ${text('fibre_target_g', 'Fibre (g)', t.fibre_target_g, 'number')}
           ${text('whole_foods_pct', 'Whole foods (%)', t.whole_foods_pct, 'number')}
         </div>
-        <div class="field"><label for="t-coach_note">Coach note: biggest lever for next week</label><textarea id="t-coach_note" name="coach_note">${esc(t.coach_note || '')}</textarea>
-          <p class="hint">Shows at the top of their dashboard.</p></div>
-        <button class="btn btn-small" type="submit">Save targets</button>
-      </form>
-      <section class="card">
+        <p class="hint">The coach note now lives on <a href="#client/${p.id}/overview">Overview</a>.</p>
+        <button class="btn btn-small" type="submit">Save goals</button>
+      </form>`,
+    );
+    const planForm = document.getElementById('plan-form');
+    planForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      withBusy(planForm.querySelector('button'), async () => {
+        must(await sb.from('profiles').update(readForm(planForm)).eq('id', p.id));
+        invalidate(p.id);
+        toast('Setup saved.');
+        renderClient(p.id, 'goals');
+      });
+    });
+    const tForm = document.getElementById('targets-form');
+    tForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const data = readForm(tForm);
+      for (const k of ['steps_target', 'water_target', 'fibre_target_g', 'sleep_target_h', 'whole_foods_pct']) if (data[k] === null) delete data[k];
+      withBusy(tForm.querySelector('button'), async () => {
+        const rows = must(await sb.from('targets').update(data).eq('client_id', p.id).select());
+        if (!rows.length) throw new Error('Not saved. Check you are signed in as the coach.');
+        invalidate(p.id);
+        toast('Goals saved.');
+      });
+    });
+  }
+
+  // Nutrition builder: how the client tracks, their diet requirements, the
+  // weekly macro targets, and (for an assigned meal plan) the plan itself.
+  function renderNutritionBuilder(ctx, tabs, title, sub, view, arg2) {
+    const p = ctx.profile;
+    const text = targetField;
+    const mealPlan = p.nutrition_tracking === 'Assigned meal plan';
+    const week = Math.max(S.currentWeek(p.start_date), 1);
+    const current = S.macrosForWeek(ctx.macros, week) || {};
+    const macroRows = ctx.macros
+      .map((m) => `<tr><th scope="row">Week ${m.week_number}</th><td>${m.protein_g}</td><td>${m.carbs_g}</td><td>${m.fats_g}</td><td>${m.fibre_g}</td><td><b>${fmt(m.calories)}</b></td><td><button class="btn btn-ghost btn-small" type="button" data-del-macro="${m.week_number}">Remove</button></td></tr>`)
+      .join('');
+    const dietKnown = !p.diet_requirement || DIETS.includes(p.diet_requirement);
+    const setup = `<form id="nut-setup" class="card" novalidate>
+        <p class="kicker">Nutrition setup</p>
+        <div class="grid-2">
+          <div class="field"><label for="t-nutrition_tracking">Nutrition tracking</label>
+            <select id="t-nutrition_tracking" name="nutrition_tracking"><option value="">–</option>${TRACKING.map((n) => `<option${p.nutrition_tracking === n ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
+          <div class="field"><label for="t-diet_requirement">Diet requirements</label>
+            <select id="t-diet_requirement" name="diet_requirement"><option value="">None</option>${DIETS.concat(dietKnown ? [] : [p.diet_requirement]).map((n) => `<option${p.diet_requirement === n ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></div>
+        </div>
+        <p class="hint">${mealPlan ? 'On an assigned meal plan: build and assign it below.' : 'On flexible macros: set the weekly macro targets below. Pick "Assigned meal plan" to build set meals.'}</p>
+        <button class="btn btn-small" type="submit">Save setup</button>
+      </form>`;
+    const macros = `<section class="card">
         <p class="kicker">Macro targets by week</p>
-        <p class="hint" style="margin-top:0">Set Monday's targets. Later weeks keep the latest numbers until you change them. Calories = protein×4 + carbs×4 + fats×9 + fibre×2.</p>
+        <p class="hint" style="margin-top:0">${mealPlan ? 'Used when no meal plan is running. ' : ''}Set Monday's targets. Later weeks keep the latest numbers until you change them. Calories = protein×4 + carbs×4 + fats×9 + fibre×2.</p>
         <div class="table-wrap"><table>
           <thead><tr><th>From</th><th>Protein</th><th>Carbs</th><th>Fats</th><th>Fibre</th><th>Kcal</th><th></th></tr></thead>
           <tbody>${macroRows || '<tr><td colspan="7">None set yet.</td></tr>'}</tbody>
@@ -2963,58 +3281,62 @@
           <p class="hint" id="kcal-preview"></p>
           <button class="btn btn-small" type="submit">Save macros</button>
         </form>
-      </section>`,
-    );
+      </section>`;
 
-    const planForm = document.getElementById('plan-form');
-    planForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      withBusy(planForm.querySelector('button'), async () => {
-        must(await sb.from('profiles').update(readForm(planForm)).eq('id', p.id));
-        invalidate(p.id);
-        toast('Setup saved.');
-        renderClient(p.id, 'targets');
-      });
-    });
-    const tForm = document.getElementById('targets-form');
-    tForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const data = readForm(tForm);
-      for (const k of ['steps_target', 'water_target', 'fibre_target_g', 'sleep_target_h', 'whole_foods_pct']) if (data[k] === null) delete data[k];
-      withBusy(tForm.querySelector('button'), async () => {
-        const rows = must(await sb.from('targets').update(data).eq('client_id', p.id).select());
-        if (!rows.length) throw new Error('Not saved. Check you are signed in as the coach.');
-        invalidate(p.id);
-        toast('Targets saved.');
-      });
-    });
-    const mForm = document.getElementById('macro-form');
-    const preview = () => {
-      const d = readForm(mForm);
-      const kcal = (d.protein_g || 0) * 4 + (d.carbs_g || 0) * 4 + (d.fats_g || 0) * 9 + (d.fibre_g || 0) * 2;
-      document.getElementById('kcal-preview').textContent = `= ${fmt(kcal)} kcal a day`;
-    };
-    mForm.addEventListener('input', preview);
-    preview();
-    mForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const d = readForm(mForm);
-      if (d.protein_g === null || d.carbs_g === null || d.fats_g === null) return toast('Add protein, carbs and fats.', true);
-      withBusy(mForm.querySelector('button'), async () => {
-        must(await sb.from('macro_targets').upsert({ ...d, fibre_g: d.fibre_g || 0, client_id: p.id }, { onConflict: 'client_id,week_number' }));
-        invalidate(p.id);
-        toast(`Macros saved from week ${d.week_number}.`);
-        renderClient(p.id, 'targets');
-      });
-    });
-    root.querySelectorAll('[data-del-macro]').forEach((btn) => {
-      btn.addEventListener('click', () =>
-        withBusy(btn, async () => {
-          must(await sb.from('macro_targets').delete().eq('client_id', p.id).eq('week_number', Number(btn.dataset.delMacro)));
+    const bind = () => {
+      const setupForm = document.getElementById('nut-setup');
+      if (setupForm)
+        setupForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          withBusy(setupForm.querySelector('button'), async () => {
+            const d = readForm(setupForm);
+            const res = await sb.from('profiles').update(d).eq('id', p.id).select('id');
+            if (res.error && /diet_requirement/.test(res.error.message)) throw new Error('Diet requirements need a one-off database update. Run supabase/migrations/2026-10-28-diet-requirements.sql in the Supabase SQL Editor.');
+            must(res);
+            invalidate(p.id);
+            toast('Nutrition setup saved.');
+            renderClient(p.id, 'nutrition', 'builder');
+          });
+        });
+      const mForm = document.getElementById('macro-form');
+      if (!mForm) return;
+      const preview = () => {
+        const d = readForm(mForm);
+        const kcal = (d.protein_g || 0) * 4 + (d.carbs_g || 0) * 4 + (d.fats_g || 0) * 9 + (d.fibre_g || 0) * 2;
+        document.getElementById('kcal-preview').textContent = `= ${fmt(kcal)} kcal a day`;
+      };
+      mForm.addEventListener('input', preview);
+      preview();
+      mForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const d = readForm(mForm);
+        if (d.protein_g === null || d.carbs_g === null || d.fats_g === null) return toast('Add protein, carbs and fats.', true);
+        withBusy(mForm.querySelector('button'), async () => {
+          must(await sb.from('macro_targets').upsert({ ...d, fibre_g: d.fibre_g || 0, client_id: p.id }, { onConflict: 'client_id,week_number' }));
           invalidate(p.id);
-          renderClient(p.id, 'targets');
-        }),
-      );
+          toast(`Macros saved from week ${d.week_number}.`);
+          renderClient(p.id, 'nutrition', 'builder');
+        });
+      });
+      root.querySelectorAll('[data-del-macro]').forEach((btn) => {
+        btn.addEventListener('click', () =>
+          withBusy(btn, async () => {
+            must(await sb.from('macro_targets').delete().eq('client_id', p.id).eq('week_number', Number(btn.dataset.delMacro)));
+            invalidate(p.id);
+            renderClient(p.id, 'nutrition', 'builder');
+          }),
+        );
+      });
+    };
+    // Flexible: setup then macros (plus any plan that is still assigned).
+    // Meal plan: setup, the plan builder, then the fallback macros.
+    return NUI.coachMeals(ctx, title, sub, view === 'builder' || view === 'targets' ? 'current' : view, {
+      tabs,
+      before: mealPlan ? setup : `${setup}${macros}`,
+      after: mealPlan ? macros : '',
+      showPlan: mealPlan,
+      template: view === 'assign' ? arg2 : null,
+      bind,
     });
   }
 
@@ -3036,9 +3358,9 @@
       const parts = path.split('/');
 
       if (state.me.role === 'coach') {
-        if (parts[0] === 'client' && parts[1]) return await renderClient(parts[1], parts[2], parts[3]);
+        if (parts[0] === 'client' && parts[1]) return await renderClient(parts[1], parts[2], parts[3], parts[4]);
         if (parts[0] === 'inbox') return await renderInbox();
-        if (parts[0] === 'library') return await NUI.library(parts[1], parts[2]);
+        if (parts[0] === 'library') return await NUI.library(parts[1], parts[2], parts[3]);
         return await renderClients();
       }
 
@@ -3089,9 +3411,27 @@
   window.addEventListener('hashchange', route);
 
   // Keep read-only client plans current while the app is open. Coach forms are
-  // never refreshed here, so unsaved edits cannot be lost.
-  function refreshOpenClientPlan() {
-    if (!document.hidden && state.me && state.me.role === 'client' && /^#(training|supps)(\/|$)/.test(location.hash)) route();
+  // never refreshed here, so unsaved edits cannot be lost. On Training the
+  // client may be mid-workout (phone locked between sets), so the refresh
+  // never touches a workout being typed and keeps the scroll position.
+  async function refreshOpenClientPlan() {
+    if (document.hidden || !state.me || state.me.role !== 'client' || !/^#(training|supps)(\/|$)/.test(location.hash)) return;
+    const form = root.querySelector('#workout-log');
+    if (form && (form.dataset.dirty || form.contains(document.activeElement))) return;
+    const y = window.scrollY;
+    const open = [...root.querySelectorAll('details')].map((el) => el.open);
+    const id = state.renderId;
+    try {
+      if (location.hash.startsWith('#training') && state.trainingView) await renderTraining(state.trainingView.day, state.trainingView.cycleDay);
+      else await route();
+    } catch (err) {
+      return;
+    }
+    if (id + 1 < state.renderId) return;
+    root.querySelectorAll('details').forEach((el, i) => {
+      if (open[i] !== undefined) el.open = open[i];
+    });
+    window.scrollTo(0, y);
   }
   document.addEventListener('visibilitychange', refreshOpenClientPlan);
   setInterval(refreshOpenClientPlan, 60000);

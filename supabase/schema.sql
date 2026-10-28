@@ -42,6 +42,8 @@ create table public.profiles (
   consent_at             timestamptz,  -- when the client agreed to the privacy notice
   meal_names             jsonb not null default '{}'::jsonb
                          check (jsonb_typeof(meal_names) = 'object' and pg_column_size(meal_names) <= 4000),  -- client's own meal names
+  diet_requirement       text constraint profiles_diet_requirement_check
+                         check (diet_requirement is null or length(trim(diet_requirement)) between 1 and 40),  -- Halal, Vegan ... (coach sets)
   created_at             timestamptz not null default now()
 );
 
@@ -62,6 +64,9 @@ create table public.targets (
   whole_foods_pct  int not null default 80 check (whole_foods_pct between 0 and 100),
   coach_note       text,  -- "biggest lever for next week", shown on the dashboard
   checkin_day      smallint not null default 0 check (checkin_day between 0 and 6),  -- 0 = Sunday
+  -- The coach's name, category and show/hide choice per target habit.
+  habit_settings   jsonb not null default '{}'::jsonb
+                   constraint targets_habit_settings_object check (jsonb_typeof(habit_settings) = 'object'),
   updated_at       timestamptz not null default now()
 );
 
@@ -296,7 +301,7 @@ grant select, insert, update, delete on public.supplement_plan to authenticated;
 -- can only be changed from the SQL editor. Clients edit their own details.
 revoke insert, update, delete on public.profiles from authenticated;
 grant update (full_name, phone, start_date, age, height_cm, dream_outcome, training_days_per_week,
-  training_experience, nutrition_tracking, injuries, work_schedule, wake_sleep, consent_at, meal_names)
+  training_experience, nutrition_tracking, injuries, work_schedule, wake_sleep, consent_at, meal_names, diet_requirement)
   on public.profiles to authenticated;
 
 -- Targets rows are created by the trigger; the coach only updates them.
@@ -500,6 +505,17 @@ create policy "client updates own habits" on public.client_habits
 drop policy if exists "client deletes own habits" on public.client_habits;
 create policy "client deletes own habits" on public.client_habits
   for delete to authenticated using (user_id = (select auth.uid()));
+-- The coach can also add, edit and remove a client's habits.
+drop policy if exists "coach adds client habits" on public.client_habits;
+create policy "coach adds client habits" on public.client_habits
+  for insert to authenticated with check ((select public.is_coach()));
+drop policy if exists "coach updates client habits" on public.client_habits;
+create policy "coach updates client habits" on public.client_habits
+  for update to authenticated
+  using ((select public.is_coach())) with check ((select public.is_coach()));
+drop policy if exists "coach deletes client habits" on public.client_habits;
+create policy "coach deletes client habits" on public.client_habits
+  for delete to authenticated using ((select public.is_coach()));
 
 -- habit_entries: only against the client's own habits
 drop policy if exists "read own habit entries or coach reads all" on public.habit_entries;
