@@ -13,6 +13,9 @@ and Playwright.
 sh tests/e2e/setup.sh && sh tests/e2e/start.sh && node tests/e2e/e2e.js
 ```
 
+`coach-tools.js` covers the coach Overview daily logs column, Physique → Photos,
+Client view (read-only), coach habit editing and the Training scroll fix.
+
 It covers: building a template, assigning versions, macro-only targets, recipe
 import (and refusing a local address), every meal action including undo and
 no duplicates, a typed food with a missing value, barcode lookup, extras,
