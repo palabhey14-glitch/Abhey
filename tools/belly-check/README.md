@@ -4,7 +4,7 @@ A 5-minute lead-magnet quiz for busy men who have lost weight but are not happy 
 Instagram hook: comment BELLY, get the 3 things to check before cutting more calories.
 
 ## Where it lives
-Live at https://rewiredbyabhey.com/belly-check/ as part of the main site (no separate Netlify site).
+Live at https://rewiredbyabhey.com/belly-check/ as part of the main site (no separate Netlify site). It is unlisted: no links from the site, and noindex (meta tag plus X-Robots-Tag header in netlify.toml) keeps it out of Google. Anyone with the link can open it.
 
 ## Files
 - `src/quiz.html` source of truth (single self-contained page, no framework)

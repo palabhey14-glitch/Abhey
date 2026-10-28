@@ -12,6 +12,7 @@ cat <<'HEAD'
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b2545">
+<meta name="robots" content="noindex, nofollow">
 <meta name="description" content="A 5-minute check for busy men who have lost weight but are not happy with their belly. Find the 3 things to check before cutting more calories.">
 <title>Stubborn Belly Check | Rewired Coaching</title>
 <style>*,*::before,*::after{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0}[hidden]{display:none!important}</style>
