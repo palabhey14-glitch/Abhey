@@ -136,3 +136,33 @@ assert.equal(N.macroKcal({ p: 30 }), 120);
   assert.ok(Math.abs((big.per100.c * big.amount) / 100 - 250) < 0.5, 'totals survive the round trip');
   assert.ok(Math.abs((big.per100.kcal * big.amount) / 100 - N.macroKcal({ p: 90, c: 250, f: 80, fibre: 20 })) < 1);
 }
+
+// Carb cycling: the kind of day comes from the training plan session
+{
+  const ex = (primary) => ({ name: 'x', primary: [primary] });
+  const plan = [
+    { program_start_date: '2026-10-29', cycle_day: 1, session_name: 'Push', is_rest_day: false, exercises: [ex('chest')] },
+    { program_start_date: '2026-10-29', cycle_day: 2, session_name: 'Pull', is_rest_day: false, exercises: [ex('lats')] },
+    { program_start_date: '2026-10-29', cycle_day: 3, session_name: 'Legs', is_rest_day: false, exercises: [ex('quads')] },
+    { program_start_date: '2026-10-29', cycle_day: 4, session_name: 'Rest', is_rest_day: true, exercises: [] },
+    { program_start_date: '2026-10-29', cycle_day: 5, session_name: 'Upper', is_rest_day: false, exercises: [ex('chest')] },
+    { program_start_date: '2026-10-29', cycle_day: 6, session_name: 'Day 6', is_rest_day: false, exercises: [ex('hamstrings'), ex('glutes'), ex('chest')] },
+    { program_start_date: '2026-10-29', cycle_day: 7, session_name: 'Rest', is_rest_day: true, exercises: [] },
+  ];
+  assert.equal(N.sessionFor(plan, '2026-10-28'), null, 'nothing before the program starts');
+  assert.equal(N.sessionFor(plan, '2026-10-29').session_name, 'Push');
+  assert.equal(N.sessionFor(plan, '2026-11-05').session_name, 'Push', 'the cycle repeats every 7 days');
+  const kinds = Array.from({ length: 7 }, (_, i) => N.dayKind(N.sessionFor(plan, `2026-11-${String(i + 5).padStart(2, '0')}`)));
+  assert.deepEqual(kinds, ['training', 'training', 'legs', 'rest', 'training', 'legs', 'rest'], 'mostly lower-body exercises count as a leg day');
+  assert.equal(N.dayKind(null), 'rest');
+
+  const a = { kind: 'macros', protein_g: 183, carbs_g: 467, fats_g: 89, fibre_g: null, calories: 3401, carb_cycle: { rest: 339, training: 488, legs: 563 } };
+  const legs = N.targetsFor(a, '2026-10-31', 'legs');
+  assert.equal(legs.carbs_g, 563);
+  assert.equal(legs.calories, 183 * 4 + 563 * 4 + 89 * 9);
+  assert.equal(legs.dayLabel, 'Leg day');
+  assert.equal(N.targetsFor(a, '2026-11-01', 'rest').carbs_g, 339);
+  assert.equal(N.targetsFor(a, '2026-11-01').carbs_g, 467, 'without a known kind of day, the average is used');
+  assert.equal(N.targetsFor({ ...a, carb_cycle: null }, '2026-10-31', 'legs').carbs_g, 467, 'no cycle, no change');
+}
+console.log('carb cycle tests passed');
