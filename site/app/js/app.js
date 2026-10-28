@@ -810,6 +810,7 @@
     if (m) {
       bits.push(`<span><b>${fmt(m.calories)}</b> kcal</span>`, `<span><b>${m.protein_g}</b>g protein</span>`, `<span><b>${m.carbs_g}</b>g carbs</span>`, `<span><b>${m.fats_g}</b>g fats</span>`);
       if (m.fibre_g) bits.push(`<span><b>${m.fibre_g}</b>g fibre</span>`);
+      if (m.dayLabel) bits.push(`<span class="t-kind">${esc(m.dayLabel)}</span>`);
     }
     if (t.steps_target) bits.push(`<span><b>${fmt(t.steps_target)}</b> steps</span>`);
     if (t.sleep_target_h) bits.push(`<span><b>${fmt(t.sleep_target_h, 0)}h+</b> sleep</span>`);

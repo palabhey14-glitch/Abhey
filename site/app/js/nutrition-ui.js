@@ -67,11 +67,16 @@
     ctx.foodRange = [lo, hi];
   }
 
+  // Rest, training or leg day from the client's training plan; null without one.
+  function dayKindFor(ctx, day) {
+    return ctx.training && ctx.training.length ? N.dayKind(N.sessionFor(ctx.training, day)) : null;
+  }
+
   // Daily targets: the assigned plan's (its own targets, or its total),
   // otherwise the weekly macro targets.
   function dayTarget(ctx, day) {
     const a = ctx.nutritionReady ? N.assignmentFor(ctx.assignments, day) : null;
-    const t = a ? N.targetsFor(a, day) : null;
+    const t = a ? N.targetsFor(a, day, dayKindFor(ctx, day)) : null;
     if (t && t.calories) return t;
     const week = S.weekOf(ctx.profile.start_date, day) || Math.max(S.currentWeek(ctx.profile.start_date), 1);
     const m = S.macrosForWeek(ctx.macros, week);
@@ -706,7 +711,7 @@
       <section class="score left">
         <p class="label">${day === now ? 'Eaten today' : day > now ? 'Planned' : 'Eaten'}</p>
         <div class="big-num">${fmt(day > now ? r.plannedTotal.kcal : t.kcal)}<span> kcal</span></div>
-        <p class="label">${target ? `of ${fmt(target.calories)} kcal target${target.from === 'plan' ? ' (your plan’s total)' : ''}` : 'No calorie target yet'}${kst.label && t.items && day <= now ? ` · <b class="ms ${kst.level}">${esc(kst.label)}</b>` : ''}</p>
+        <p class="label">${target ? `of ${fmt(target.calories)} kcal target${target.from === 'plan' ? ' (your plan’s total)' : ''}${target.dayLabel ? ` · ${esc(target.dayLabel)}` : ''}` : 'No calorie target yet'}${kst.label && t.items && day <= now ? ` · <b class="ms ${kst.level}">${esc(kst.label)}</b>` : ''}</p>
       </section>
       ${unknownNote(t)}
       ${target ? `<div class="macro-grid">
@@ -1135,6 +1140,7 @@
     const cur = N.assignmentFor(ctx.assignments, today);
     const weekly = S.macrosForWeek(ctx.macros, Math.max(S.currentWeek(ctx.profile.start_date), 1)) || {};
     const pre = cur && cur.protein_g !== null ? cur : weekly;
+    const cyc = (cur && cur.carb_cycle) || {};
     const num = (k, l, v) => `<div class="field"><label for="as-${k}">${l}</label><input id="as-${k}" name="${k}" type="number" inputmode="numeric" min="0" step="1" value="${esc(v === null || v === undefined ? '' : v)}"></div>`;
     const avg = (plan) => {
       const days = plan.days || [];
@@ -1162,6 +1168,11 @@
         <p class="kicker" style="margin-top:8px">Daily targets <span class="hint" data-targets-optional>(optional with a meal plan: leave blank to use the plan’s totals)</span></p>
         <div class="grid-2">${num('protein_g', 'Protein (g)', pre.protein_g)}${num('carbs_g', 'Carbs (g)', pre.carbs_g)}${num('fats_g', 'Fats (g)', pre.fats_g)}${num('fibre_g', 'Fibre (g)', pre.fibre_g)}</div>
         <p class="hint" data-kcal></p>
+        <div data-for="macros">
+          <p class="kicker" style="margin-top:8px">Carb cycle <span class="hint">(optional: carbs by the kind of day in the training plan; protein and fats stay the same)</span></p>
+          <div class="grid-2">${num('cc_rest', 'Rest day carbs (g)', cyc.rest)}${num('cc_training', 'Training day carbs (g)', cyc.training)}${num('cc_legs', 'Leg day carbs (g)', cyc.legs)}</div>
+          <p class="hint" data-cycle></p>
+        </div>
         <div class="field"><label for="as-note">Note for ${esc(ctx.profile.full_name || 'the client')}</label><textarea id="as-note" name="note" maxlength="1000" placeholder="e.g. Swap roti for rice on training days if you prefer."></textarea></div>
         <p class="hint">${latest ? `Version ${latest.version} ends the day before this one starts and stays in the history with every meal logged against it.` : 'This becomes version 1.'} Assigned plans never change when you edit a template.</p>
         <button type="submit" class="btn">Assign</button>
@@ -1172,6 +1183,7 @@
       const d = h.readForm(form);
       form.querySelector('[data-for="meal_plan"]').hidden = d.kind !== 'meal_plan';
       form.querySelector('[data-targets-optional]').hidden = d.kind !== 'meal_plan';
+      form.querySelector('[data-for="macros"]').hidden = d.kind !== 'macros';
       const t = templates.find((x) => x.id === d.template);
       if (t && d.kind === 'meal_plan') {
         const a = avg(t.plan);
@@ -1181,6 +1193,10 @@
       if (!nameInput.dataset.touched) nameInput.value = d.kind === 'meal_plan' && t ? t.name : 'Daily macro targets';
       const kc = (d.protein_g || 0) * 4 + (d.carbs_g || 0) * 4 + (d.fats_g || 0) * 9 + (d.fibre_g || 0) * 2;
       form.querySelector('[data-kcal]').textContent = d.protein_g !== null ? `= ${fmt(kc)} kcal a day (protein×4 + carbs×4 + fats×9 + fibre×2)` : '';
+      const dayKc = (c) => fmt((d.protein_g || 0) * 4 + c * 4 + (d.fats_g || 0) * 9 + (d.fibre_g || 0) * 2);
+      form.querySelector('[data-cycle]').textContent = d.cc_rest !== null && d.cc_training !== null && d.cc_legs !== null
+        ? `Rest ${dayKc(d.cc_rest)} · training ${dayKc(d.cc_training)} · leg day ${dayKc(d.cc_legs)} kcal. The carbs above are the weekly average and are used on days with no training plan.`
+        : '';
     };
     form.querySelector('[name=name]').addEventListener('input', (e) => (e.target.dataset.touched = '1'));
     form.addEventListener('input', sync);
@@ -1194,11 +1210,14 @@
       if (d.kind === 'macros' && !set) return h.toast('Daily macro targets need protein, carbs and fats.', true);
       if (d.kind === 'meal_plan' && !d.template) return h.toast('Choose a template.', true);
       if (!d.starts_on) return h.toast('Choose a start date.', true);
+      const cycleSet = ['cc_rest', 'cc_training', 'cc_legs'].filter((k) => d[k] !== null).length;
+      if (d.kind === 'macros' && cycleSet && cycleSet < 3) return h.toast('Add carbs for rest, training and leg days, or leave all three blank.', true);
+      const cycle = d.kind === 'macros' && cycleSet ? { rest: d.cc_rest, training: d.cc_training, legs: d.cc_legs } : null;
       h.withBusy(form.querySelector('button[type=submit]'), async () => {
         const row = h.must(await sb.rpc('assign_nutrition', {
           p_client: id, p_kind: d.kind, p_name: d.name, p_starts_on: d.starts_on, p_plan: null,
           p_template: d.kind === 'meal_plan' ? d.template : null,
-          p_targets: set ? { protein_g: d.protein_g, carbs_g: d.carbs_g, fats_g: d.fats_g, fibre_g: d.fibre_g } : null,
+          p_targets: set ? { protein_g: d.protein_g, carbs_g: d.carbs_g, fats_g: d.fats_g, fibre_g: d.fibre_g, ...(cycle ? { carb_cycle: cycle } : {}) } : null,
           p_note: d.note,
         }));
         h.invalidate(id);
@@ -1287,7 +1306,7 @@
 
     const dayHTML = ({ d, a, meals, total, target }) => {
       const head = `<div class="cn-day-head"><h3>${d === today ? 'Today' : h.niceDate(d, { weekday: 'long' })}<small>${h.niceDate(d, { day: 'numeric', month: 'long' })}</small></h3>
-        <div class="cn-tot">${meals.length ? `<b>${kcal(total.kcal)}</b><span>${macroLine(total)}</span>` : target ? `<b>${fmt(target.calories)} kcal</b><span>P ${fmt(target.protein_g)} · C ${fmt(target.carbs_g)} · F ${fmt(target.fats_g)}</span>` : '<span>No targets set</span>'}</div></div>`;
+        <div class="cn-tot">${meals.length ? `<b>${kcal(total.kcal)}</b><span>${macroLine(total)}</span>` : target ? `<b>${fmt(target.calories)} kcal</b><span>P ${fmt(target.protein_g)} · C ${fmt(target.carbs_g)} · F ${fmt(target.fats_g)}</span>${target.dayLabel ? `<span class="cn-kind">${esc(target.dayLabel)}</span>` : ''}` : '<span>No targets set</span>'}</div></div>`;
       const plan = a ? `${esc(KIND[a.kind])}: ${esc(a.name)} (version ${a.version})` : 'Weekly macro targets';
       const body = meals.length
         ? `<ul class="cn-meals">${meals.map((meal) => {
@@ -1376,7 +1395,7 @@
         ${day < now ? `<a class="btn btn-ghost" href="#client/${id}/foodlog/${S.addDays(day, 1)}" aria-label="Next day">›</a>` : '<span style="width:48px"></span>'}
       </div>
       ${h.statCards([
-        { k: 'Eaten', v: t.items ? `${fmt(t.kcal)} kcal` : '–', s: target ? `Target ${fmt(target.calories)} kcal${r.isPlan ? ` · planned ${fmt(r.plannedTotal.kcal)}` : ''}` : 'No target' },
+        { k: 'Eaten', v: t.items ? `${fmt(t.kcal)} kcal` : '–', s: target ? `Target ${fmt(target.calories)} kcal${target.dayLabel ? ` · ${target.dayLabel}` : ''}${r.isPlan ? ` · planned ${fmt(r.plannedTotal.kcal)}` : ''}` : 'No target' },
         { k: 'Protein', v: t.items ? `${fmt(t.p)} g` : '–', s: target ? `Target ${fmt(target.protein_g)} g` : '' },
         { k: 'Meals on plan', v: r.isPlan ? `${ad.onPlan} of ${ad.planned}` : '–', s: r.isPlan ? `${ad.counts.as_planned} as planned · ${ad.counts.adjusted} amount · ${ad.counts.replaced} swapped · ${ad.counts.skipped} skipped` : r.assignment ? 'Macro targets only' : 'No plan assigned' },
         { k: 'Carbs · fats · fibre', v: t.items ? `${fmt(t.c)} · ${fmt(t.f)} · ${fmt(t.fibre)}` : '–', s: flags || (target ? `Targets ${fmt(target.carbs_g)} · ${fmt(target.fats_g)} · ${fmt(target.fibre_g)} g` : '') },

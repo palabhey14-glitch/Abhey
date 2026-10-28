@@ -165,10 +165,47 @@
     return d ? d.meals || [] : [];
   }
 
+  // ------------------------------------------------------------ carb cycling
+
+  // The training plan session that falls on a day: the latest program that
+  // has started, its cycle repeating from its start date. Null without one.
+  function sessionFor(training, day) {
+    const rows = (training || []).filter((r) => r.program_start_date && r.program_start_date <= day);
+    if (!rows.length) return null;
+    const start = rows.reduce((a, r) => (r.program_start_date > a ? r.program_start_date : a), '');
+    const sessions = rows.filter((r) => r.program_start_date === start);
+    const len = Math.max(...sessions.map((r) => r.cycle_day));
+    const diff = Math.round((Date.parse(`${day}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / 86400000);
+    return sessions.find((r) => r.cycle_day === (diff % len) + 1) || null;
+  }
+
+  const LOWER_BODY = ['quads', 'hamstrings', 'glutes', 'adductors', 'calves'];
+  const DAY_KINDS = { rest: 'Rest day', training: 'Training day', legs: 'Leg day' };
+
+  // 'rest', 'legs' or 'training' for a session. A leg day is named that way
+  // (Legs, Lower, Quads ...) or has mostly lower-body exercises.
+  function dayKind(session) {
+    if (!session || session.is_rest_day) return 'rest';
+    if (/\b(legs?|lower|quads?|hamstrings?|glutes?)\b/i.test(session.session_name || '')) return 'legs';
+    const ex = Array.isArray(session.exercises) ? session.exercises : [];
+    const lower = ex.filter((e) => (e.primary || []).some((m) => LOWER_BODY.includes(m))).length;
+    return ex.length && lower / ex.length > 0.5 ? 'legs' : 'training';
+  }
+
   // Daily targets: the coach's numbers if set, otherwise the plan's total.
-  function targetsFor(assignment, day) {
+  // With a carb cycle and a known kind of day, carbs (and calories) follow it.
+  function targetsFor(assignment, day, kind) {
     if (!assignment) return null;
     if (assignment.protein_g !== null && assignment.protein_g !== undefined) {
+      const cycle = assignment.carb_cycle;
+      if (cycle && kind && num(cycle[kind]) !== null) {
+        const c = num(cycle[kind]);
+        return {
+          calories: macroKcal({ p: assignment.protein_g, c, f: assignment.fats_g, fibre: assignment.fibre_g }),
+          protein_g: num(assignment.protein_g), carbs_g: c, fats_g: num(assignment.fats_g), fibre_g: num(assignment.fibre_g),
+          from: 'targets', dayKind: kind, dayLabel: DAY_KINDS[kind],
+        };
+      }
       return {
         calories: num(assignment.calories), protein_g: num(assignment.protein_g), carbs_g: num(assignment.carbs_g),
         fats_g: num(assignment.fats_g), fibre_g: num(assignment.fibre_g), from: 'targets',
@@ -328,6 +365,7 @@
     toBase, entryUnitsFor, formatAmount, formatKcal, formatGrams,
     per100Of, forAmount, sum, entryNutrition, itemNutrition, mealPlanned,
     weekdayKey, assignmentFor, planDay, planMeals, targetsFor, dayReport, adherence,
+    sessionFor, dayKind, DAY_KINDS,
     recipeNutrition, newId, emptyPlan, planForSave,
   };
 
