@@ -2,11 +2,24 @@
 // Netlify environment and never reach the browser.
 'use strict';
 
+// Reads a setting, forgiving a stray space or lower case in the name as typed
+// into Netlify, and a stray space around the value.
+function setting(name) {
+  if (process.env[name]) return process.env[name].trim();
+  const key = Object.keys(process.env).find((k) => k.trim().toUpperCase() === name);
+  return key && process.env[key] ? process.env[key].trim() : '';
+}
+
 function env() {
-  const url = (process.env.SUPABASE_URL || '').replace(/\/$/, '');
-  const anon = process.env.SUPABASE_ANON_KEY;
-  const service = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !anon) throw Object.assign(new Error('Server is missing SUPABASE_URL or SUPABASE_ANON_KEY'), { status: 500 });
+  const url = setting('SUPABASE_URL').replace(/\/$/, '');
+  const anon = setting('SUPABASE_ANON_KEY');
+  const service = setting('SUPABASE_SERVICE_ROLE_KEY');
+  if (!url || !anon) {
+    // Names only, never values, so the coach can see what Netlify passed in.
+    const missing = [!url && 'SUPABASE_URL', !anon && 'SUPABASE_ANON_KEY'].filter(Boolean).join(' and ');
+    const seen = Object.keys(process.env).filter((k) => /supa/i.test(k)).map((k) => JSON.stringify(k));
+    throw Object.assign(new Error(`Server is missing ${missing}. Supabase settings it can see: ${seen.length ? seen.join(', ') : 'none'}.`), { status: 500 });
+  }
   return { url, anon, service };
 }
 
