@@ -1689,7 +1689,7 @@ svg.mx text { fill: #7a879b; font: 600 9px var(--font); letter-spacing: 0.06em; 
 .cn-flex { margin: 4px 0 0; }
 
 /* ----- Coach side menu: grouped, dark ----- */
-.crm-rail { background: #14181f; color: #c3cad6; border-right: 0; gap: 2px; overflow-y: auto; }
+.crm-rail { background: var(--navy); color: #c5d2ea; border-right: 0; gap: 2px; overflow-y: auto; }
 .crm-brand { color: var(--white) !important; margin-bottom: 14px; }
 .crm-brand small { color: #8fb0ff; }
 .crm-group { margin: 16px 12px 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #7c8594; }
@@ -1717,8 +1717,8 @@ svg.mx text { fill: #7a879b; font: 600 9px var(--font); letter-spacing: 0.06em; 
 
 /* ----- Coach check-ins inbox ----- */
 .crm-actions { margin-left: auto; display: flex; gap: 8px; align-self: center; }
-.ci-dark { background: #14181f; color: var(--white); border-color: #14181f; }
-.ci-dark:hover { background: #262c36; }
+.ci-dark { background: var(--navy); color: var(--white); border-color: var(--navy); }
+.ci-dark:hover { background: #123253; }
 .ci-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .ci-stats.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .ci-stat { padding: 16px 18px; background: var(--white); border-radius: 16px; box-shadow: var(--soft); }
@@ -1739,7 +1739,7 @@ svg.mx text { fill: #7a879b; font: 600 9px var(--font); letter-spacing: 0.06em; 
 .ci-sub { display: block; font-size: 12px; color: var(--ink-2); }
 .ci-muted { color: var(--ink-2); }
 .ci-risk { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
-.ci-risk.low { background: #e4f3eb; color: #1f7a55; }
+.ci-risk.low { background: var(--sky); color: var(--brand-blue); }
 .ci-risk.medium { background: #fff1d6; color: #9a6200; }
 .ci-risk.high { background: #fde4e4; color: #b42318; }
 .ci-empty { display: grid; justify-items: center; gap: 4px; padding: 34px 16px 30px; text-align: center; color: var(--ink-2); }

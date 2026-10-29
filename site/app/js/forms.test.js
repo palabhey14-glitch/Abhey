@@ -7,7 +7,9 @@ assert.deepEqual(F.CATEGORIES, ['Onboarding', 'Health screen', 'Contract', 'Feed
 
 // Templates: only Onboarding has one; 4 sections, 9 questions.
 assert.equal(F.templatesFor('Onboarding').length, 1);
-assert.equal(F.templatesFor('Contract').length, 0);
+assert.equal(F.templatesFor('Contract').length, 1);
+assert.equal(F.templatesFor('Health screen').length, 1);
+assert.equal(F.templatesFor('Feedback').length, 0);
 const t = F.fromTemplate('onboarding');
 assert.deepEqual(F.counts(t), { sections: 4, questions: 9 });
 assert.deepEqual(t.sections.map((s) => s.title), ['Your goals', 'Training history', 'Availability', 'Measurements']);
@@ -93,5 +95,53 @@ assert.equal(F.status({ published_version_id: 'v', published_rev: 3, draft_rev: 
 assert.equal(F.status({ archived_at: 'x' }).key, 'archived');
 assert.deepEqual(F.addTag(['New'], ' new '), ['New']);
 assert.deepEqual(F.addTag(['New'], 'VIP'), ['New', 'VIP']);
+
+// Contract template: terms document then a signature, ready to publish.
+const ct = F.fromTemplate('contract');
+assert.deepEqual(ct.sections[0].questions.map((q) => q.type), ['terms', 'signature']);
+assert.deepEqual(F.problems(ct), []);
+const [terms, sig] = ct.sections[0].questions;
+assert.equal(terms.required, true, 'terms are always required');
+assert.equal(F.answerError(terms, {}), 'Tick the box to continue.');
+assert.equal(F.answerError(terms, { [terms.id]: { agreed: true } }), '');
+assert.equal(F.answerText(terms, { [terms.id]: { agreed: true } }).text, 'Agreed · Version 1');
+assert.equal(F.answerError(sig, { [sig.id]: { name: 'Dean Subotic' } }), 'Tick the box to agree.');
+assert.match(F.answerError(sig, { [sig.id]: { agreed: true } }), /signature|name/);
+assert.equal(F.answerError(sig, { [sig.id]: { agreed: true, name: 'Dean Subotic' } }), '');
+assert.equal(F.answerError(sig, { [sig.id]: { agreed: true, image: 'data:image/png;base64,AAAA' } }), '');
+assert.match(F.answerError({ ...sig, mode: 'draw' }, { [sig.id]: { agreed: true, name: 'Dean' } }), /Draw/);
+assert.match(F.answerError(sig, { [sig.id]: { agreed: true, image: `data:image/png;base64,${'A'.repeat(F.SIGN_MAX)}` } }), /too detailed/);
+assert.equal(F.answerText(sig, { [sig.id]: { agreed: true, name: 'Dean Subotic' } }).typed, 'Dean Subotic');
+const noTerms = F.normalise({ sections: [{ title: 'S', questions: [{ id: 't', type: 'terms', label: 'T', terms: '' }, { id: 'g', type: 'signature', label: 'G', statement: ' ' }] }] });
+assert.match(F.problems(noTerms).map((p) => p.message).join(' | '), /add the terms text.*add the consent statement/);
+
+// Health screen: rules, follow-ups and flags.
+const hs = F.fromTemplate('health');
+assert.deepEqual(F.problems(hs), []);
+assert.equal(hs.sections.length, 6);
+const hist = hs.sections[1].questions;
+const heart = hist[0];
+const heartMore = hist[1];
+assert.equal(heartMore.showIf.q, heart.id);
+const supervised = hist.filter((q) => q.type === 'yesno')[6];
+assert.equal(hs.sections[2].showIf.q, supervised.id);
+const ans = { [heart.id]: false, [heartMore.id]: 'old note', [supervised.id]: false };
+assert.equal(F.shown(hs, 1, 1, ans), false);
+assert.equal(F.shown(hs, 2, 0, ans), false);
+assert.equal(F.visibleAnswers(hs, ans)[heartMore.id], undefined);
+ans[heart.id] = true;
+ans[supervised.id] = true;
+assert.equal(F.shown(hs, 1, 1, ans), true);
+assert.equal(F.shown(hs, 2, 0, ans), true);
+assert.equal(F.isFlagged(heart, ans), true);
+assert.equal(F.isFlagged(heart, { [heart.id]: false }), false);
+assert.equal(F.isFlagged(hs.sections[4].questions[0], { [hs.sections[4].questions[0].id]: ['knee-l'] }), true);
+// A rule pointing at a deleted question stops a publish.
+const broken = F.clone(hs);
+broken.sections[1].questions.splice(0, 1);
+assert.match(F.problems(broken).map((p) => p.message).join(' | '), /follows up an answer that is missing/);
+const dob = hs.sections[0].questions[1];
+assert.equal(F.answerError(dob, { [dob.id]: '2999-01-01' }), 'Pick a date in the past.');
+assert.equal(F.answerError(dob, { [dob.id]: '1990-05-01' }), '');
 
 console.log('forms tests passed');

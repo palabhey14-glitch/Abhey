@@ -184,5 +184,111 @@ do $$ begin
     'an archived form cannot be sent';
 end $$;
 
+-- ------------------------------------------------ marking reviewed
+select pg_temp.as_user('10000000-0000-0000-0000-0000000000c2');
+do $$ begin
+  assert pg_temp.fails($q$ select mark_form_reviewed((select id from form_assignments where submitted_at is not null limit 1), true) $q$),
+    'another coach cannot mark it reviewed';
+end $$;
+select pg_temp.as_user('10000000-0000-0000-0000-00000000000c');
+select mark_form_reviewed(id, true) from form_assignments where submitted_at is not null;
+do $$ begin
+  assert (select reviewed_at from form_assignments where submitted_at is not null) is not null, 'coach marks a submitted form reviewed';
+  assert pg_temp.fails($q$ update form_assignments set reviewed_at = now() $q$)
+      or (select count(*) from form_assignments where reviewed_at is not null) = 1, 'reviewed_at only changes through the function';
+end $$;
+
+-- ------------------------------------------------ once per client, new types, file ownership
+insert into forms (name, category, answer_limit, draft) values ('Agreement', 'Contract', 'once',
+  '{"sections":[{"id":"s1","title":"Agreement","questions":[
+     {"id":"i1","type":"info","label":"Read this","text":"Hello"},
+     {"id":"t1","type":"terms","label":"Coaching agreement","terms":"Be nice.","required":true},
+     {"id":"g1","type":"signature","label":"Sign","statement":"I agree.","required":true,"mode":"type"},
+     {"id":"d1","type":"dropdown","label":"Pick","required":true,"options":[{"id":"x","label":"X"},{"id":"y","label":"Y"}]},
+     {"id":"m1","type":"measurement","label":"Weight","unit":"kg","min":30,"max":300,"required":true},
+     {"id":"h1","type":"time","label":"Wake time","required":true},
+     {"id":"f1","type":"file","label":"Bloods","maxFiles":1,"required":false}]}]}');
+select publish_form(id, 0) from forms where name = 'Agreement';
+select assign_form((select id from forms where name = 'Agreement'), array['10000000-0000-0000-0000-0000000000a1']::uuid[]);
+create temp table agr as select a.id from form_assignments a join forms f on f.id = a.form_id where f.name = 'Agreement';
+grant select on agr to authenticated;
+select pg_temp.as_user('10000000-0000-0000-0000-0000000000a1');
+do $$ begin
+  assert pg_temp.fails($q$ select submit_form_assignment((select id from agr),
+    '{"t1":{"agreed":true},"g1":{"agreed":true,"name":"A"},"d1":"x","m1":80,"h1":"06:30"}', 1) $q$), 'a one-letter typed signature is refused';
+  assert pg_temp.fails($q$ select submit_form_assignment((select id from agr),
+    '{"t1":{"agreed":true},"g1":{"agreed":true,"name":"Arjun Mehta"},"d1":"zzz","m1":80,"h1":"06:30"}', 1) $q$), 'a dropdown answer must be one of its options';
+  assert pg_temp.fails($q$ select submit_form_assignment((select id from agr),
+    '{"t1":{"agreed":true},"g1":{"agreed":true,"name":"Arjun Mehta"},"d1":"x","m1":500,"h1":"06:30"}', 1) $q$), 'measurement range is checked';
+  assert pg_temp.fails($q$ select submit_form_assignment((select id from agr),
+    '{"t1":{"agreed":true},"g1":{"agreed":true,"name":"Arjun Mehta"},"d1":"x","m1":80,"h1":"6.30"}', 1) $q$), 'time format is checked';
+  assert pg_temp.fails($q$ select submit_form_assignment((select id from agr),
+    '{"t1":{"agreed":true},"g1":{"agreed":true,"name":"Arjun Mehta"},"d1":"x","m1":80,"h1":"06:30","f1":[{"path":"10000000-0000-0000-0000-0000000000b2/x/y.pdf","name":"y.pdf"}]}', 1) $q$),
+    'a file from someone else''s folder is refused';
+  assert pg_temp.fails($q$ select submit_form_assignment((select id from agr),
+    '{"g1":{"agreed":true,"name":"Arjun Mehta"},"d1":"x","m1":80,"h1":"06:30"}', 1) $q$), 'the terms must be agreed to';
+end $$;
+select submit_form_assignment((select id from agr),
+  '{"t1":{"agreed":true},"g1":{"agreed":true,"name":"Arjun Mehta"},"d1":"x","m1":80,"h1":"06:30"}', 1);
+select pg_temp.as_user('10000000-0000-0000-0000-00000000000c');
+do $$ begin
+  assert (select bool_and(not created) from assign_form((select id from forms where name = 'Agreement'),
+          array['10000000-0000-0000-0000-0000000000a1']::uuid[])), 'once per client: no second copy after submitting';
+  assert (select count(*) from form_assignments a join forms f on f.id = a.form_id where f.name = 'Agreement') = 1, 'still one copy';
+end $$;
+update forms set answer_limit = 'every' where name = 'Agreement';
+do $$ begin
+  assert (select bool_and(created) from assign_form((select id from forms where name = 'Agreement'),
+          array['10000000-0000-0000-0000-0000000000a1']::uuid[])), 'every time: a new copy can be sent';
+end $$;
+
+-- ------------------------------------------------ rules, follow-ups, flags and past dates
+do $$ begin
+  assert cardinality(form_content_problems('{"sections":[{"id":"s1","title":"A","questions":[
+     {"id":"q2","type":"long","label":"More","showIf":{"q":"q1","is":"yes"}},
+     {"id":"q1","type":"yesno","label":"Yes?"}]}]}')) = 1, 'a follow-up must come after the answer it follows';
+  assert cardinality(form_content_problems('{"sections":[{"id":"s1","title":"A","questions":[
+     {"id":"q1","type":"yesno","label":"Yes?"},
+     {"id":"q2","type":"long","label":"More","showIf":{"q":"q1","is":"maybe"}}]}]}')) = 1, 'a rule must name a real answer';
+  assert cardinality(form_content_problems('{"sections":[{"id":"s1","title":"A","questions":[
+     {"id":"q1","type":"yesno","label":"Yes?"},
+     {"id":"q2","type":"long","label":"More","showIf":{"q":"q1","is":"yes"}},
+     {"id":"q3","type":"long","label":"Even more","showIf":{"q":"q2","is":"yes"}}]}]}')) = 1, 'rules do not chain';
+end $$;
+insert into forms (name, category, draft) values ('Health', 'Health screen',
+  '{"sections":[
+     {"id":"s1","title":"History","questions":[
+       {"id":"y1","type":"yesno","label":"Heart?","required":true,"flag":"yes"},
+       {"id":"y1m","type":"long","label":"More","required":true,"showIf":{"q":"y1","is":"yes"}},
+       {"id":"dob","type":"date","label":"Born","required":true,"allowed":"past"}]},
+     {"id":"s2","title":"Clearance","showIf":{"q":"y1","is":"yes"},"questions":[
+       {"id":"c1","type":"yesno","label":"Cleared?","required":true}]}]}');
+select publish_form(id, 0) from forms where name = 'Health';
+select assign_form((select id from forms where name = 'Health'), array['10000000-0000-0000-0000-0000000000a1']::uuid[]);
+create temp table hs as select a.id from form_assignments a join forms f on f.id = a.form_id where f.name = 'Health';
+grant select on hs to authenticated;
+select pg_temp.as_user('10000000-0000-0000-0000-0000000000a1');
+do $$ begin
+  assert pg_temp.fails($q$ select submit_form_assignment((select id from hs), '{"y1":true,"dob":"1990-01-01"}', 1) $q$),
+    'a required follow-up is required once it shows';
+  assert pg_temp.fails($q$ select submit_form_assignment((select id from hs), '{"y1":false,"dob":"2999-01-01"}', 1) $q$),
+    'a past-only date refuses the future';
+end $$;
+select submit_form_assignment((select id from hs), '{"y1":false,"y1m":"stale","dob":"1990-01-01"}', 1);
+do $$ begin
+  assert (select answers from form_responses where assignment_id = (select id from hs)) = '{"y1":false,"dob":"1990-01-01"}'::jsonb,
+    'hidden follow-ups and sections are skipped, and their stale answers dropped';
+  assert not (select flagged from form_assignments where id = (select id from hs)), 'No does not flag';
+end $$;
+select pg_temp.as_user('10000000-0000-0000-0000-00000000000c');
+select assign_form((select id from forms where name = 'Health'), array['10000000-0000-0000-0000-0000000000a1']::uuid[]);
+truncate hs;
+insert into hs select a.id from form_assignments a join forms f on f.id = a.form_id where f.name = 'Health' and a.submitted_at is null;
+select pg_temp.as_user('10000000-0000-0000-0000-0000000000a1');
+select submit_form_assignment((select id from hs), '{"y1":true,"y1m":"Stent in 2019","dob":"1990-01-01","c1":true}', 1);
+do $$ begin
+  assert (select flagged from form_assignments where id = (select id from hs)), 'a flagged Yes flags the response';
+end $$;
+
 reset role;
 select 'forms tests passed' as result;

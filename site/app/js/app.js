@@ -2336,11 +2336,14 @@
   }
 
   async function renderInbox(view) {
-    const [clients, targets, checkins] = await Promise.all([
+    const [clients, targets, checkins, formsDone, formNames] = await Promise.all([
       sb.from('profiles').select('id, full_name, email, start_date').eq('role', 'client'),
       sb.from('targets').select('client_id, checkin_day'),
       sb.from('weekly_checkins').select('user_id, week_number, submitted_at, updated_at, coach_feedback, sleep_hours, stress, energy, hunger, digestion, biggest_win, biggest_struggle'),
-    ]).then((rs) => rs.map((r, i) => (i === 1 && r.error ? [] : must(r))));
+      sb.from('form_assignments').select('id, form_id, client_id, submitted_at, reviewed_at, flagged').eq('status', 'completed'),
+      sb.from('forms').select('id, name'),
+    ]).then((rs) => rs.map((r, i) => (i !== 0 && i !== 2 && r.error ? [] : must(r))));
+    const formName = new Map(formNames.map((f) => [f.id, f.name]));
     const today = S.today();
     const now = Date.now();
     const dayOf = new Map(targets.map((t) => [t.client_id, t.checkin_day]));
@@ -2377,6 +2380,14 @@
       const latest = [...sent.values()].sort((a, b) => b.week_number - a.week_number)[0];
       const risk = checkinRisk(missed, latest);
       items.forEach((it) => rows.push({ ...it, p, name, risk }));
+      // Completed forms wait here too until marked reviewed on the response.
+      formsDone.filter((a) => a.client_id === p.id).forEach((a) => rows.push({
+        p, name, risk, win: null,
+        kind: a.reviewed_at ? 'done' : 'todo',
+        label: `Form · ${formName.get(a.form_id) || 'Form'}${a.flagged ? ' · Flagged' : ''}`,
+        href: `#forms/${a.form_id}/responses/${a.id}`,
+        c: { submitted_at: a.submitted_at, coach_feedback: a.reviewed_at, updated_at: a.reviewed_at },
+      }));
       perClient.push({ p, name, sent, missed, latest, risk, expected: items.filter((it) => it.kind !== 'open' && it.kind !== 'today').length });
     });
 
@@ -2386,13 +2397,13 @@
     const open = rows.filter((r) => r.kind === 'open');
     const done = rows.filter((r) => r.kind === 'done');
     const weekAgo = new Date(now - 7 * 86400000).toISOString();
-    const sentThisWeek = rows.filter((r) => r.c && r.c.submitted_at >= weekAgo);
+    const sentThisWeek = rows.filter((r) => r.c && !r.href && r.c.submitted_at >= weekAgo);
     const reviewedThisWeek = sentThisWeek.filter((r) => r.c.coach_feedback);
     const oldest = todo[0];
 
     const stat = (k, v, sub, extra) => `<div class="ci-stat${extra || ''}"><p class="k">${k}</p><p class="v">${v}</p><p class="s">${esc(sub)}</p></div>`;
     const stats = `<div class="ci-stats">
-        ${stat('Waiting on you', todo.length, todo.length ? `${todo.length === 1 ? 'Check-in' : 'Check-ins'} to reply to` : 'Nothing to review')}
+        ${stat('Waiting on you', todo.length, todo.length ? 'Check-ins and forms to review' : 'Nothing to review')}
         ${stat('Oldest waiting', oldest ? ageText(days(oldest.c.submitted_at)) : 'None', oldest ? oldest.name : 'Queue is clear')}
         ${stat('Due today', dueToday.length, dueToday.length ? 'Not sent yet' : 'Nothing due today')}
       </div><div class="ci-stats two">
@@ -2453,18 +2464,19 @@
       const shown = list.slice(page * PER, page * PER + PER);
       const rowHTML = (r) => {
         const age = r.kind === 'todo' ? ageText(days(r.c.submitted_at)) : r.kind === 'overdue' ? `${ageText(S.daysBetween(r.win.due, today))} late` : '–';
-        return `<tr data-href="#client/${r.p.id}/checkins" tabindex="0"><td><a href="#client/${r.p.id}/checkins"><b>${esc(r.name)}</b></a><span class="ci-sub">Week ${r.week}${r.p.email ? ` · ${esc(r.p.email)}` : ''}</span></td>
+        const href = r.href || `#client/${r.p.id}/checkins`;
+        return `<tr data-href="${href}" tabindex="0"><td><a href="${href}"><b>${esc(r.name)}</b></a><span class="ci-sub">${r.label ? esc(r.label) : `Week ${r.week}`}${r.p.email ? ` · ${esc(r.p.email)}` : ''}</span></td>
           <td>${r.win ? esc(short(r.win.due)) : '–'}</td>
           <td>${r.c ? esc(new Date(r.c.submitted_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })) : '<span class="ci-muted">Not yet</span>'}</td>
           <td>${r.c && r.c.coach_feedback ? esc(new Date(r.c.updated_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })) : '<span class="ci-muted">–</span>'}</td>
           <td>${age}</td><td><span class="ci-risk ${r.risk}">${r.risk[0].toUpperCase() + r.risk.slice(1)}</span></td></tr>`;
       };
       const empty = {
-        todo: ['Nothing to reply to', 'When a client sends their weekly check-in it lands here until you reply.'],
+        todo: ['Nothing to reply to', 'Weekly check-ins land here until you reply. Completed forms land here until you mark them reviewed.'],
         today: ['Nothing due today', 'Clients whose check-in day is today show here until they send it.'],
         overdue: ['Nothing overdue', 'Check-ins past their day that were never sent show here.'],
         open: ['Nothing open', 'Check-ins open the day before each client’s check-in day.'],
-        done: ['No replies yet', 'Check-ins you have replied to show here.'],
+        done: ['No replies yet', 'Check-ins you have replied to, and forms you marked reviewed, show here.'],
       }[INBOX.tab];
       const filtered = lists[INBOX.tab].length && !list.length;
       box.innerHTML = `<div class="table-wrap"><table class="crm-table"><thead><tr><th>Client</th><th>Due</th><th>Submitted</th><th>Responded</th><th>Ageing</th><th>Risk</th></tr></thead>
