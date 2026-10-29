@@ -9,6 +9,8 @@
   const X = window.RewiredExercises;
   const EUI = window.RewiredExerciseLibraryUI;
   const CUI = window.RewiredCalendarUI;
+  const W = window.RewiredWellness;
+  const WUI = window.RewiredWellnessUI;
   const FUI = window.RewiredFormsUI;
   const MSG = window.RewiredMessages;
   const cfg = window.REWIRED_CONFIG || {};
@@ -308,8 +310,10 @@
     ['goals', 'Goals'],
     ['foodlog', 'Food log'],
     ['activity', 'Activity'],
+    ['sleep', 'Sleep'],
     ['recovery', 'Recovery'],
     ['habits', 'Habits'],
+    ['health-markers', 'Health Markers'],
     ['training', 'Training'],
     ['supps', 'Supplements'],
     ['checkins', 'Check-ins'],
@@ -369,11 +373,12 @@
           <a class="crm-settings" href="#client/${v.clientId}/settings"${v.section === 'settings' ? ' aria-current="page"' : ''}>⚙ Client settings</a>
         </nav>`
       : '';
-    const preview = v.clientId && v.section !== 'calendar'
+    const preview = v.clientId
       ? `<button type="button" class="btn btn-ghost btn-small crm-preview" data-client-view>${ICONS.phone}<span>Client view</span></button>`
       : '';
     root.innerHTML = `<div class="crm${v.clientId ? ' with-sections' : ''}">${rail}${sections}
-      <main class="crm-main"><header class="crm-head"><h1>${esc(title)}</h1>${sub ? `<p>${esc(sub)}</p>` : ''}${(v.badges || []).map((b) => `<span class="crm-badge">${esc(b)}</span>`).join('')}${preview}${v.actions ? `<div class="crm-actions">${v.actions}</div>` : ''}</header>${body}</main></div>`;
+      <main class="crm-main"><header class="crm-head"><h1>${esc(title)}</h1>${sub ? `<p>${esc(sub)}</p>` : ''}${(v.badges || []).map((b) => `<span class="crm-badge">${esc(b)}</span>`).join('')}${v.clientId ? WUI.headerHTML(state.ctx[v.clientId]) : ''}${preview}${v.actions ? `<div class="crm-actions">${v.actions}</div>` : ''}</header>${body}</main></div>`;
+    if (v.clientId) WUI.bindHeader(state.ctx[v.clientId]);
     root.querySelector('[data-signout]').addEventListener('click', signOut);
     MSG.badge();
     const pv = root.querySelector('[data-client-view]');
@@ -386,7 +391,7 @@
   // The client's own screen for each coach section, for Client view.
   const CLIENT_SCREEN = {
     overview: 'home', physique: 'progress', nutrition: 'meals', goals: 'progress', foodlog: 'meals', activity: 'habits',
-    recovery: 'habits', habits: 'habits/today/all', training: 'training', supps: 'supps', checkins: 'checkin', settings: 'profile',
+    recovery: 'habits', sleep: 'habits', 'health-markers': 'habits', habits: 'habits/today/all', training: 'training', supps: 'supps', checkins: 'checkin', settings: 'profile',
   };
 
   // Client view: the client's phone app, read-only, beside the coach dashboard.
@@ -1095,7 +1100,7 @@
         <p class="hint">Yes/no habit? Leave it as 1 time a day.</p></div>
         <button class="btn" type="submit" style="width:100%">Add habit</button></form>` : ''}`;
     }
-    shell('Habit tracker', `${done} of ${rows.length} on target`, `${toggle}${stepper}${missing}${body}`, 'habits');
+    shell('Habit tracker', `${done} of ${rows.length} on target`, `${toggle}${stepper}${missing}${body}<div data-client-health></div>`, 'habits');
 
     root.querySelectorAll('.habit').forEach((li) => {
       const row = rows.find((r) => r.key === li.dataset.key);
@@ -1150,6 +1155,7 @@
           renderHabits(day, 'all');
         });
       });
+    await WUI.mountHabits(ctx, day);
   }
 
   async function saveHabit(row, value, day, button) {
@@ -2017,8 +2023,7 @@
 
   // The current program week's days (or the last 7 days before a start date).
   function coachWeek(ctx) {
-    const w = S.currentWeek(ctx.profile.start_date);
-    return { week: w, days: w ? S.weekDates(ctx.profile.start_date, w) : Array.from({ length: 7 }, (_, i) => S.addDays(S.today(), i - 6)) };
+    return { week: WUI.programWeek(ctx), days: WUI.rangeFor(ctx).days };
   }
 
   function avgOf(xs) {
@@ -2918,11 +2923,12 @@
     }
     section = section || 'overview';
     // Overview, meal plan and food log always show the client's latest records.
-    const ctx = await loadCtx(id, ['overview', 'calendar', 'nutrition', 'foodlog'].includes(section));
+    const ctx = await loadCtx(id, ['overview', 'calendar', 'nutrition', 'foodlog', 'health-markers', 'sleep', 'activity'].includes(section));
     const p = ctx.profile;
     const week = S.currentWeek(p.start_date);
     const name = p.full_name || p.email;
     state.coachView = { clientId: id, clientName: name, section };
+    if (section === 'overview' && arg) WUI.useProgramWeek(ctx, Number(arg));
     // Nutrition shows how the client eats beside "Week x of 12".
     if (section === 'nutrition') {
       const a = ctx.nutritionReady ? (ctx.assignments || []).filter((x) => x.starts_on <= S.today() && (!x.ends_on || x.ends_on >= S.today())).pop() : null;
@@ -2931,15 +2937,17 @@
     }
     const label = (COACH_SECTIONS.find(([s]) => s === section) || [, 'Client settings'])[1];
     const title = label;
-    const sub = `${name} · ${week ? `Week ${week} of 12` : p.start_date ? `Starts ${niceDate(p.start_date)}` : 'No start date yet'}`;
+    const sub = name;
     const nav = '';
 
-    if (section === 'overview') return renderCoachOverview(ctx, title, sub, Number(arg) || Math.max(week, 1));
+    if (section === 'overview') return renderCoachOverview(ctx, title, sub, Number(arg) || Math.max(WUI.programWeek(ctx), 1));
     if (section === 'calendar') return CUI.calendar(ctx, title, sub, arg, arg2);
     if (section === 'physique') return renderCoachPhysique(ctx, nav, title, sub, arg, arg2);
     if (section === 'nutrition') return renderCoachNutrition(ctx, nav, title, sub, arg, arg2);
     if (section === 'goals') return renderCoachGoals(ctx, title, sub);
-    if (section === 'activity') return renderCoachActivity(ctx, nav, title, sub);
+    if (section === 'activity') return WUI.activity(ctx, title, sub);
+    if (section === 'sleep') return WUI.sleep(ctx, title, sub);
+    if (section === 'health-markers') return WUI.health(ctx, title, sub);
     if (section === 'recovery') return renderCoachRecovery(ctx, nav, title, sub);
     if (section === 'habits') return renderCoachHabits(ctx, nav, title, sub, arg);
     if (section === 'checkins') return renderCoachCheckins(ctx, nav, title, sub);
@@ -3886,6 +3894,7 @@
   FUI.init({ sb, state, COACH, esc, fmt, friendlyError, must, shell, invalidate });
   EUI.init({ sb, state, root, X, esc, shell, toast, friendlyError, must, withBusy, loadExerciseLibrary });
   CUI.init({ sb, state, root, S, esc, fmt, shell, toast, friendlyError, must, withBusy });
+  WUI.init({ sb, state, root, S, W, esc, fmt, shell, toast, friendlyError, must, withBusy, invalidate, rerender: route, refreshHabits: renderHabits });
   MSG.init({ sb, state, COACH, esc, friendlyError, toast, shell });
 
   // ---------------------------------------------------------------- router
