@@ -38,3 +38,28 @@ replaced. Component styles are scoped to `w-` classes in `wellness.css`.
 
 Verification: `node --test site/app/js/*.test.js`. Local Postgres smoke checks
 also verified the migration, value constraints and owner/coach/anonymous access.
+
+## Blood-test results
+
+Apply `20261029101555_health_blood_test_markers.sql` after the health/sleep
+migration when deploying. It adds free/total testosterone, SHBG, E2, TSH,
+free T4, free T3, total/LDL/HDL cholesterol and triglycerides to the existing
+readings table. Existing ownership policies remain in place.
+
+Clients select the sample collection date, report units and exact/less-than/
+greater-than result format. Collection time, laboratory name and the laboratory's
+reported reference range are optional. Results retain up to six decimal places.
+The client Habits summary shows the latest blood results at or before the
+selected day, including older tests. Coach summaries follow the selected period.
+
+Each chart and average uses a single unit. Units are never silently converted
+or combined. Limit results such as `<0.005` remain visible in the latest result
+and history but are excluded from averages and exact graph points. The app
+does not supply normal ranges or interpret results.
+
+Unit-label references (no clinical thresholds copied into the app):
+- [Royal Melbourne Hospital: free testosterone](https://www.thermh.org.au/health-professionals/pathology-handbook/testosterone-free)
+- [Quest Diagnostics: SI units](https://www.questdiagnostics.com/content/dam/corporate/restricted/documents/test-center/si_units/si_units.pdf)
+- [Gloucestershire Hospitals: thyroid function tests](https://www.gloshospitals.nhs.uk/our-services/services-we-offer/pathology/tests-and-investigations/thyroid-function-tests-tsh-ft4-ft3/)
+- [Cleveland Clinic Laboratories: free T3](https://clevelandcliniclabs.com/test/t3-free/)
+- [Fairbanks Memorial Hospital: TSH](https://fhplab.testcatalog.org/show/TSH)

@@ -18,10 +18,18 @@
     chart: '<path d="M3 3v18h18M6 15l4-5 4 3 6-8"/>',
     range: '<path d="M12 3v18m-4-14 4-4 4 4M8 17l4 4 4-4"/>',
     history: '<path d="M3 3v6h6M3.6 9A9 9 0 1 1 3 14m9-8v6l4 2"/>',
+    lab: '<path d="m14 3 7 7m-5-5L5 16a4.2 4.2 0 0 0 6 6L22 11M9 12l6 6M6 17l2 2m5-10 2 2"/>',
+    thyroid: '<path d="M12 5v14m0-8c-3-7-9-7-9 0 0 6 5 10 9 4m0-4c3-7 9-7 9 0 0 6-5 10-9 4"/>',
+    cholesterol: '<path d="M12 2S5 10 5 15a7 7 0 0 0 14 0c0-5-7-13-7-13Z"/><circle cx="10" cy="13" r="1"/><circle cx="15" cy="16" r="1"/><path d="m9 18 5-6"/>',
   };
   function icon(key) { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${PATHS[key] || PATHS.heart}</svg>`; }
   function init(helpers) { h = helpers; W = helpers.W; }
   const val = (value, dp = 0) => W.num(value) == null ? '–' : h.fmt(value, dp);
+  const pretty = (value) => W.num(value) == null ? '–' : Number(value).toLocaleString('en-AU', { maximumFractionDigits: 6 });
+  function readingValue(m, row) {
+    if (!row) return '–';
+    return `${row.result_qualifier && row.result_qualifier !== '=' ? `${h.esc(row.result_qualifier)} ` : ''}${m.blood ? pretty(row.value) : pair(row.value, row.secondary_value, m.dp)}`;
+  }
   const date = (day, opts) => new Intl.DateTimeFormat('en-AU', { timeZone: 'UTC', ...opts }).format(new Date(`${day}T12:00:00Z`));
   const dayLabel = (day) => date(day, { day: 'numeric', month: 'short' });
   const timeLabel = (time) => time ? time.slice(0, 5) : '–';
@@ -97,19 +105,21 @@
   function chart(title, days, series, unit, target) {
     const values = series.flatMap((s) => s.values).map(W.num).filter((v) => v != null);
     const all = [...values, ...(W.num(target) != null ? [Number(target)] : [])];
-    let min = all.length ? Math.max(0, Math.floor(Math.min(...all) * 0.8)) : 0;
-    let max = all.length ? Math.ceil(Math.max(...all) * 1.15) : 20;
+    const spread = all.length ? Math.max(...all) - Math.min(...all) : 0;
+    const padding = spread ? spread * .2 : all.length ? Math.max(Math.abs(all[0]) * .1, .001) : 0;
+    let min = all.length ? Math.max(0, Math.min(...all) - padding) : 0;
+    let max = all.length ? Math.max(...all) + padding : 20;
     if (max <= min) max = min + 1;
     const x = (i) => 44 + (days.length === 1 ? 226 : i * 452 / (days.length - 1));
     const y = (n) => 205 - (n - min) * 170 / (max - min);
     const ticks = Array.from({ length: 5 }, (_, i) => min + (max - min) * i / 4);
-    let drawing = ticks.map((n) => `<g><line x1="44" x2="496" y1="${y(n)}" y2="${y(n)}" class="w-grid-line"/><text x="35" y="${y(n) + 4}" text-anchor="end">${h.esc(n >= 1000 ? `${val(n / 1000, 1)}k` : val(n, Number.isInteger(n) ? 0 : max < 100 ? 1 : 0))}</text></g>`).join('');
+    let drawing = ticks.map((n) => `<g><line x1="44" x2="496" y1="${y(n)}" y2="${y(n)}" class="w-grid-line"/><text x="35" y="${y(n) + 4}" text-anchor="end">${h.esc(n >= 1000 ? `${val(n / 1000, 1)}k` : pretty(Number(n.toPrecision(3))))}</text></g>`).join('');
     if (W.num(target) != null) drawing += `<line x1="44" x2="496" y1="${y(target)}" y2="${y(target)}" class="w-target-line"/><text x="492" y="${y(target) - 5}" text-anchor="end">Target ${val(target, Number.isInteger(Number(target)) ? 0 : 1)}</text>`;
     series.forEach((s, si) => {
       let path = '', previous = false;
       s.values.forEach((v, i) => { const n = W.num(v); if (n == null) { previous = false; return; } path += `${previous ? 'L' : 'M'}${x(i)},${y(n)} `; previous = true; });
       drawing += `<path d="${path}" fill="none" class="w-chart-line w-series-${si}"/>`;
-      drawing += s.values.map((v, i) => W.num(v) == null ? '' : `<circle tabindex="0" cx="${x(i)}" cy="${y(Number(v))}" r="3.5" class="w-chart-dot w-series-${si}"><title>${h.esc(`${dayLabel(days[i])} · ${s.name}: ${val(v, 1)} ${unit}`)}</title></circle>`).join('');
+      drawing += s.values.map((v, i) => W.num(v) == null ? '' : `<circle tabindex="0" cx="${x(i)}" cy="${y(Number(v))}" r="3.5" class="w-chart-dot w-series-${si}"><title>${h.esc(`${dayLabel(days[i])} · ${s.name}: ${pretty(v)} ${unit}`)}</title></circle>`).join('');
     });
     drawing += days.map((day, i) => i % Math.max(1, Math.ceil(days.length / 7)) && i !== days.length - 1 ? '' : `<text x="${x(i)}" y="226" text-anchor="middle">${h.esc(days.length <= 7 ? date(day, { weekday: 'short' }) : dayLabel(day))}</text>`).join('');
     if (!values.length) drawing += '<text x="270" y="120" text-anchor="middle">No readings in this date range</text>';
@@ -139,10 +149,12 @@
     document.addEventListener('keydown', keys); el.addEventListener('click', (event) => { if (event.target === el || event.target.closest('[data-w-close]')) close(); });
     (el.querySelector('form input:not([type=hidden]), form select') || el.querySelector('[data-w-close]'))?.focus(); return { el, close };
   }
-  async function loadReadings(uid, first, last) {
+  async function loadReadings(uid, first, last, markers) {
     const rows = [];
     for (let from = 0; ; from += 500) {
-      const r = await h.sb.from('health_marker_readings').select('*').eq('user_id', uid).gte('day', first).lte('day', last).order('day').order('taken_at').order('id').range(from, from + 499);
+      let q = h.sb.from('health_marker_readings').select('*').eq('user_id', uid).gte('day', first).lte('day', last);
+      if (markers) q = q.in('marker', markers);
+      const r = await q.order('day').order('taken_at').order('id').range(from, from + 499);
       if (r.error) return { ready: false, rows: [], error: r.error };
       rows.push(...r.data); if (r.data.length < 500) return { ready: true, rows };
     }
@@ -152,36 +164,64 @@
     return `<p class="w-notice" role="status">${missing ? 'Health logging will be available after the health markers update is enabled.' : `Health readings could not be loaded. ${h.esc(h.friendlyError(result.error))}`}</p>`;
   }
   function healthCard(m, stats) {
-    return `<section class="card w-summary"><header><span class="w-marker-icon">${icon(m.icon)}</span><h2>${m.name}</h2><button type="button" class="w-icon-button" data-w-history-marker="${m.key}" aria-label="View ${m.name} readings">${icon('history')}</button></header>
-      ${summaryRow(`Latest reading${stats.latest ? ` · ${dayLabel(stats.latest.day)}` : ''}`, `${pair(stats.latest?.value, stats.latest?.secondary_value, m.dp)} <small>${m.unit}</small>`, 'clock')}
-      ${summaryRow('Daily average', `${pair(stats.average, stats.averageSecondary, m.dp)} <small>${m.unit}</small>`, 'chart')}
-      ${summaryRow('Range', `${bounds(stats.min, stats.max, m.dp)}${m.paired && stats.minSecondary != null ? ` / ${bounds(stats.minSecondary, stats.maxSecondary)}` : ''} <small>${m.unit}</small>`, 'range')}
-      <p class="w-card-foot">${stats.readings.length} readings · ${stats.daily.length} days logged</p></section>`;
+    const unit = stats.unit || m.unit;
+    const average = m.blood ? pretty(stats.average) : pair(stats.average, stats.averageSecondary, m.dp);
+    const observed = m.blood ? (stats.min == null ? '–' : `${pretty(stats.min)}–${pretty(stats.max)}`) : `${bounds(stats.min, stats.max, m.dp)}${m.paired && stats.minSecondary != null ? ` / ${bounds(stats.minSecondary, stats.maxSecondary)}` : ''}`;
+    return `<section class="card w-summary"><header><span class="w-marker-icon">${icon(m.icon)}</span><h2>${m.name}</h2>${m.blood ? `<select class="w-lab-unit" data-w-unit="${m.key}" aria-label="${m.name} chart units">${m.units.map((u) => `<option${u === unit ? ' selected' : ''}>${h.esc(u)}</option>`).join('')}</select>` : ''}<button type="button" class="w-icon-button" data-w-history-marker="${m.key}" aria-label="View ${m.name} readings">${icon('history')}</button></header>
+      ${summaryRow(`${m.blood ? 'Latest result' : 'Latest reading'}${stats.latest ? ` · ${dayLabel(stats.latest.day)}` : ''}`, `${readingValue(m, stats.latest)} <small>${h.esc(unit)}</small>`, 'clock')}
+      ${summaryRow(m.blood ? 'Average result' : 'Daily average', `${average} <small>${h.esc(unit)}</small>`, 'chart')}
+      ${summaryRow(m.blood ? 'Observed range' : 'Range', `${observed} <small>${h.esc(unit)}</small>`, 'range')}
+      ${m.blood && stats.latest?.reference_range ? summaryRow('Lab reference range', h.esc(stats.latest.reference_range), 'lab') : ''}
+      <p class="w-card-foot">${stats.readings.length} readings · ${stats.daily.length} days logged${m.blood ? ` · ${h.esc(unit)} results only${stats.latest?.lab_name ? ` · ${h.esc(stats.latest.lab_name)}` : ''}` : ''}${stats.excluded ? ` · ${stats.excluded} limit results excluded from averages and plots` : ''}</p></section>`;
   }
   async function health(ctx, title, sub) {
-    const range = rangeFor(ctx), result = await loadReadings(ctx.profile.id, range.first, range.last);
-    h.shell(title, sub, `<div class="w-page">${result.ready ? '' : unavailable(result)}<div class="w-two">${W.MARKERS.map((m) => {
-      const s = W.markerSummary(result.rows, m.key, range.first, range.last);
+    const range = rangeFor(ctx), result = await loadReadings(ctx.profile.id, range.first, range.last), units = {};
+    const metric = (m) => {
+      const s = W.markerSummary(result.rows, m.key, range.first, range.last, units[m.key]);
       const byDay = new Map(s.daily.map((r) => [r.day, r]));
       const series = [{ name: m.paired ? 'Systolic' : m.short, values: range.days.map((day) => byDay.get(day)?.value) }];
       if (m.paired) series.push({ name: 'Diastolic', values: range.days.map((day) => byDay.get(day)?.secondary) });
-      return `<article class="w-metric">${healthCard(m, s)}${chart(m.name, range.days, series, m.unit)}</article>`;
-    }).join('')}</div></div>`);
-    h.root.querySelectorAll('[data-w-history-marker]').forEach((button) => button.onclick = () => historyModal(W.MARKERS.find((m) => m.key === button.dataset.wHistoryMarker), result.rows, range, false, ctx));
+      return `<article class="w-metric">${healthCard(m, s)}${chart(m.name, range.days, series, s.unit || m.unit)}</article>`;
+    };
+    h.shell(title, sub, `<div class="w-page">${result.ready ? '' : unavailable(result)}<details class="w-lab-section" data-w-lab-report><summary><span class="w-marker-icon">${icon('lab')}</span><span>Blood test markers<small>Hormones · Thyroid function · Cholesterol levels</small></span><b>View results</b></summary><p class="w-muted">Results use the sample collection date. Units and reference ranges come from the client's laboratory report. Different units are displayed separately.</p><div class="w-two" data-w-lab-grid>${W.BLOOD_MARKERS.map(metric).join('')}</div></details><div class="w-two">${W.MARKERS.filter((m) => !m.blood).map(metric).join('')}</div></div>`);
+    const page = h.root.querySelector('.w-page');
+    page.addEventListener('click', (event) => { const button = event.target.closest('[data-w-history-marker]'); if (button) historyModal(W.MARKERS.find((m) => m.key === button.dataset.wHistoryMarker), result.rows, range, false, ctx); });
+    page.addEventListener('change', (event) => { const marker = event.target.dataset.wUnit; if (!marker) return; units[marker] = event.target.value; page.querySelector('[data-w-lab-grid]').innerHTML = W.BLOOD_MARKERS.map(metric).join(''); });
   }
   function historyModal(m, rows, range, editable, ctx, refresh) {
     const s = W.markerSummary(rows, m.key, range.first, range.last);
-    const { el, close } = modal(`${m.name} readings`, `<p class="w-muted">${dayLabel(range.first)} – ${dayLabel(range.last)} · ${m.unit}</p>${table('Recorded readings', ['Date', 'Time', 'Reading', 'Notes'].concat(editable ? [''] : []), s.readings.slice().reverse().map((r) => `<tr><td>${dayLabel(r.day)}</td><td>${timeLabel(r.taken_at)}</td><td>${pair(r.value, r.secondary_value, m.dp)} ${m.unit}</td><td>${h.esc(r.notes || '–')}</td>${editable ? `<td><button type="button" class="btn btn-ghost btn-small" data-w-edit-reading="${h.esc(r.id)}">Edit</button></td>` : ''}</tr>`))}`);
+    const { el, close } = modal(`${m.name} readings`, `<p class="w-muted">${dayLabel(range.first)} – ${dayLabel(range.last)} · ${m.blood ? 'Units as reported by the laboratory' : m.unit}</p>${table('Recorded readings', ['Date', 'Time', 'Reading'].concat(m.blood ? ['Lab reference range', 'Lab'] : []).concat(['Notes']).concat(editable ? [''] : []), s.allReadings.slice().reverse().map((r) => `<tr><td>${m.blood ? date(r.day, { day: 'numeric', month: 'short', year: 'numeric' }) : dayLabel(r.day)}</td><td>${timeLabel(r.taken_at)}</td><td>${readingValue(m, r)} ${h.esc(r.reading_unit || m.unit)}</td>${m.blood ? `<td>${h.esc(r.reference_range || '–')}</td><td>${h.esc(r.lab_name || '–')}</td>` : ''}<td>${h.esc(r.notes || '–')}</td>${editable ? `<td><button type="button" class="btn btn-ghost btn-small" data-w-edit-reading="${h.esc(r.id)}">Edit</button></td>` : ''}</tr>`))}`);
     bindTables(el);
     el.querySelectorAll('[data-w-edit-reading]').forEach((button) => button.onclick = () => { const r = rows.find((row) => row.id === button.dataset.wEditReading); close(); readingModal(ctx, r.day, r, refresh); });
   }
   function readingModal(ctx, day, existing, refresh) {
     if (h.state.preview) return h.toast('Client view is a preview. Nothing is saved.');
-    const now = new Date();
-    const { el, close } = modal(existing?.id ? 'Edit health reading' : 'Log health reading', `<form class="w-form"><label>Health marker<select name="marker">${W.MARKERS.map((m) => `<option value="${m.key}"${existing?.marker === m.key ? ' selected' : ''}>${m.name}</option>`).join('')}</select></label><div class="w-form-two"><label>Date<input type="date" name="day" max="${h.S.today()}" value="${day}" required></label><label>Time (local)<input type="time" name="taken_at" value="${existing?.taken_at?.slice(0, 5) || `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`}" required></label></div><div class="w-form-two"><label><span data-w-value-label></span><input type="number" name="value" inputmode="decimal" value="${existing?.value ?? ''}" required></label><label data-w-second><span>Diastolic (mmHg)</span><input type="number" name="secondary_value" inputmode="numeric" min="1" max="300" step="1" value="${existing?.secondary_value ?? ''}"></label></div><label>Notes <small>Optional</small><textarea name="notes" rows="2" maxlength="500">${h.esc(existing?.notes || '')}</textarea></label><p class="hint">Enter a reading from your device. Keep the units shown above.</p><p class="w-form-error" role="alert" data-w-error></p><footer><button type="button" class="btn btn-ghost btn-small" data-w-close>Cancel</button><button type="submit" class="btn btn-small">Save reading</button></footer></form>`);
+    const now = new Date(), localTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const initial = W.MARKERS.find((m) => m.key === existing?.marker) || W.MARKERS[0];
+    const groups = ['Daily health', 'Hormones', 'Thyroid function', 'Cholesterol levels'];
+    const options = groups.map((group) => `<optgroup label="${group}">${W.MARKERS.filter((m) => (m.group || 'Daily health') === group).map((m) => `<option value="${m.key}"${initial.key === m.key ? ' selected' : ''}>${m.name}</option>`).join('')}</optgroup>`).join('');
+    const { el, close } = modal(existing?.id ? 'Edit health reading' : 'Log health reading', `<form class="w-form"><label>Health marker<select name="marker">${options}</select></label><div class="w-form-two"><label><span data-w-date-label>Date</span><input type="date" name="day" max="${h.S.today()}" value="${day}" required></label><label><span data-w-time-label>Time (local)</span><input type="time" name="taken_at" value="${existing?.taken_at?.slice(0, 5) || (initial.blood ? '' : localTime)}"></label></div><div class="w-form-two"><label><span data-w-value-label></span><input type="number" name="value" inputmode="decimal" value="${existing?.value ?? ''}" required></label><label data-w-second><span>Diastolic (mmHg)</span><input type="number" name="secondary_value" inputmode="numeric" min="1" max="300" step="1" value="${existing?.secondary_value ?? ''}"></label></div><div class="w-form-two" data-w-lab-fields><label>Report units<select name="reading_unit" required></select></label><label>Result format<select name="result_qualifier"><option value="=">Exact value</option><option value="<">Less than (&lt;)</option><option value=">">Greater than (&gt;)</option></select></label><label>Lab reference range <small>Optional · copy from report</small><input name="reference_range" maxlength="120" value="${h.esc(existing?.reference_range || '')}" placeholder="As printed on your report"></label><label>Laboratory <small>Optional</small><input name="lab_name" maxlength="120" value="${h.esc(existing?.lab_name || '')}" placeholder="Lab name"></label></div><label>Notes <small>Optional</small><textarea name="notes" rows="2" maxlength="500">${h.esc(existing?.notes || '')}</textarea></label><p class="hint" data-w-reading-hint></p><p class="w-form-error" role="alert" data-w-error></p><footer><button type="button" class="btn btn-ghost btn-small" data-w-close>Cancel</button><button type="submit" class="btn btn-small">Save reading</button></footer></form>`);
     const form = el.querySelector('form');
-    const update = () => { const m = W.MARKERS.find((m) => m.key === form.elements.marker.value); form.querySelector('[data-w-value-label]').textContent = `${m.paired ? 'Systolic' : m.name} (${m.unit})`; Object.assign(form.elements.value, { min: m.min, max: m.max, step: m.dp ? '0.1' : '1' }); form.querySelector('[data-w-second]').hidden = !m.paired; form.elements.secondary_value.required = !!m.paired; };
-    form.elements.marker.onchange = update; update();
+    let previous = initial.key;
+    const label = () => { const m = W.MARKERS.find((m) => m.key === form.elements.marker.value); form.querySelector('[data-w-value-label]').textContent = `${m.paired ? 'Systolic' : m.name} (${m.blood ? form.elements.reading_unit.value : m.unit})`; };
+    const update = () => {
+      const m = W.MARKERS.find((m) => m.key === form.elements.marker.value), changed = previous !== m.key;
+      if (changed) { form.elements.value.value = ''; form.elements.secondary_value.value = ''; form.elements.reference_range.value = ''; }
+      const unit = existing?.marker === m.key ? existing.reading_unit || m.unit : m.unit;
+      form.elements.reading_unit.innerHTML = (m.units || [m.unit]).map((u) => `<option${u === unit ? ' selected' : ''}>${h.esc(u)}</option>`).join('');
+      form.querySelector('[data-w-lab-fields]').hidden = !m.blood;
+      ['reading_unit', 'result_qualifier', 'reference_range', 'lab_name'].forEach((key) => { form.elements[key].disabled = !m.blood; });
+      form.elements.result_qualifier.value = existing?.marker === m.key ? existing.result_qualifier || '=' : '=';
+      Object.assign(form.elements.value, { min: m.min, max: m.max, step: m.blood ? 'any' : m.dp ? '0.1' : '1' });
+      form.querySelector('[data-w-second]').hidden = !m.paired; form.elements.secondary_value.required = !!m.paired;
+      form.elements.taken_at.required = !m.blood;
+      if (changed) form.elements.taken_at.value = m.blood ? '' : localTime;
+      form.querySelector('[data-w-date-label]').textContent = m.blood ? 'Sample collection date' : 'Date';
+      form.querySelector('[data-w-time-label]').textContent = m.blood ? 'Collection time (optional)' : 'Time (local)';
+      form.querySelector('[data-w-reading-hint]').textContent = m.blood ? 'Copy the value and units from your blood test report. Use the sample collection date. Reference ranges are saved as reported by your laboratory.' : 'Enter a reading from your device. Keep the units shown above.';
+      previous = m.key; label();
+    };
+    form.elements.marker.onchange = update; form.elements.reading_unit.onchange = label; update();
     form.addEventListener('submit', (event) => {
       event.preventDefault();
       h.withBusy(form.querySelector('[type=submit]'), async () => {
@@ -211,13 +251,24 @@
   }
   async function mountHabits(ctx, day) {
     const slot = h.root.querySelector('[data-client-health]'); if (!slot) return;
-    const result = await loadReadings(ctx.profile.id, day, day); if (!slot.isConnected) return;
+    const [result, lab] = await Promise.all([loadReadings(ctx.profile.id, day, day, W.MARKERS.filter((m) => !m.blood).map((m) => m.key)), loadReadings(ctx.profile.id, '1900-01-01', day, W.BLOOD_MARKERS.map((m) => m.key))]);
+    if (!slot.isConnected) return;
     const refresh = () => mountHabits(ctx, day);
     const log = ctx.logs.find((r) => r.day === day) || {};
-    slot.innerHTML = `<section class="card w-client-health"><header><div><p class="kicker">Health markers</p><p class="hint">Your readings for ${dayLabel(day)}</p></div><button type="button" class="btn btn-ghost btn-small" data-w-log-health${result.ready && !h.state.preview ? '' : ' disabled'}>Log reading</button></header>${result.ready ? '' : unavailable(result)}<div class="w-client-markers">${W.MARKERS.map((m) => { const s = W.markerSummary(result.rows, m.key, day, day); return `<button type="button" data-w-client-marker="${m.key}" aria-label="${m.name}: ${s.latest ? `${pair(s.latest.value, s.latest.secondary_value, m.dp)} ${m.unit}` : 'Not logged'}"><span class="w-marker-icon">${icon(m.icon)}</span><span><b>${m.name}</b><small>${s.latest ? `${pair(s.latest.value, s.latest.secondary_value, m.dp)} ${m.unit}` : 'Not logged'}</small></span></button>`; }).join('')}</div></section>
+    const button = (m, readings, first) => {
+      const s = W.markerSummary(readings, m.key, first, day), row = s.latest;
+      const unit = row?.reading_unit || m.unit;
+      return `<button type="button" data-w-client-marker="${m.key}" aria-label="${m.name}: ${row ? `${readingValue(m, row)} ${h.esc(unit)}` : 'Not logged'}"><span class="w-marker-icon">${icon(m.icon)}</span><span><b>${m.name}</b><small>${row ? `${readingValue(m, row)} ${h.esc(unit)}` : 'Not logged'}</small>${m.blood && row ? `<small>${date(row.day, { day: 'numeric', month: 'short', year: 'numeric' })}</small>` : ''}</span></button>`;
+    };
+    slot.innerHTML = `<section class="card w-client-health"><header><div><p class="kicker">Health markers</p><p class="hint">Your readings for ${dayLabel(day)}</p></div><button type="button" class="btn btn-ghost btn-small" data-w-log-health${result.ready && !h.state.preview ? '' : ' disabled'}>Log reading</button></header>${result.ready ? '' : unavailable(result)}<div class="w-client-markers">${W.MARKERS.filter((m) => !m.blood).map((m) => button(m, result.rows, day)).join('')}</div><details class="w-client-blood"><summary>${icon('lab')}<span>Blood test results<small>Hormones · Thyroid · Cholesterol</small></span></summary><p class="hint">Latest results on or before ${dayLabel(day)}. Tap a marker to view or add a result.</p>${lab.ready ? '' : unavailable(lab)}<div class="w-client-markers">${W.BLOOD_MARKERS.map((m) => button(m, lab.rows, '1900-01-01')).join('')}</div></details></section>
       <section class="card w-client-sleep"><header><span class="w-marker-icon">${icon('moon')}</span><div><p class="kicker">Sleep details</p><p class="hint">Night ending ${dayLabel(day)}</p></div><button type="button" class="btn btn-ghost btn-small" data-w-log-sleep${h.state.preview ? ' disabled' : ''}>Log details</button></header><div class="w-client-sleep-values"><span>Total sleep<b>${hours(log.sleep_h)}</b></span><span>Sleep score<b>${val(log.sleep_score)}${W.num(log.sleep_score) == null ? '' : ' / 100'}</b></span><span>Bedtime<b>${timeLabel(log.sleep_bedtime)}</b></span></div></section>`;
     slot.querySelector('[data-w-log-health]').onclick = () => readingModal(ctx, day, null, refresh);
-    slot.querySelectorAll('[data-w-client-marker]').forEach((button) => button.onclick = () => { const m = W.MARKERS.find((m) => m.key === button.dataset.wClientMarker); const found = result.rows.filter((r) => r.marker === m.key); if (found.length) historyModal(m, found, { first: day, last: day }, !h.state.preview, ctx, refresh); else if (result.ready && !h.state.preview) readingModal(ctx, day, { marker: m.key }, refresh); });
+    slot.querySelectorAll('[data-w-client-marker]').forEach((node) => node.onclick = () => {
+      const m = W.MARKERS.find((m) => m.key === node.dataset.wClientMarker), source = m.blood ? lab : result;
+      const found = source.rows.filter((r) => r.marker === m.key);
+      if (found.length) historyModal(m, found, { first: m.blood ? found.reduce((first, r) => r.day < first ? r.day : first, day) : day, last: day }, !h.state.preview, ctx, refresh);
+      else if (source.ready && !h.state.preview) readingModal(ctx, day, { marker: m.key }, refresh);
+    });
     slot.querySelector('[data-w-log-sleep]').onclick = () => sleepModal(ctx, day, async () => { await refresh(); if (h.refreshHabits) h.refreshHabits(day); }, result.ready);
   }
   function progress(label, value, text, max = 100) { return `<div class="w-progress-row"><div><span>${label}</span><b>${text}</b></div><div class="w-progress"><span style="width:${W.num(value) == null ? 0 : Math.min(100, Math.max(0, Number(value) / max * 100))}%"></span></div></div>`; }

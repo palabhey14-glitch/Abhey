@@ -10,6 +10,20 @@
     { key: 'body_temperature', name: 'Body Temperature', short: 'Temp', unit: '°C', icon: 'temperature', min: 20, max: 50, dp: 1 },
     { key: 'respiratory_rate', name: 'Respiratory Rate', short: 'RR', unit: 'breaths/min', icon: 'breath', min: 1, max: 150, dp: 0 },
   ];
+  const BLOOD_MARKERS = [
+    { key: 'free_testosterone', name: 'Free Testosterone', short: 'Free T', units: ['pmol/L', 'pg/mL', 'ng/dL', 'nmol/L'], group: 'Hormones' },
+    { key: 'total_testosterone', name: 'Total Testosterone', short: 'Total T', units: ['nmol/L', 'ng/dL'], group: 'Hormones' },
+    { key: 'shbg', name: 'SHBG', short: 'SHBG', units: ['nmol/L'], group: 'Hormones' },
+    { key: 'estradiol', name: 'E2 (Oestradiol)', short: 'E2', units: ['pmol/L', 'pg/mL'], group: 'Hormones' },
+    { key: 'tsh', name: 'Thyroid · TSH', short: 'TSH', units: ['mIU/L', 'µIU/mL'], group: 'Thyroid function' },
+    { key: 'free_t4', name: 'Thyroid · Free T4', short: 'FT4', units: ['pmol/L', 'ng/dL'], group: 'Thyroid function' },
+    { key: 'free_t3', name: 'Thyroid · Free T3', short: 'FT3', units: ['pmol/L', 'pg/mL'], group: 'Thyroid function' },
+    { key: 'total_cholesterol', name: 'Total Cholesterol', short: 'Total cholesterol', units: ['mmol/L', 'mg/dL'], group: 'Cholesterol levels' },
+    { key: 'ldl_cholesterol', name: 'LDL Cholesterol', short: 'LDL', units: ['mmol/L', 'mg/dL'], group: 'Cholesterol levels' },
+    { key: 'hdl_cholesterol', name: 'HDL Cholesterol', short: 'HDL', units: ['mmol/L', 'mg/dL'], group: 'Cholesterol levels' },
+    { key: 'triglycerides', name: 'Triglycerides', short: 'Triglycerides', units: ['mmol/L', 'mg/dL'], group: 'Cholesterol levels' },
+  ].map((m) => ({ ...m, blood: true, min: 0, max: 99999999, dp: 2, unit: m.units[0], icon: m.group === 'Thyroid function' ? 'thyroid' : m.group === 'Cholesterol levels' ? 'cholesterol' : 'lab' }));
+  MARKERS.push(...BLOOD_MARKERS);
   const SLEEP_FIELDS = {
     sleep_h: ['Total sleep (hours)', 0, 16, 0.1],
     sleep_core_min: ['Core sleep (minutes)', 0, 960, 1],
@@ -30,17 +44,21 @@
   function validDay(day) {
     return /^\d{4}-\d{2}-\d{2}$/.test(day || '') && !Number.isNaN(Date.parse(day)) && new Date(`${day}T12:00:00Z`).toISOString().slice(0, 10) === day;
   }
-  function markerSummary(rows, marker, first, last) {
-    const readings = rows.filter((r) => r.marker === marker && r.day >= first && r.day <= last && num(r.value) != null)
+  function markerSummary(rows, marker, first, last, selectedUnit) {
+    const definition = MARKERS.find((m) => m.key === marker);
+    const allReadings = rows.filter((r) => r.marker === marker && r.day >= first && r.day <= last && num(r.value) != null)
       .sort((a, b) => `${a.day} ${a.taken_at || ''} ${a.created_at || ''}`.localeCompare(`${b.day} ${b.taken_at || ''} ${b.created_at || ''}`));
-    const days = [...new Set(readings.map((r) => r.day))];
+    const unit = selectedUnit || allReadings.at(-1)?.reading_unit || definition?.unit;
+    const readings = allReadings.filter((r) => (r.reading_unit || definition?.unit) === unit);
+    const exact = readings.filter((r) => !r.result_qualifier || r.result_qualifier === '=');
+    const days = [...new Set(exact.map((r) => r.day))];
     const daily = days.map((day) => {
-      const rs = readings.filter((r) => r.day === day);
+      const rs = exact.filter((r) => r.day === day);
       return { day, value: mean(rs.map((r) => r.value)), secondary: mean(rs.map((r) => r.secondary_value)) };
     });
-    const values = readings.map((r) => Number(r.value));
-    const secondary = readings.map((r) => num(r.secondary_value)).filter((v) => v != null);
-    return { readings, daily, latest: readings.at(-1) || null, average: mean(daily.map((r) => r.value)),
+    const values = exact.map((r) => Number(r.value));
+    const secondary = exact.map((r) => num(r.secondary_value)).filter((v) => v != null);
+    return { readings, allReadings, unit, excluded: readings.length - exact.length, daily, latest: readings.at(-1) || null, average: mean(daily.map((r) => r.value)),
       averageSecondary: mean(daily.map((r) => r.secondary)), min: values.length ? Math.min(...values) : null,
       max: values.length ? Math.max(...values) : null, minSecondary: secondary.length ? Math.min(...secondary) : null,
       maxSecondary: secondary.length ? Math.max(...secondary) : null };
@@ -49,13 +67,19 @@
     const marker = MARKERS.find((m) => m.key === data.marker);
     if (!marker) throw new Error('Choose a health marker.');
     if (!validDay(data.day) || data.day > today) throw new Error('Choose a valid reading date up to today.');
-    if (!/^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(data.taken_at || '')) throw new Error('Enter a valid reading time.');
+    if ((!marker.blood || data.taken_at) && !/^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(data.taken_at || '')) throw new Error('Enter a valid reading time.');
     const value = num(data.value);
     if (value == null || value < marker.min || value > marker.max) throw new Error(`Enter ${marker.name.toLowerCase()} between ${marker.min} and ${marker.max} ${marker.unit}.`);
     const secondary = marker.paired ? num(data.secondary_value) : null;
     if (marker.paired && (secondary == null || secondary < 1 || secondary > 300 || secondary >= value)) throw new Error('Enter both blood pressure numbers. Systolic must be higher than diastolic.');
     if (String(data.notes || '').length > 500) throw new Error('Keep notes to 500 characters.');
-    return { marker: marker.key, day: data.day, taken_at: data.taken_at, value, secondary_value: secondary, notes: String(data.notes || '').trim() || null };
+    const reading_unit = marker.blood ? data.reading_unit || marker.unit : null;
+    if (marker.blood && !marker.units.includes(reading_unit)) throw new Error('Choose the units printed on your blood test report.');
+    const result_qualifier = marker.blood ? data.result_qualifier || '=' : '=';
+    if (!['=', '<', '>'].includes(result_qualifier)) throw new Error('Choose an exact result, less than, or greater than.');
+    if (String(data.reference_range || '').length > 120 || String(data.lab_name || '').length > 120) throw new Error('Keep the lab name and reference range to 120 characters each.');
+    return { marker: marker.key, day: data.day, taken_at: data.taken_at || null, value, secondary_value: secondary, notes: String(data.notes || '').trim() || null,
+      reading_unit, result_qualifier, reference_range: marker.blood ? String(data.reference_range || '').trim() || null : null, lab_name: marker.blood ? String(data.lab_name || '').trim() || null : null };
   }
   function validateSleep(data, today) {
     if (!validDay(data.day) || data.day > today) throw new Error('Choose a valid wake-up date up to today.');
@@ -86,7 +110,7 @@
     const values = rows.map((r) => Number(r[field]));
     return { rows, latest: rows.at(-1) || null, average: mean(values), total: sum(values), min: values.length ? Math.min(...values) : null, max: values.length ? Math.max(...values) : null };
   }
-  const api = { MARKERS, SLEEP_FIELDS, num, mean, sum, validDay, markerSummary, validateReading, validateSleep, sleepSummary, activitySummary };
+  const api = { MARKERS, BLOOD_MARKERS, SLEEP_FIELDS, num, mean, sum, validDay, markerSummary, validateReading, validateSleep, sleepSummary, activitySummary };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.RewiredWellness = api;
 })(typeof window !== 'undefined' ? window : globalThis);
