@@ -13,6 +13,8 @@
   const WUI = window.RewiredWellnessUI;
   const T = window.RewiredTraining;
   const TUI = window.RewiredTrainingUI;
+  const CI = window.RewiredCoachIcons;
+  const PUI = window.RewiredPhasesUI;
   const FUI = window.RewiredFormsUI;
   const MSG = window.RewiredMessages;
   const cfg = window.REWIRED_CONFIG || {};
@@ -266,10 +268,12 @@
     const nutrition = await NUI.load(id);
     // Same for migrations/2026-10-26-workout-logs.sql (sets and reps).
     const workouts = await sb.from('workout_logs').select('*').eq('user_id', id).order('day', { ascending: false }).limit(60);
+    const phases = await sb.from('client_phases').select('*').eq('client_id', id).order('start_date');
     const ctx = {
       profile, targets: targets || {}, macros, training, supplements, logs, checkins, measurements, photos,
       habits: habitsReady ? habits.data : [], habitEntries: habitsReady ? habitEntries.data : [], habitsReady,
       workouts: workouts.error ? [] : workouts.data, workoutsReady: !workouts.error,
+      phases: phases.error ? [] : phases.data, phasesReady: !phases.error,
       ...nutrition,
       loadedAt: Date.now(),
     };
@@ -306,6 +310,7 @@
 
   const COACH_SECTIONS = [
     ['overview', 'Overview'],
+    ['phases', 'Phases'],
     ['calendar', 'Calendar'],
     ['physique', 'Physique'],
     ['nutrition', 'Nutrition'],
@@ -371,7 +376,7 @@
     const sections = v.clientId
       ? `<nav class="crm-sections" aria-label="Client sections">
           <a class="crm-back" href="#clients">‹ ${esc(v.clientName)}</a>
-          ${COACH_SECTIONS.map(([id, label]) => `<a href="#client/${v.clientId}/${id}"${v.section === id ? ' aria-current="page"' : ''}>${label}</a>`).join('')}
+          ${COACH_SECTIONS.map(([id, label]) => `<a href="#client/${v.clientId}/${id}"${v.section === id ? ' aria-current="page"' : ''}>${CI.icon(id)}<span>${label}</span></a>`).join('')}
           <a class="crm-settings" href="#client/${v.clientId}/settings"${v.section === 'settings' ? ' aria-current="page"' : ''}>⚙ Client settings</a>
         </nav>`
       : '';
@@ -379,7 +384,8 @@
       ? `<button type="button" class="btn btn-ghost btn-small crm-preview" data-client-view>${ICONS.phone}<span>Client view</span></button>`
       : '';
     root.innerHTML = `<div class="crm${v.clientId ? ' with-sections' : ''}">${rail}${sections}
-      <main class="crm-main"><header class="crm-head"><h1>${esc(title)}</h1>${sub ? `<p>${esc(sub)}</p>` : ''}${(v.badges || []).map((b) => `<span class="crm-badge">${esc(b)}</span>`).join('')}${v.clientId ? WUI.headerHTML(state.ctx[v.clientId]) : ''}${preview}${v.actions ? `<div class="crm-actions">${v.actions}</div>` : ''}</header>${body}</main></div>`;
+      <main class="crm-main"><header class="crm-head"><h1>${v.clientId && COACH_SECTIONS.some(([id]) => id === v.section) ? CI.icon(v.section) : ''}${esc(title)}</h1>${sub ? `<p>${esc(sub)}</p>` : ''}${(v.badges || []).map((b) => `<span class="crm-badge">${esc(b)}</span>`).join('')}${v.clientId ? WUI.headerHTML(state.ctx[v.clientId]) : ''}${preview}${v.actions ? `<div class="crm-actions">${v.actions}</div>` : ''}</header>${body}</main></div>`;
+    CI.decorate(root);
     if (v.clientId) WUI.bindHeader(state.ctx[v.clientId]);
     root.querySelector('[data-signout]').addEventListener('click', signOut);
     MSG.badge();
@@ -1290,6 +1296,7 @@
     const exercises = session && Array.isArray(session.exercises) ? session.exercises.length : 0;
     // Forms the coach has sent and the client hasn't finished.
     const formsCard = state.preview ? '' : await FUI.homeCardHTML();
+    const activePhase = ctx.phases.find((phase) => phase.status === 'active');
     const greet = !session ? `Good to see you,<br>${first}.` : session.is_rest_day ? `Recovery day,<br>${first}.` : `Ready to train,<br>${first}?`;
 
     const pills = [
@@ -1336,6 +1343,7 @@
       </section>
 
       ${formsCard}
+      ${activePhase ? `<section class="card ph-client-summary"><span class="ph-client-symbol" aria-hidden="true">${CI.icon('phases')}</span><div><p class="kicker">Current coaching phase</p><h2>${esc(activePhase.name)}</h2>${activePhase.description ? `<p>${esc(activePhase.description)}</p>` : ''}<small>Projected through ${niceDate(activePhase.end_date, { day: 'numeric', month: 'long', year: 'numeric' })}</small></div></section>` : ''}
       <section class="score">
         <p class="label">${day === now ? "Today's score" : 'Day score'}</p>
         <a class="big-num" href="#habits/${day}">${hit}<span>/${rows.length}</span></a>
@@ -1980,7 +1988,7 @@
 
   function statCards(cards) {
     return `<div class="stat-cards">${cards
-      .map((c) => `<div class="stat-card"><div class="k">${esc(c.k)}</div><div class="v">${c.v}${c.delta || ''}</div>${c.s ? `<div class="s">${esc(c.s)}</div>` : ''}</div>`)
+      .map((c) => `<div class="stat-card"><div class="k">${CI.forText(c.k) ? CI.icon(CI.forText(c.k)) : ''}${esc(c.k)}</div><div class="v">${c.v}${c.delta || ''}</div>${c.s ? `<div class="s">${esc(c.s)}</div>` : ''}</div>`)
       .join('')}</div>`;
   }
 
@@ -2934,7 +2942,7 @@
     }
     section = section || 'overview';
     // Overview, meal plan and food log always show the client's latest records.
-    const ctx = await loadCtx(id, ['overview', 'calendar', 'nutrition', 'foodlog', 'health-markers', 'sleep', 'activity', 'training'].includes(section));
+    const ctx = await loadCtx(id, ['overview', 'phases', 'calendar', 'nutrition', 'foodlog', 'health-markers', 'sleep', 'activity', 'training'].includes(section));
     const p = ctx.profile;
     const week = S.currentWeek(p.start_date);
     const name = p.full_name || p.email;
@@ -2952,6 +2960,7 @@
     const nav = '';
 
     if (section === 'overview') return renderCoachOverview(ctx, title, sub, Number(arg) || Math.max(WUI.programWeek(ctx), 1));
+    if (section === 'phases') return PUI.render(ctx, title, sub, arg === 'roadmap' ? 'roadmap' : 'list', arg2);
     if (section === 'calendar') return CUI.calendar(ctx, title, sub, arg, arg2);
     if (section === 'physique') return renderCoachPhysique(ctx, nav, title, sub, arg, arg2);
     if (section === 'nutrition') return renderCoachNutrition(ctx, nav, title, sub, arg, arg2);
@@ -3905,8 +3914,9 @@
   FUI.init({ sb, state, COACH, esc, fmt, friendlyError, must, shell, invalidate });
   EUI.init({ sb, state, root, X, esc, shell, toast, friendlyError, must, withBusy, loadExerciseLibrary });
   CUI.init({ sb, state, root, S, esc, fmt, shell, toast, friendlyError, must, withBusy });
+  PUI.init({ sb, state, root, S, CI, esc, shell, toast, friendlyError, must, invalidate });
   WUI.init({ sb, state, root, S, W, esc, fmt, shell, toast, friendlyError, must, withBusy, invalidate, rerender: route, refreshHabits: renderHabits });
-  TUI.init({ sb, state, root, S, T, X, EUI, esc, fmt, shell, toast, friendlyError, must, withBusy, invalidate, loadExerciseLibrary });
+  TUI.init({ sb, state, root, S, T, X, EUI, CI, esc, fmt, shell, toast, friendlyError, must, withBusy, invalidate, loadExerciseLibrary });
   MSG.init({ sb, state, COACH, esc, friendlyError, toast, shell });
 
   // ---------------------------------------------------------------- router

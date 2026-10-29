@@ -1,0 +1,24 @@
+/* Additive icons across coach sections. Existing palette and shell dimensions stay in use. */
+.ci-icon { display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex:none;color:var(--brand-blue);vertical-align:-3px; }
+.ci-icon svg { width:100%;height:100%;display:block; }
+.ci-badge { width:28px;height:28px;border-radius:50%;background:var(--sky); }
+.ci-badge svg { width:16px;height:16px; }
+.crm-sections a:not(.crm-back):not(.crm-settings) { display:flex;align-items:center;gap:10px; }
+.crm-sections a .ci-icon { color:var(--ink-2);width:16px;height:16px; }
+.crm-sections a[aria-current='page'] .ci-icon { color:var(--brand-blue); }
+.crm-head h1 { display:inline-flex;align-items:center;gap:10px; }
+.crm-head h1 .ci-icon { width:25px;height:25px; }
+.crm-main .stat-card .k { display:flex;align-items:center;gap:7px; }
+.crm-main .stat-card .k .ci-icon { width:16px;height:16px; }
+.crm-main .stat-cards .stat-card:first-child .k .ci-icon { color:var(--white); }
+.crm-main .crm-sub,.crm-main .card > .kicker,.crm-main .coach-editor-intro h2,.crm-main .daily-col .kicker { align-items:center;gap:8px; }
+.crm-main .crm-sub:has(.ci-icon),.crm-main .card > .kicker:has(.ci-icon),.crm-main .coach-editor-intro h2:has(.ci-icon),.crm-main .daily-col .kicker:has(.ci-icon) { display:flex; }
+.crm-main .kicker .ci-icon { width:15px;height:15px; }
+.tr-summary-title { justify-content:flex-start !important;gap:9px !important; }
+.tr-summary-title small { margin-left:auto; }
+.tr-summary-title .ci-badge { margin-right:2px; }
+.tr-card dl dt { display:flex;align-items:center;gap:7px; }
+.tr-card dl dt .ci-icon { width:15px;height:15px; }
+.tr-card dl dd { max-width:55%; }
+@media(max-width:900px) { .crm-sections a:not(.crm-back):not(.crm-settings){gap:6px;} }
+@media(max-width:900px) { .crm-sections a[aria-current='page'] .ci-icon{color:var(--white);} }
