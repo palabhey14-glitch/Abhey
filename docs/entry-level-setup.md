@@ -1,24 +1,22 @@
 # Entry Level Guidance: setup
 
-Entry Level Guidance (Monthly Coaching) is AUD $380 per month, an ongoing
-subscription. The site is built; these steps connect the payment.
+Entry Level Guidance is AUD $80 per week, billed weekly, an ongoing
+subscription. The site uses the Stripe link https://buy.stripe.com/28E14hg0N4iba5HdjL0Ny02
+(`REWIRED_ENTRY_JOIN_URL` in `site/booking.js`).
 
-## 1. Create the Stripe subscription (Stripe dashboard)
+## 1. Finish the Stripe link (Stripe dashboard)
 
-1. Product catalogue, Add product. Name: `Entry Level Guidance (Monthly Coaching)`.
-   Description: `Customised meal or macro plan, meal plan ebook, workout program in
-   the Custom Rewired Coaching App, fortnightly check-ins and plan updates,
-   coaching by email.`
-2. Price: Recurring, AUD 380.00, billing period Monthly.
-3. Payment Links, New, pick that price. Turn on collecting the customer's email.
-4. After payment: redirect customers to your website,
+1. Rename the product behind the link from "Premium 1 on 1 Coaching" to
+   `Entry Level Guidance`, and replace its description (it currently reads as
+   Premium) with: `Customised meal or macro plan, meal plan ebook, workout
+   program in the Custom Rewired Coaching App, fortnightly check-ins and plan
+   updates, coaching by email.` Clients see this at checkout and on receipts.
+2. Payment Links, this link, After payment: redirect customers to
    `https://rewiredbyabhey.com/entry-welcome.html`
-5. Settings, Customer emails: turn on emails for successful payments, so Stripe
+3. Settings, Customer emails: turn on emails for successful payments, so Stripe
    sends the receipt the welcome page mentions.
-6. Copy the link (https://buy.stripe.com/...) into `site/booking.js` as
-   `REWIRED_ENTRY_JOIN_URL`. Until then the Subscribe button opens an email to Abhey.
 
-Test first in Stripe test mode with card 4242 4242 4242 4242, then repeat in live mode.
+Test in Stripe test mode with card 4242 4242 4242 4242 if you want a dry run.
 
 ## 2. Netlify form notifications
 
@@ -29,8 +27,10 @@ notifications, add an email notification for it.
 
 - Cancel: when a client emails after week four, open the subscription in Stripe,
   Cancel, "At the end of the current period".
-- Eight-week satisfaction policy: refund the most recent monthly payment
-  (AUD $380) from the Payments page.
+- Stripe can't block an early cancellation itself, so cancel only once the
+  fourth weekly payment has been taken.
+- Eight-week satisfaction policy: refund the last four weekly payments
+  (AUD $320) from the Payments page.
 
 ## 4. App access
 
