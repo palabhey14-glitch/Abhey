@@ -11,6 +11,8 @@
   const CUI = window.RewiredCalendarUI;
   const W = window.RewiredWellness;
   const WUI = window.RewiredWellnessUI;
+  const T = window.RewiredTraining;
+  const TUI = window.RewiredTrainingUI;
   const FUI = window.RewiredFormsUI;
   const MSG = window.RewiredMessages;
   const cfg = window.REWIRED_CONFIG || {};
@@ -1429,6 +1431,7 @@
           <strong>${esc(ex.name)}</strong>${muscles ? `<div class="exercise-muscles">${esc(muscles)}</div>` : ''}<div class="exercise-meta">${fmt(ex.sets)} sets × ${esc(reps)} reps${effort ? ` · ${esc(effort)}` : ''}${rest ? ` · ${esc(rest)}` : ''}</div>
           ${ex.rir && ex.rir_target != null ? `<div class="exercise-meta">${Number(ex.rir_target) === 0 ? 'Take each set to the last clean rep' : `Stop each set with about ${fmt(ex.rir_target)} clean rep${Number(ex.rir_target) === 1 ? '' : 's'} left in the tank`}</div>` : ''}
           ${ex.final_set_rpe_target ? `<div class="exercise-meta">Final set: about RPE ${fmt(ex.final_set_rpe_target)} if technique stays solid</div>` : ''}
+          ${prescriptionHTML(ex)}
           ${ex.note ? `<p class="exercise-note">${esc(ex.note)}</p>` : ''}
         </div></li>`;
       }).join('');
@@ -1438,6 +1441,11 @@
       </details>`;
     }).join('');
     return `${header}<div class="training-days">${cards}</div>`;
+  }
+
+  function prescriptionHTML(ex) {
+    if (!Array.isArray(ex.prescriptions) || !ex.prescriptions.length) return '';
+    return `<details class="training-prescriptions"><summary>Set instructions</summary><div class="tr-scroll"><table><thead><tr><th>Set</th><th>Weight</th><th>Reps</th><th>Tempo</th><th>RIR</th><th>Type / group</th><th>Rest</th></tr></thead><tbody>${ex.prescriptions.map((s,i) => `<tr><td>${i+1}</td><td>${s.weight_kg == null || s.weight_kg === '' ? '–' : `${fmt(s.weight_kg,1)} kg`}</td><td>${fmt(s.reps_min)}–${fmt(s.reps_max)}</td><td>${esc(s.tempo || '–')}</td><td>${s.rir == null || s.rir === '' ? '–' : fmt(s.rir)}</td><td>${esc(s.set_type || 'Working set')}${s.group ? ` · ${esc(s.group)}` : ''}</td><td>${fmt(s.rest_seconds)} sec</td></tr>`).join('')}</tbody></table></div></details>`;
   }
 
   // ------------------------------------------------- client: workout log
@@ -1475,21 +1483,22 @@
     const scheduledRest = prog.sessions.find((r) => r.cycle_day === prog.scheduled && r.is_rest_day);
     const sameSession = existing && existing.cycle_day === chosen;
     const rows = session && !session.is_rest_day ? session.exercises.map((ex, i) => {
-      const logged = sameSession ? (existing.exercises || []).find((e) => e.index === i || X.normalise(e.name) === X.normalise(ex.name)) : null;
+      const logged = sameSession ? ((existing.exercises || []).find((e) => ex.exercise_id && e.exercise_id === ex.exercise_id) || (existing.exercises || []).find((e) => X.normalise(e.name) === X.normalise(ex.name))) : null;
       const prev = lastSets(ctx, ex.name, day);
       const count = Math.max(Number(ex.sets) || 1, logged ? logged.sets.length : 0);
       const reps = ex.reps_min === ex.reps_max ? fmt(ex.reps_min) : `${fmt(ex.reps_min)}–${fmt(ex.reps_max)}`;
       const sets = Array.from({ length: count }, (_, n) => {
         const v = logged && logged.sets[n] ? logged.sets[n] : {};
         const p = prev && prev.sets[n] ? prev.sets[n] : {};
-        return `<div class="wl-set"><span class="wl-n">Set ${n + 1}</span>
+        const prescription = ex.prescriptions?.[n];
+        return `<div class="wl-set" data-set-type="${esc(v.set_type || (logged ? 'Working set' : prescription?.set_type) || 'Working set')}"><span class="wl-n">Set ${n + 1}${prescription?.set_type && prescription.set_type !== 'Working set' ? `<small>${esc(prescription.set_type)}</small>` : ''}</span>
           <label><span>kg</span><input data-kg type="number" inputmode="decimal" step="0.5" min="0" max="500" value="${esc(v.kg ?? '')}" placeholder="${esc(p.kg ?? '')}"></label>
           <label><span>reps</span><input data-reps type="number" inputmode="numeric" min="0" max="100" value="${esc(v.reps ?? '')}" placeholder="${esc(p.reps ?? '')}"></label></div>`;
       }).join('');
       return `<li class="wl-ex" data-wl-ex="${i}" data-name="${esc(ex.name)}">
         <div class="wl-ex-head"><div class="wl-ex-map" aria-hidden="true">${(withMuscles(ex).primary || []).length ? X.bodyDiagram(withMuscles(ex).primary, withMuscles(ex).secondary, { small: true }) : ''}</div>
           <div><strong>${esc(ex.name)}</strong><small>Target: ${fmt(ex.sets)} sets × ${esc(reps)} reps${ex.rir && ex.rir_target != null ? ` · ${fmt(ex.rir_target)} RIR` : ''}</small>
-          ${prev ? `<small class="wl-prev">Last time (${esc(niceDate(prev.day))}): ${esc(setsText(prev.sets))}</small>` : ''}</div></div>
+          ${prev ? `<small class="wl-prev">Last time (${esc(niceDate(prev.day))}): ${esc(setsText(prev.sets))}</small>` : ''}</div></div>${prescriptionHTML(ex)}
         <div class="wl-sets" data-sets>${sets}</div>
         <button type="button" class="wl-add" data-add-set>+ Add set</button>
       </li>`;
@@ -1554,10 +1563,12 @@
         const exercises = [...form.querySelectorAll('[data-wl-ex]')].map((li) => ({
           index: Number(li.dataset.wlEx),
           name: li.dataset.name,
+          exercise_id: session?.exercises?.[Number(li.dataset.wlEx)]?.exercise_id || null,
+          primary: session?.exercises?.[Number(li.dataset.wlEx)]?.primary || [],
           sets: [...li.querySelectorAll('.wl-set')].map((row) => {
             const kg = row.querySelector('[data-kg]').value.trim();
             const reps = row.querySelector('[data-reps]').value.trim();
-            return { kg: kg === '' ? null : Number(kg), reps: reps === '' ? null : Number(reps) };
+            return { kg: kg === '' ? null : Number(kg), reps: reps === '' ? null : Number(reps), set_type: row.dataset.setType || 'Working set' };
           }).filter((x) => x.reps !== null || x.kg !== null),
         }));
         for (const ex of exercises) {
@@ -2923,7 +2934,7 @@
     }
     section = section || 'overview';
     // Overview, meal plan and food log always show the client's latest records.
-    const ctx = await loadCtx(id, ['overview', 'calendar', 'nutrition', 'foodlog', 'health-markers', 'sleep', 'activity'].includes(section));
+    const ctx = await loadCtx(id, ['overview', 'calendar', 'nutrition', 'foodlog', 'health-markers', 'sleep', 'activity', 'training'].includes(section));
     const p = ctx.profile;
     const week = S.currentWeek(p.start_date);
     const name = p.full_name || p.email;
@@ -2951,7 +2962,7 @@
     if (section === 'recovery') return renderCoachRecovery(ctx, nav, title, sub);
     if (section === 'habits') return renderCoachHabits(ctx, nav, title, sub, arg);
     if (section === 'checkins') return renderCoachCheckins(ctx, nav, title, sub);
-    if (section === 'training') return renderCoachTraining(ctx, nav, title, sub, arg === 'new');
+    if (section === 'training') return TUI.render(ctx, title, sub, arg || 'workouts');
     if (section === 'supps') return renderCoachSupps(ctx, nav, title, sub);
     if (section === 'foodlog') return NUI.coachFoodLog(ctx, title, sub, arg);
     const rows = [
@@ -3895,6 +3906,7 @@
   EUI.init({ sb, state, root, X, esc, shell, toast, friendlyError, must, withBusy, loadExerciseLibrary });
   CUI.init({ sb, state, root, S, esc, fmt, shell, toast, friendlyError, must, withBusy });
   WUI.init({ sb, state, root, S, W, esc, fmt, shell, toast, friendlyError, must, withBusy, invalidate, rerender: route, refreshHabits: renderHabits });
+  TUI.init({ sb, state, root, S, T, X, EUI, esc, fmt, shell, toast, friendlyError, must, withBusy, invalidate, loadExerciseLibrary });
   MSG.init({ sb, state, COACH, esc, friendlyError, toast, shell });
 
   // ---------------------------------------------------------------- router
