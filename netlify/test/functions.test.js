@@ -149,6 +149,38 @@ process.env.SUPABASE_SERVICE_ROLE_KEY = 'service';
   assert.equal(out.statusCode, 400, 'private address refused through the real guard');
   assert.equal(recipeImport.matchConfidence('green chillies', 'Chilli, green, raw'), 1);
 
+  // Add client: coach only, creates the login with the service key, fills name and phone
+  const addClient = require('../functions/add-client');
+  const coachRole = (role) => [/\/rest\/v1\/profiles\?id=eq\.u1&select=role/, () => res(200, [{ role }])];
+  let made;
+  let patched;
+  f = fakeFetch([
+    authOk, coachRole('coach'),
+    [/\/auth\/v1\/admin\/users$/, (_u, init) => {
+      assert.equal(init.headers.apikey, 'service', 'login made with the server key');
+      made = JSON.parse(init.body);
+      return made.email === 'taken@example.com' ? res(422, { msg: 'A user with this email address has already been registered' }) : res(200, { id: 'c9' });
+    }],
+    [/\/rest\/v1\/profiles\?id=eq\.c9$/, (_u, init) => { patched = JSON.parse(init.body); return res(204); }],
+  ]);
+  const add = (who, body) => addClient._handler({ httpMethod: 'POST', headers: { authorization: `Bearer ${who}` }, body: JSON.stringify(body) }, {}, f);
+  out = await add('good', { first_name: ' Dean ', last_name: 'Subotic', email: 'Dean@Example.com', phone: '+61 400 000 000' });
+  assert.equal(out.statusCode, 200, out.body);
+  assert.equal(made.email, 'dean@example.com');
+  assert.equal(made.email_confirm, true);
+  assert.deepEqual(patched, { full_name: 'Dean Subotic', phone: '+61 400 000 000' });
+  out = await add('good', { first_name: 'Dean', email: 'taken@example.com' });
+  assert.equal(out.statusCode, 409, 'an email that already has a login is explained');
+  out = await add('good', { first_name: '', email: 'x@example.com' });
+  assert.equal(out.statusCode, 400);
+  out = await add('good', { first_name: 'X', email: 'not-an-email' });
+  assert.equal(out.statusCode, 400);
+  out = await add('bad', { first_name: 'X', email: 'x@example.com' });
+  assert.equal(out.statusCode, 401, 'signed-out callers are refused');
+  f = fakeFetch([authOk, coachRole('client')]);
+  out = await addClient._handler({ httpMethod: 'POST', headers: { authorization: 'Bearer good' }, body: JSON.stringify({ first_name: 'X', email: 'x@example.com' }) }, {}, f);
+  assert.equal(out.statusCode, 403, 'a client cannot add clients');
+
   console.log('function tests passed');
 })().catch((e) => {
   console.error(e);

@@ -64,7 +64,15 @@ async function fakeSafeFetch(url) {
 const functions = {
   'food-barcode': (ev) => require(path.join(REPO, 'netlify/functions/food-barcode'))._handler(ev, {}, fakeFetch),
   'recipe-import': (ev) => require(path.join(REPO, 'netlify/functions/recipe-import'))._handler(ev, {}, { fetch: fakeFetch, safeFetch: fakeSafeFetch }),
+  'add-client': (ev) => require(path.join(REPO, 'netlify/functions/add-client'))._handler(ev, {}, fetch),
 };
+// Supabase's admin "create user", against the scratch database's auth.users.
+function adminCreateUser(body) {
+  const { execFileSync } = require('child_process');
+  const email = String(body.email || '').replace(/'/g, "''");
+  const q = `insert into auth.users (id, email) select gen_random_uuid(), '${email}' where not exists (select 1 from auth.users where lower(email) = lower('${email}')) returning id`;
+  return execFileSync('psql', ['-h', process.env.PGHOST || '/var/lib/postgresql/rwtest', '-p', process.env.PGPORT || '5499', '-U', 'postgres', '-d', 'rw', '-tAq', '-c', q]).toString().trim();
+}
 
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.woff2': 'font/woff2', '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml' };
 
@@ -106,6 +114,15 @@ const server = http.createServer(async (req, res) => {
       }
       res.writeHead(200, { 'content-type': 'application/json' });
       return res.end(JSON.stringify({ id: claims.sub, email: claims.email, aud: 'authenticated', role: 'authenticated' }));
+    }
+    if (url.pathname === '/auth/v1/admin/users' && req.method === 'POST') {
+      if (req.headers.apikey !== SERVICE) {
+        res.writeHead(401, { 'content-type': 'application/json' });
+        return res.end('{"msg":"service key needed"}');
+      }
+      const id = adminCreateUser(JSON.parse((await readBody(req)).toString()));
+      res.writeHead(id ? 200 : 422, { 'content-type': 'application/json' });
+      return res.end(JSON.stringify(id ? { id } : { msg: 'A user with this email address has already been registered' }));
     }
     if (url.pathname.startsWith('/auth/v1/')) {
       res.writeHead(200, { 'content-type': 'application/json' });

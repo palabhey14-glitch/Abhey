@@ -89,7 +89,7 @@ async function run(claims, fn) {
   const c = await pool.connect();
   try {
     await c.query('begin');
-    await c.query(`select set_config('role', $1, true), set_config('request.jwt.claims', $2, true)`, [claims.role === 'authenticated' ? 'authenticated' : 'anon', JSON.stringify(claims)]);
+    await c.query(`select set_config('role', $1, true), set_config('request.jwt.claims', $2, true)`, [['authenticated', 'service_role'].includes(claims.role) ? claims.role : 'anon', JSON.stringify(claims)]);
     const out = await fn(c);
     await c.query('commit');
     return out;
