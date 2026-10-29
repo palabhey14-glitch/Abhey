@@ -15,6 +15,8 @@
   const TUI = window.RewiredTrainingUI;
   const CI = window.RewiredCoachIcons;
   const PUI = window.RewiredPhasesUI;
+  const PR = window.RewiredProspects;
+  const PRUI = window.RewiredProspectsUI;
   const FUI = window.RewiredFormsUI;
   const MSG = window.RewiredMessages;
   const cfg = window.REWIRED_CONFIG || {};
@@ -190,6 +192,7 @@
   }
 
   const ICONS = {
+    prospects: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="7" r="4"/><path d="M2 21c0-5 3-7 7-7s7 2 7 7M19 7v6m-3-3h6"/></svg>',
     messages:
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>',
     home:
@@ -361,7 +364,8 @@
     const rail = `<aside class="crm-rail">
         <a class="crm-brand" href="#clients"><img src="icons/icon-192.png" alt=""><span>Rewired<small>Coach</small></span></a>
         <p class="crm-group">Workspace</p>
-        ${item('#clients', !['inbox', 'library', 'exercise-library', 'forms', 'messages'].includes(v.section), ICONS.profile, 'Clients')}
+        ${item('#clients', !['prospects', 'inbox', 'library', 'exercise-library', 'forms', 'messages'].includes(v.section), ICONS.profile, 'Clients')}
+        ${item('#prospects', v.section === 'prospects', ICONS.prospects, 'Prospects')}
         ${item('#inbox', v.section === 'inbox', ICONS.checkin, 'Check-ins')}
         ${item('#messages', v.section === 'messages', ICONS.messages, 'Messages<b class="nav-badge" data-msg-badge hidden></b>')}
         <p class="crm-group">Content</p>
@@ -2816,7 +2820,7 @@
     });
   }
 
-  async function addClientModal(data) {
+  async function addClientModal(data, prospect = null) {
     const forms = await sb.from('forms').select('id, name, category, is_default, published_version_id, archived_at').order('name');
     const live = forms.error ? [] : forms.data.filter((f) => f.published_version_id && !f.archived_at);
     const formSelect = (cat, label, id) => {
@@ -2824,18 +2828,18 @@
       const def = list.find((f) => f.is_default);
       return `<label class="fb-field cl-f"><span>${label}</span><span class="fb-select"><select id="${id}"><option value="">None</option>${list.map((f) => `<option value="${f.id}"${def && def.id === f.id ? ' selected' : ''}>${esc(f.name)}</option>`).join('')}</select></span></label>`;
     };
-    let tags = [];
+    let tags = [...(prospect?.tags || [])];
     const d = crmDialog(`<form class="fm cl-modal cl-add" role="dialog" aria-modal="true" aria-labelledby="add-h" novalidate>
       <div class="fm-head"><h2 id="add-h" class="cl-title">Add Client</h2><button type="button" class="fm-x" data-close aria-label="Close">✕</button></div>
       <div class="cl-cols">
         <div>
           <p class="cl-k">Client</p>
-          <div class="cl-two"><label class="fb-field cl-f"><span>First name</span><input id="ac-first" maxlength="60" autocomplete="off" placeholder="John" required></label>
-            <label class="fb-field cl-f"><span>Last name</span><input id="ac-last" maxlength="60" autocomplete="off" placeholder="Smith"></label></div>
-          <div class="cl-two"><label class="fb-field cl-f"><span>Email address</span><input id="ac-email" type="email" maxlength="254" autocomplete="off" placeholder="john@email.com" required></label>
-            <label class="fb-field cl-f"><span>Phone number</span><span class="cl-phone"><select id="ac-cc" aria-label="Country code"><option value="+61">🇦🇺 +61</option><option value="+64">🇳🇿 +64</option><option value="+44">🇬🇧 +44</option><option value="+1">🇺🇸 +1</option><option value="+91">🇮🇳 +91</option><option value="">Other</option></select><input id="ac-phone" type="tel" maxlength="20" autocomplete="off" placeholder="400 000 000"></span></label></div>
+          <div class="cl-two"><label class="fb-field cl-f"><span>First name</span><input id="ac-first" maxlength="60" autocomplete="off" placeholder="John" value="${esc(prospect?.first_name || '')}" required></label>
+            <label class="fb-field cl-f"><span>Last name</span><input id="ac-last" maxlength="60" autocomplete="off" placeholder="Smith" value="${esc(prospect?.last_name || '')}"></label></div>
+          <div class="cl-two"><label class="fb-field cl-f"><span>Email address</span><input id="ac-email" type="email" maxlength="254" autocomplete="off" placeholder="john@email.com" value="${esc(prospect?.email || '')}" required></label>
+            <label class="fb-field cl-f"><span>Phone number</span><span class="cl-phone"><select id="ac-cc" aria-label="Country code"><option value="+61">🇦🇺 +61</option><option value="+64">🇳🇿 +64</option><option value="+44">🇬🇧 +44</option><option value="+1">🇺🇸 +1</option><option value="+91">🇮🇳 +91</option><option value="">Other</option></select><input id="ac-phone" type="tel" maxlength="20" autocomplete="off" placeholder="400 000 000" value="${esc(prospect?.phone || '')}"></span></label></div>
           <p class="cl-k">Payment</p>
-          <div class="cl-two"><label class="fb-field cl-f"><span>Payment amount (AUD)</span><input id="ac-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="750"></label>
+          <div class="cl-two"><label class="fb-field cl-f"><span>Payment amount (AUD)</span><input id="ac-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="750" value="${prospect?.deal_value ?? ''}"></label>
             <label class="fb-field cl-f"><span>Payment schedule</span><span class="fb-select"><select id="ac-sched">${PAY_SCHEDULES.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></span></label></div>
           <p class="fm-help">For your records. It doesn’t charge the client.</p>
         </div>
@@ -2853,7 +2857,7 @@
           <p class="cl-k">Tags &amp; notes</p>
           <label class="fb-field cl-f"><span>Tags</span><span class="cl-tagbox"><span class="cl-tagchips"></span><input id="ac-tag" list="ac-tags" maxlength="40" placeholder="Type a tag, press Enter"></span></label>
           <datalist id="ac-tags">${data.allTags.map((t) => `<option value="${esc(t)}">`).join('')}</datalist>
-          <label class="fb-field cl-f"><span>Notes <small class="cl-count" data-count>0/2000</small></span><textarea id="ac-notes" rows="8" maxlength="2000" placeholder="Anything you want to remember about this client. Only you see this."></textarea></label>
+          <label class="fb-field cl-f"><span>Notes <small class="cl-count" data-count>0/2000</small></span><textarea id="ac-notes" rows="8" maxlength="2000" placeholder="Anything you want to remember about this client. Only you see this.">${esc(prospect?.notes || '')}</textarea></label>
         </div>
       </div>
       <p class="fm-err" role="alert"></p>
@@ -2894,7 +2898,7 @@
       const rawPhone = $('ac-phone').value.trim();
       const phone = rawPhone ? (rawPhone.startsWith('+') || !$('ac-cc').value ? rawPhone : `${$('ac-cc').value} ${rawPhone.replace(/^0/, '')}`) : '';
       try {
-        const res = await fetch('/.netlify/functions/add-client', {
+        const res = await (window.REWIRED_PREVIEW_FETCH || fetch)('/.netlify/functions/add-client', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${state.session.access_token}` },
           body: JSON.stringify({ first_name: $('ac-first').value.trim(), last_name: $('ac-last').value.trim(), email: $('ac-email').value.trim(), phone }),
@@ -2910,6 +2914,10 @@
           payment_amount: amount === '' ? null : Number(amount), payment_schedule: $('ac-sched').value, invited_at: new Date().toISOString(),
         }, { onConflict: 'client_id' });
         if (ad.error) problems.push('tags, notes and payment');
+        if (prospect) {
+          const converted = await sb.from('prospects').update({ stage: 'converted', close_percentage: 100, converted_client_id: id, converted_at: new Date().toISOString() }).eq('id', prospect.id).select('id');
+          if (converted.error || !converted.data?.length) problems.push('prospect conversion status');
+        }
         const tg = await sb.from('targets').update({ checkin_day: Number($('ac-day').value) }).eq('client_id', id);
         if (tg.error) problems.push('check-in day');
         for (const fid of ['ac-f-onb', 'ac-f-con', 'ac-f-hs'].map((x) => $(x).value).filter(Boolean)) {
@@ -2927,6 +2935,29 @@
         save.textContent = 'Save';
       }
     });
+    drawTags();
+    save.disabled = !valid();
+    box.querySelector('[data-count]').textContent = `${$('ac-notes').value.length}/2000`;
+  }
+
+  async function convertProspect(prospect) {
+    try {
+      if (prospect.converted_client_id) { location.hash = `#client/${prospect.converted_client_id}/overview`; return; }
+      if (prospect.email) {
+        const existing = must(await sb.from('profiles').select('id,full_name,email').eq('role','client').eq('email',prospect.email.toLowerCase()).limit(1));
+        if (existing.length) {
+          const client = existing[0];
+          const d = crmDialog(`<div class="fm"><div class="fm-head"><h2>Client already exists</h2><button type="button" data-close aria-label="Close">×</button></div><p>${esc(client.full_name || client.email)} already has a client account. Link this prospect to their existing account? Their current plans and logs stay as they are.</p><div class="fm-foot"><button type="button" class="f-btn" data-close>Cancel</button><button type="button" class="f-btn f-dark" data-link-prospect>Link existing client</button></div></div>`);
+          d.box.querySelector('[data-link-prospect]').onclick = () => withBusy(d.box.querySelector('[data-link-prospect]'), async () => {
+            const rows = must(await sb.from('prospects').update({stage:'converted',close_percentage:100,converted_client_id:client.id,converted_at:new Date().toISOString()}).eq('id',prospect.id).select('id'));
+            if (!rows.length) throw new Error('Prospect could not be linked. Please retry.');
+            d.close(); toast('Prospect linked to the existing client.'); route();
+          });
+          return;
+        }
+      }
+      await addClientModal(await rosterData(), prospect);
+    } catch (error) { toast(friendlyError(error), true); }
   }
 
   // Old links (#client/<id>/dashboard, /targets, /profile, /logs, /photos)
@@ -3915,6 +3946,7 @@
   EUI.init({ sb, state, root, X, esc, shell, toast, friendlyError, must, withBusy, loadExerciseLibrary });
   CUI.init({ sb, state, root, S, esc, fmt, shell, toast, friendlyError, must, withBusy });
   PUI.init({ sb, state, root, S, CI, esc, shell, toast, friendlyError, must, invalidate });
+  PRUI.init({ sb, state, root, S, CI, P: PR, esc, shell, toast, friendlyError, must, convert: convertProspect, request: window.REWIRED_PREVIEW_FETCH || fetch, previewMode: !!window.REWIRED_PREVIEW_FETCH });
   WUI.init({ sb, state, root, S, W, esc, fmt, shell, toast, friendlyError, must, withBusy, invalidate, rerender: route, refreshHabits: renderHabits });
   TUI.init({ sb, state, root, S, T, X, EUI, CI, esc, fmt, shell, toast, friendlyError, must, withBusy, invalidate, loadExerciseLibrary });
   MSG.init({ sb, state, COACH, esc, friendlyError, toast, shell });
@@ -3923,6 +3955,8 @@
 
   async function route() {
     const id = ++state.renderId;
+    const lead = location.hash.match(/^#lead\/([^/?]+)/);
+    if (lead) return PRUI.publicForm(lead[1]);
     if (!sb) return renderSetupNeeded();
     if (!state.session) return renderLogin();
     try {
@@ -3932,6 +3966,7 @@
       const parts = path.split('/');
 
       if (state.me.role === 'coach') {
+        if (parts[0] === 'prospects') return await PRUI.render(parts[1] === 'forms' ? 'forms' : 'list', parts[2]);
         if (parts[0] === 'client' && parts[1]) return await renderClient(parts[1], parts[2], parts[3], parts[4]);
         if (parts[0] === 'inbox') return await renderInbox(parts[1]);
         if (parts[0] === 'messages') return await MSG.coachInbox(parts[1]);
