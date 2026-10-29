@@ -1250,7 +1250,7 @@
       ${labels}</svg>`;
   }
 
-  // One dark stat pill for the scrolling row on Home.
+  // One dark stat pill for the grid on Home.
   function statPill(label, value, target, unit, st, dp) {
     const has = value !== null && value !== undefined;
     return `<div class="stat-pill"><span class="sp-k">${esc(label)}<i class="sp-dot ${st.level || 'empty'}" title="${esc(st.label || 'Not logged')}"></i></span>
