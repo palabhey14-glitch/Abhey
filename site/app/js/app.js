@@ -7,6 +7,8 @@
   const S = window.RewiredStats;
   const NUI = window.RewiredNutritionUI;
   const X = window.RewiredExercises;
+  const EUI = window.RewiredExerciseLibraryUI;
+  const CUI = window.RewiredCalendarUI;
   const FUI = window.RewiredFormsUI;
   const MSG = window.RewiredMessages;
   const cfg = window.REWIRED_CONFIG || {};
@@ -300,6 +302,7 @@
 
   const COACH_SECTIONS = [
     ['overview', 'Overview'],
+    ['calendar', 'Calendar'],
     ['physique', 'Physique'],
     ['nutrition', 'Nutrition'],
     ['goals', 'Goals'],
@@ -347,13 +350,14 @@
     const rail = `<aside class="crm-rail">
         <a class="crm-brand" href="#clients"><img src="icons/icon-192.png" alt=""><span>Rewired<small>Coach</small></span></a>
         <p class="crm-group">Workspace</p>
-        ${item('#clients', !['inbox', 'library', 'forms', 'messages'].includes(v.section), ICONS.profile, 'Clients')}
+        ${item('#clients', !['inbox', 'library', 'exercise-library', 'forms', 'messages'].includes(v.section), ICONS.profile, 'Clients')}
         ${item('#inbox', v.section === 'inbox', ICONS.checkin, 'Check-ins')}
         ${item('#messages', v.section === 'messages', ICONS.messages, 'Messages<b class="nav-badge" data-msg-badge hidden></b>')}
         <p class="crm-group">Content</p>
         ${item('#library/templates', lib === 'templates', ICONS.meals, 'Meal plans')}
         ${item('#library/recipes', lib === 'recipes', ICONS.recipes, 'Recipes')}
         ${item('#library/foods', lib === 'foods', ICONS.foods, 'Foods')}
+        ${item('#exercise-library', v.section === 'exercise-library', ICONS.training, 'Exercise library')}
         ${item('#forms', v.section === 'forms', ICONS.forms, 'Forms')}
         <div class="crm-me"><span class="crm-avatar" aria-hidden="true">${esc(initials)}</span><span class="crm-me-name">${esc(name)}<small>Rewired Coaching</small></span>
           <button type="button" class="crm-signout" data-signout>Sign out</button></div>
@@ -365,7 +369,7 @@
           <a class="crm-settings" href="#client/${v.clientId}/settings"${v.section === 'settings' ? ' aria-current="page"' : ''}>⚙ Client settings</a>
         </nav>`
       : '';
-    const preview = v.clientId
+    const preview = v.clientId && v.section !== 'calendar'
       ? `<button type="button" class="btn btn-ghost btn-small crm-preview" data-client-view>${ICONS.phone}<span>Client view</span></button>`
       : '';
     root.innerHTML = `<div class="crm${v.clientId ? ' with-sections' : ''}">${rail}${sections}
@@ -2914,7 +2918,7 @@
     }
     section = section || 'overview';
     // Overview, meal plan and food log always show the client's latest records.
-    const ctx = await loadCtx(id, ['overview', 'nutrition', 'foodlog'].includes(section));
+    const ctx = await loadCtx(id, ['overview', 'calendar', 'nutrition', 'foodlog'].includes(section));
     const p = ctx.profile;
     const week = S.currentWeek(p.start_date);
     const name = p.full_name || p.email;
@@ -2931,6 +2935,7 @@
     const nav = '';
 
     if (section === 'overview') return renderCoachOverview(ctx, title, sub, Number(arg) || Math.max(week, 1));
+    if (section === 'calendar') return CUI.calendar(ctx, title, sub, arg, arg2);
     if (section === 'physique') return renderCoachPhysique(ctx, nav, title, sub, arg, arg2);
     if (section === 'nutrition') return renderCoachNutrition(ctx, nav, title, sub, arg, arg2);
     if (section === 'goals') return renderCoachGoals(ctx, title, sub);
@@ -2938,7 +2943,7 @@
     if (section === 'recovery') return renderCoachRecovery(ctx, nav, title, sub);
     if (section === 'habits') return renderCoachHabits(ctx, nav, title, sub, arg);
     if (section === 'checkins') return renderCoachCheckins(ctx, nav, title, sub);
-    if (section === 'training') return renderCoachTraining(ctx, nav, title, sub);
+    if (section === 'training') return renderCoachTraining(ctx, nav, title, sub, arg === 'new');
     if (section === 'supps') return renderCoachSupps(ctx, nav, title, sub);
     if (section === 'foodlog') return NUI.coachFoodLog(ctx, title, sub, arg);
     const rows = [
@@ -3135,19 +3140,24 @@
   // ------------------------------------------------- coach: training builder
   // The coach saves one complete seven-day version at a time. A new start
   // date creates a new version; the old plan remains available in Supabase.
-  // Exercises come from the exercises table (migrations/2026-10-26-exercises.sql);
-  // until that has been run, the built-in starter list in exercises.js is used.
+  // Exercises come from the coach's existing exercises table. The built-in
+  // catalogue is never mixed into the new library or sent to client plans.
   const TRAINING_DAYS = 7;
   const DEFAULT_SESSIONS = ['Push', 'Pull', 'Legs', 'Rest day', 'Upper', 'Lower', 'Rest day'];
 
   async function loadExerciseLibrary(force) {
     if (state.exLib && !force) return state.exLib;
-    const r = await sb.from('exercises').select('id,name,primary_muscles,secondary_muscles,equipment,is_custom').order('name');
-    if (r.error) {
-      state.exLib = { ready: false, list: X.LIBRARY.slice() };
-    } else {
-      state.exLib = { ready: true, list: r.data.map((row) => ({ id: row.id, name: row.name, primary: row.primary_muscles || [], secondary: row.secondary_muscles || [], equipment: row.equipment, custom: row.is_custom })) };
+    const rows = [];
+    for (let from = 0; ; from += 500) {
+      const r = await sb.from('exercises').select('id,name,primary_muscles,secondary_muscles,equipment,is_custom').order('name').range(from, from + 499);
+      if (r.error) {
+        state.exLib = { ready: false, list: [], error: r.error };
+        return state.exLib;
+      }
+      rows.push(...r.data);
+      if (r.data.length < 500) break;
     }
+    state.exLib = { ready: true, list: rows.map((row) => ({ id: row.id, name: row.name, primary: row.primary_muscles || [], secondary: row.secondary_muscles || [], equipment: row.equipment, custom: row.is_custom })) };
     return state.exLib;
   }
 
@@ -3235,10 +3245,21 @@
     const lib = await loadExerciseLibrary();
     const latestStart = ctx.training.length ? ctx.training[0].program_start_date : null;
     const latest = newPlan || !latestStart ? [] : ctx.training.filter((row) => row.program_start_date === latestStart);
-    const sessions = DEFAULT_SESSIONS.map((name, i) => latest.find((row) => row.cycle_day === i + 1) || {
-      cycle_day: i + 1, session_name: name, is_rest_day: /rest/i.test(name), exercises: [], session_note: '',
+    const sessions = DEFAULT_SESSIONS.map((name, i) => {
+      const saved = latest.find((row) => row.cycle_day === i + 1);
+      return saved ? { ...saved, exercises: [...(saved.exercises || [])] } : {
+        cycle_day: i + 1, session_name: name, is_rest_day: /rest/i.test(name), exercises: [], session_note: '',
+      };
     });
-    const start = newPlan || !latestStart ? (ctx.profile.start_date || S.today()) : latestStart;
+    const pending = state.pendingExercise;
+    if (pending && pending.clientId === ctx.profile.id && pending.newPlan === Boolean(newPlan)) {
+      const day = sessions.find((row) => row.cycle_day === pending.day);
+      if (day && !day.is_rest_day) day.exercises = [...(day.exercises || []), pending.exercise];
+      state.pendingExercise = null;
+    }
+    const start = newPlan && latestStart
+      ? (S.today() > latestStart ? S.today() : S.addDays(latestStart, 1))
+      : !latestStart ? (ctx.profile.start_date || S.today()) : latestStart;
     const programName = latest[0]?.program_name || '12 Week Rewired Premium Designer Coaching · Phase 1';
     const extraDays = latest.some((row) => row.cycle_day > TRAINING_DAYS);
     shell(title, sub, `${nav}
@@ -3246,7 +3267,7 @@
         <h2>${newPlan ? 'Create a new training plan' : latest.length ? 'Edit training plan' : 'Assign a training plan'}</h2>
         <p>Seven days that repeat. Tick a rest day to block it out, or pick exercises from the library for a training day. Your client sees the plan as soon as you save.</p>
         ${extraDays ? '<p class="hint">This plan was set up as an eight-day cycle. Saving it here makes it a seven-day week.</p>' : ''}
-        ${lib.ready ? '' : '<p class="hint">Using the built-in exercise list. Run <b>supabase/migrations/2026-10-26-exercises.sql</b> in Supabase to save your own exercises too.</p>'}
+        ${lib.ready ? '' : '<p class="hint">The exercise database could not be loaded. Check the connection before saving this training plan.</p>'}
         ${latest.length && !newPlan ? '<button class="btn btn-ghost btn-small" type="button" id="new-training-plan">Create a new program version</button>' : ''}
         ${newPlan ? '<button class="btn btn-ghost btn-small" type="button" id="cancel-training-plan">Back to current program</button>' : ''}
       </section>
@@ -3863,6 +3884,8 @@
     shell, loadCtx, invalidate, sectionTabs, statCards, dotCell,
   });
   FUI.init({ sb, state, COACH, esc, fmt, friendlyError, must, shell, invalidate });
+  EUI.init({ sb, state, root, X, esc, shell, toast, friendlyError, must, withBusy, loadExerciseLibrary });
+  CUI.init({ sb, state, root, S, esc, fmt, shell, toast, friendlyError, must, withBusy });
   MSG.init({ sb, state, COACH, esc, friendlyError, toast, shell });
 
   // ---------------------------------------------------------------- router
@@ -3882,6 +3905,7 @@
         if (parts[0] === 'inbox') return await renderInbox(parts[1]);
         if (parts[0] === 'messages') return await MSG.coachInbox(parts[1]);
         if (parts[0] === 'library') return await NUI.library(parts[1], parts[2], parts[3]);
+        if (parts[0] === 'exercise-library') return await EUI.library();
         if (parts[0] === 'forms' && parts[1] && parts[2] === 'responses') return await FUI.responses(parts[1], parts[3]);
         if (parts[0] === 'forms' && parts[1]) return await FUI.builder(parts[1]);
         if (parts[0] === 'forms') return await FUI.library();
