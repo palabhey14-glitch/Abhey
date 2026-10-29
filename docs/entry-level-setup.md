@@ -1,13 +1,13 @@
-# Entry Level Guidance: setup
+# Rewired Coaching: setup
 
-Entry Level Guidance is AUD $80 per week, billed weekly, an ongoing
+Rewired Coaching is AUD $80 per week, billed weekly, an ongoing
 subscription. The site uses the Stripe link https://buy.stripe.com/28E14hg0N4iba5HdjL0Ny02
 (`REWIRED_ENTRY_JOIN_URL` in `site/booking.js`).
 
 ## 1. Finish the Stripe link (Stripe dashboard)
 
 1. Rename the product behind the link from "Premium 1 on 1 Coaching" to
-   `Entry Level Guidance`, and replace its description (it currently reads as
+   `Rewired Coaching`, and replace its description (it currently reads as
    Premium) with: `Customised meal or macro plan, meal plan ebook, workout
    program in the Custom Rewired Coaching App, fortnightly check-ins and plan
    updates, coaching by email.` Clients see this at checkout and on receipts.

@@ -13,7 +13,7 @@ document.querySelectorAll('[data-join]').forEach((a) => {
   a.href = window.REWIRED_JOIN_URL;
 });
 
-// The Stripe subscription payment link for Entry Level Guidance (AUD $80 per
+// The Stripe subscription payment link for Rewired Coaching (AUD $80 per
 // week), behind every data-join-entry button. Paste the link from Stripe
 // here. Until then the buttons open an email to Abhey instead, so nobody hits
 // a dead checkout.
@@ -23,7 +23,7 @@ document.querySelectorAll('[data-join-entry]').forEach((a) => {
     a.href = window.REWIRED_ENTRY_JOIN_URL;
     return;
   }
-  a.href = 'mailto:coaching@abheyrewired.com?subject=' + encodeURIComponent('Entry Level Guidance: payment link');
+  a.href = 'mailto:coaching@abheyrewired.com?subject=' + encodeURIComponent('Rewired Coaching: payment link');
   const note = document.querySelector('[data-join-entry-note]');
   if (note) note.hidden = false;
 });

@@ -2722,7 +2722,7 @@
       cycle_day: i + 1, session_name: name, is_rest_day: /rest/i.test(name), exercises: [], session_note: '',
     });
     const start = newPlan || !latestStart ? (ctx.profile.start_date || S.today()) : latestStart;
-    const programName = latest[0]?.program_name || '12 Week Premium Designer Coaching · Phase 1';
+    const programName = latest[0]?.program_name || '12 Week Rewired Premium Designer Coaching · Phase 1';
     const extraDays = latest.some((row) => row.cycle_day > TRAINING_DAYS);
     shell(title, sub, `${nav}
       <section class="card coach-editor-intro"><p class="kicker">Coach controls · Training</p>
