@@ -7,6 +7,8 @@
   const S = window.RewiredStats;
   const NUI = window.RewiredNutritionUI;
   const X = window.RewiredExercises;
+  const FUI = window.RewiredFormsUI;
+  const MSG = window.RewiredMessages;
   const cfg = window.REWIRED_CONFIG || {};
   const root = document.getElementById('root');
   const configured =
@@ -180,6 +182,8 @@
   }
 
   const ICONS = {
+    messages:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>',
     home:
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>',
     habits:
@@ -206,6 +210,12 @@
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
     sun:
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+    forms:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>',
+    recipes:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/><path d="M10 8h5"/></svg>',
+    foods:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 8c-3-3-8-1-8 4 0 5 4 9 6 9 1 0 1.5-.5 2-.5s1 .5 2 .5c2 0 6-4 6-9 0-5-5-7-8-4z"/><path d="M12 8c0-2 1-4 3-5"/></svg>',
     phone:
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/></svg>',
   };
@@ -280,11 +290,12 @@
     ['meals', 'Meal plan'],
     ['training', 'Training'],
     ['habits', 'Habits'],
+    ['messages', 'Messages'],
   ];
   // Screens without their own tab (reached from Home) keep Home lit.
   const TAB_OF = {
     checkin: 'home', photos: 'home', supps: 'home', profile: 'home', log: 'home', today: 'home', progress: 'home', hub: 'home',
-    recipes: 'meals', recipe: 'meals', 'recipe-import': 'meals',
+    recipes: 'meals', recipe: 'meals', 'recipe-import': 'meals', forms: 'home', form: 'home',
   };
 
   const COACH_SECTIONS = [
@@ -317,8 +328,9 @@
       </header>
       <main class="screen">${body}</main>
       <nav class="tabs" aria-label="Main">${CLIENT_TABS.map(
-        ([id, label]) => `<a href="#${id}"${active === id ? ' aria-current="page"' : ''}>${ICONS[id]}<span>${label}</span></a>`,
+        ([id, label]) => `<a href="#${id}"${active === id ? ' aria-current="page"' : ''}>${ICONS[id]}<span>${label}</span>${id === 'messages' ? '<b class="nav-badge" data-msg-badge hidden></b>' : ''}</a>`,
       ).join('')}</nav>`;
+    if (!state.preview) MSG.badge();
     window.scrollTo(0, 0);
   }
 
@@ -326,12 +338,25 @@
   function coachShell(title, sub, body) {
     const v = state.coachView || {};
     document.body.classList.add('crm-body');
+    const hash = location.hash || '#clients';
+    const lib = v.section === 'library' ? (hash.match(/^#library\/(recipes?|recipe-import|foods)/) ? (/foods/.test(hash) ? 'foods' : 'recipes') : 'templates') : '';
+    const item = (href, on, icon, label) => `<a href="${href}"${on ? ' aria-current="page"' : ''}>${icon}<span>${label}</span></a>`;
+    const me = state.me || {};
+    const name = (me.full_name || 'Coach').trim();
+    const initials = name.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
     const rail = `<aside class="crm-rail">
         <a class="crm-brand" href="#clients"><img src="icons/icon-192.png" alt=""><span>Rewired<small>Coach</small></span></a>
-        <a href="#clients"${v.section !== 'inbox' && v.section !== 'library' ? ' aria-current="page"' : ''}>${ICONS.profile}<span>Clients</span></a>
-        <a href="#inbox"${v.section === 'inbox' ? ' aria-current="page"' : ''}>${ICONS.checkin}<span>Check-ins</span></a>
-        <a href="#library"${v.section === 'library' ? ' aria-current="page"' : ''}>${ICONS.meals}<span>Foods &amp; plans</span></a>
-        <button type="button" class="crm-signout" data-signout>Sign out</button>
+        <p class="crm-group">Workspace</p>
+        ${item('#clients', !['inbox', 'library', 'forms', 'messages'].includes(v.section), ICONS.profile, 'Clients')}
+        ${item('#inbox', v.section === 'inbox', ICONS.checkin, 'Check-ins')}
+        ${item('#messages', v.section === 'messages', ICONS.messages, 'Messages<b class="nav-badge" data-msg-badge hidden></b>')}
+        <p class="crm-group">Content</p>
+        ${item('#library/templates', lib === 'templates', ICONS.meals, 'Meal plans')}
+        ${item('#library/recipes', lib === 'recipes', ICONS.recipes, 'Recipes')}
+        ${item('#library/foods', lib === 'foods', ICONS.foods, 'Foods')}
+        ${item('#forms', v.section === 'forms', ICONS.forms, 'Forms')}
+        <div class="crm-me"><span class="crm-avatar" aria-hidden="true">${esc(initials)}</span><span class="crm-me-name">${esc(name)}<small>Rewired Coaching</small></span>
+          <button type="button" class="crm-signout" data-signout>Sign out</button></div>
       </aside>`;
     const sections = v.clientId
       ? `<nav class="crm-sections" aria-label="Client sections">
@@ -344,8 +369,9 @@
       ? `<button type="button" class="btn btn-ghost btn-small crm-preview" data-client-view>${ICONS.phone}<span>Client view</span></button>`
       : '';
     root.innerHTML = `<div class="crm${v.clientId ? ' with-sections' : ''}">${rail}${sections}
-      <main class="crm-main"><header class="crm-head"><h1>${esc(title)}</h1>${sub ? `<p>${esc(sub)}</p>` : ''}${(v.badges || []).map((b) => `<span class="crm-badge">${esc(b)}</span>`).join('')}${preview}</header>${body}</main></div>`;
+      <main class="crm-main"><header class="crm-head"><h1>${esc(title)}</h1>${sub ? `<p>${esc(sub)}</p>` : ''}${(v.badges || []).map((b) => `<span class="crm-badge">${esc(b)}</span>`).join('')}${preview}${v.actions ? `<div class="crm-actions">${v.actions}</div>` : ''}</header>${body}</main></div>`;
     root.querySelector('[data-signout]').addEventListener('click', signOut);
+    MSG.badge();
     const pv = root.querySelector('[data-client-view]');
     if (pv) pv.addEventListener('click', () => openClientView(v));
     const current = root.querySelector('.crm-sections [aria-current]');
@@ -1250,6 +1276,8 @@
     const homeDue = checkinDue(ctx);
     const due = day === now ? homeDue : null;
     const exercises = session && Array.isArray(session.exercises) ? session.exercises.length : 0;
+    // Forms the coach has sent and the client hasn't finished.
+    const formsCard = state.preview ? '' : await FUI.homeCardHTML();
     const greet = !session ? `Good to see you,<br>${first}.` : session.is_rest_day ? `Recovery day,<br>${first}.` : `Ready to train,<br>${first}?`;
 
     const pills = [
@@ -1295,6 +1323,7 @@
         </div>
       </section>
 
+      ${formsCard}
       <section class="score">
         <p class="label">${day === now ? "Today's score" : 'Day score'}</p>
         <a class="big-num" href="#habits/${day}">${hit}<span>/${rows.length}</span></a>
@@ -2296,92 +2325,580 @@
       });
   }
 
-  async function renderInbox() {
-    const [clients, open] = await Promise.all([
-      sb.from('profiles').select('id, full_name, email').eq('role', 'client'),
-      sb.from('weekly_checkins').select('user_id, week_number, submitted_at, biggest_win, biggest_struggle').is('coach_feedback', null).order('submitted_at'),
-    ]).then((rs) => rs.map(must));
-    const name = new Map(clients.map((c) => [c.id, c.full_name || c.email]));
-    const rows = open.map(
-      (c) => `<tr><td><a href="#client/${c.user_id}/checkins">${esc(name.get(c.user_id) || 'Client')}</a></td><td>Week ${c.week_number}</td>
-        <td>${new Date(c.submitted_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</td><td class="wrap-text">${esc(c.biggest_struggle || c.biggest_win || '–')}</td></tr>`,
-    );
-    state.coachView = { section: 'inbox' };
-    shell('Check-ins', `${open.length} waiting for your reply`, pagedTable(['Client', 'Week', 'Sent', 'Note'], rows, 15));
-    bindPaged();
+  // Coach check-ins inbox. Every row is one week's check-in for one client:
+  // sent and waiting on the coach's reply (To do), open and due today, past
+  // its due day and not sent (Overdue), open but due tomorrow (Open), or
+  // replied to (Done). Nothing here is stored; it is worked out from
+  // weekly_checkins, each client's start date and check-in day.
+  const INBOX = { tab: 'todo', q: '', risk: '' };
+
+  // A rough flag so the coach knows who to look at first. High: two or more
+  // missed weeks, or a low score (energy, stress or digestion 4 or under,
+  // sleep under 6 hours). Medium: one missed week or a score of 5 or 6.
+  function checkinRisk(missed, c) {
+    const low = (v, n) => v !== null && v !== undefined && Number(v) <= n;
+    if (missed >= 2 || (c && (low(c.energy, 4) || low(c.stress, 4) || low(c.digestion, 4) || (c.sleep_hours !== null && Number(c.sleep_hours) < 6)))) return 'high';
+    if (missed === 1 || (c && (low(c.energy, 6) || low(c.stress, 6) || low(c.digestion, 6) || (c.sleep_hours !== null && Number(c.sleep_hours) < 7)))) return 'medium';
+    return 'low';
+  }
+
+  async function renderInbox(view) {
+    const [clients, targets, checkins, formsDone, formNames] = await Promise.all([
+      sb.from('profiles').select('id, full_name, email, start_date').eq('role', 'client'),
+      sb.from('targets').select('client_id, checkin_day'),
+      sb.from('weekly_checkins').select('user_id, week_number, submitted_at, updated_at, coach_feedback, sleep_hours, stress, energy, hunger, digestion, biggest_win, biggest_struggle'),
+      sb.from('form_assignments').select('id, form_id, client_id, submitted_at, reviewed_at, flagged').eq('status', 'completed'),
+      sb.from('forms').select('id, name'),
+    ]).then((rs) => rs.map((r, i) => (i !== 0 && i !== 2 && r.error ? [] : must(r))));
+    const formName = new Map(formNames.map((f) => [f.id, f.name]));
+    const today = S.today();
+    const now = Date.now();
+    const dayOf = new Map(targets.map((t) => [t.client_id, t.checkin_day]));
+    const byClient = new Map();
+    checkins.forEach((c) => {
+      if (!byClient.has(c.user_id)) byClient.set(c.user_id, new Map());
+      byClient.get(c.user_id).set(c.week_number, c);
+    });
+    const days = (from) => Math.max(0, Math.floor((now - new Date(from).getTime()) / 86400000));
+    const ageText = (n) => (n === 0 ? 'Today' : n === 1 ? '1 day' : `${n} days`);
+    const short = (iso) => niceDate(iso, { day: 'numeric', month: 'short' });
+    const rows = [];
+    const perClient = [];
+    clients.forEach((p) => {
+      const sent = byClient.get(p.id) || new Map();
+      const name = p.full_name || p.email || 'Client';
+      const cday = dayOf.has(p.id) ? dayOf.get(p.id) : 0;
+      let missed = 0;
+      const items = [];
+      if (p.start_date) {
+        for (let week = 1; week <= S.WEEKS; week++) {
+          const win = S.checkinWindow(p.start_date, week, cday);
+          if (!win || win.opens > today) break;
+          const c = sent.get(week);
+          if (c) items.push({ week, win, c, kind: c.coach_feedback ? 'done' : 'todo' });
+          else if (win.due < today) { missed += 1; items.push({ week, win, kind: 'overdue' }); }
+          else items.push({ week, win, kind: win.due === today ? 'today' : 'open' });
+        }
+      }
+      // Sent check-ins outside the dated weeks (no start date yet) still count.
+      sent.forEach((c, week) => {
+        if (!items.some((it) => it.week === week)) items.push({ week, win: null, c, kind: c.coach_feedback ? 'done' : 'todo' });
+      });
+      const latest = [...sent.values()].sort((a, b) => b.week_number - a.week_number)[0];
+      const risk = checkinRisk(missed, latest);
+      items.forEach((it) => rows.push({ ...it, p, name, risk }));
+      // Completed forms wait here too until marked reviewed on the response.
+      formsDone.filter((a) => a.client_id === p.id).forEach((a) => rows.push({
+        p, name, risk, win: null,
+        kind: a.reviewed_at ? 'done' : 'todo',
+        label: `Form · ${formName.get(a.form_id) || 'Form'}${a.flagged ? ' · Flagged' : ''}`,
+        href: `#forms/${a.form_id}/responses/${a.id}`,
+        c: { submitted_at: a.submitted_at, coach_feedback: a.reviewed_at, updated_at: a.reviewed_at },
+      }));
+      perClient.push({ p, name, sent, missed, latest, risk, expected: items.filter((it) => it.kind !== 'open' && it.kind !== 'today').length });
+    });
+
+    const todo = rows.filter((r) => r.kind === 'todo').sort((a, b) => a.c.submitted_at.localeCompare(b.c.submitted_at));
+    const dueToday = rows.filter((r) => r.kind === 'today');
+    const overdue = rows.filter((r) => r.kind === 'overdue');
+    const open = rows.filter((r) => r.kind === 'open');
+    const done = rows.filter((r) => r.kind === 'done');
+    const weekAgo = new Date(now - 7 * 86400000).toISOString();
+    const sentThisWeek = rows.filter((r) => r.c && !r.href && r.c.submitted_at >= weekAgo);
+    const reviewedThisWeek = sentThisWeek.filter((r) => r.c.coach_feedback);
+    const oldest = todo[0];
+
+    const stat = (k, v, sub, extra) => `<div class="ci-stat${extra || ''}"><p class="k">${k}</p><p class="v">${v}</p><p class="s">${esc(sub)}</p></div>`;
+    const stats = `<div class="ci-stats">
+        ${stat('Waiting on you', todo.length, todo.length ? 'Check-ins and forms to review' : 'Nothing to review')}
+        ${stat('Oldest waiting', oldest ? ageText(days(oldest.c.submitted_at)) : 'None', oldest ? oldest.name : 'Queue is clear')}
+        ${stat('Due today', dueToday.length, dueToday.length ? 'Not sent yet' : 'Nothing due today')}
+      </div><div class="ci-stats two">
+        ${stat('Overdue', overdue.length, overdue.length ? 'Past the check-in day, not sent' : 'Nothing past due')}
+        ${stat('Reviewed this week', reviewedThisWeek.length, `Of ${sentThisWeek.length} submitted in the last 7 days`)}
+      </div>`;
+
+    const tabs = `<nav class="crm-tabs" aria-label="Check-ins"><a href="#inbox"${view !== 'insights' ? ' aria-current="page"' : ''}>Inbox</a><a href="#inbox/insights"${view === 'insights' ? ' aria-current="page"' : ''}>Insights</a></nav>`;
+    const actions = '';
+    state.coachView = { section: 'inbox', actions: '<a class="btn btn-small ci-dark" href="#forms">Send form</a>' };
+
+    if (view === 'insights') {
+      const avg = (vals) => { const v = vals.filter((x) => x !== null && x !== undefined).map(Number); return v.length ? (v.reduce((a, b) => a + b, 0) / v.length).toFixed(1) : '–'; };
+      const replyDays = [];
+      const body = perClient.sort((a, b) => a.name.localeCompare(b.name)).map((x) => {
+        const list = [...x.sent.values()];
+        const replied = list.filter((c) => c.coach_feedback);
+        replied.forEach((c) => replyDays.push((new Date(c.updated_at) - new Date(c.submitted_at)) / 86400000));
+        const recent = list.sort((a, b) => b.week_number - a.week_number).slice(0, 4);
+        const rate = x.expected ? `${Math.round((Math.min(list.length, x.expected) / x.expected) * 100)}%` : '–';
+        return `<tr><td><a href="#client/${x.p.id}/checkins">${esc(x.name)}</a></td><td>${list.length} of ${x.expected}</td><td>${rate}</td>
+          <td>${avg(recent.map((c) => c.energy))}</td><td>${avg(recent.map((c) => c.stress))}</td><td>${avg(recent.map((c) => c.sleep_hours))}</td>
+          <td><span class="ci-risk ${x.risk}">${x.risk[0].toUpperCase() + x.risk.slice(1)}</span></td></tr>`;
+      });
+      const avgReply = replyDays.length ? replyDays.reduce((a, b) => a + b, 0) / replyDays.length : null;
+      const totalExpected = perClient.reduce((a, x) => a + x.expected, 0);
+      const totalSent = perClient.reduce((a, x) => a + Math.min(x.sent.size, x.expected), 0);
+      shell('Check-ins', 'How check-ins are going across your clients', `${actions}${tabs}
+        <div class="ci-stats">
+          ${stat('Submission rate', totalExpected ? `${Math.round((totalSent / totalExpected) * 100)}%` : '–', `${totalSent} of ${totalExpected} check-ins that were due`)}
+          ${stat('Average reply time', avgReply === null ? '–' : avgReply < 1 ? 'Same day' : `${avgReply.toFixed(1)} days`, 'From sent to your feedback')}
+          ${stat('Clients at high risk', perClient.filter((x) => x.risk === 'high').length, 'Missed weeks or low scores')}
+        </div>
+        ${body.length ? `<div class="card table-card"><div class="table-wrap"><table class="crm-table"><thead><tr><th>Client</th><th>Sent</th><th>On record</th><th>Energy (last 4)</th><th>Stress (last 4, 10 = low)</th><th>Sleep h (last 4)</th><th>Risk</th></tr></thead><tbody>${body.join('')}</tbody></table></div></div>` : '<div class="card"><p>No clients yet.</p></div>'}
+        <p class="hint">Risk is a rough flag. High means two or more missed check-ins, or a latest score of 4 or under (or under 6 hours of sleep). Medium means one missed check-in, or a latest score of 5 or 6 (or under 7 hours of sleep).</p>`);
+      return;
+    }
+
+    const lists = { todo, today: dueToday, overdue, open, done };
+    const TABS = [['todo', 'To do'], ['today', 'Due today'], ['overdue', 'Overdue'], ['open', 'Open'], ['done', 'Done']];
+    const head = `${actions}${tabs}${stats}
+      <div class="ci-filters">
+        <label class="ci-search"><span class="sr-only">Search client or email</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" placeholder="Search client or email" value="${esc(INBOX.q)}" data-ci-q></label>
+        <div class="ci-seg" role="tablist" aria-label="Show">${TABS.map(([k, l]) => `<button type="button" role="tab" data-ci-tab="${k}" aria-selected="${INBOX.tab === k}">${l} <b>${lists[k].length}</b></button>`).join('')}</div>
+        <label class="ci-select"><span class="sr-only">Risk</span><select data-ci-risk><option value="">Risk: all</option><option value="high"${INBOX.risk === 'high' ? ' selected' : ''}>High</option><option value="medium"${INBOX.risk === 'medium' ? ' selected' : ''}>Medium</option><option value="low"${INBOX.risk === 'low' ? ' selected' : ''}>Low</option></select></label>
+      </div>
+      <div class="card table-card ci-table" data-ci-table></div>`;
+    shell('Check-ins', todo.length ? `${todo.length} waiting on you` : 'Nothing waiting on you', head);
+
+    const box = root.querySelector('[data-ci-table]');
+    const PER = 10;
+    let page = 0;
+    const draw = () => {
+      const q = INBOX.q.trim().toLowerCase();
+      const list = lists[INBOX.tab].filter((r) => (!q || `${r.name} ${r.p.email || ''}`.toLowerCase().includes(q)) && (!INBOX.risk || r.risk === INBOX.risk));
+      const pages = Math.max(1, Math.ceil(list.length / PER));
+      page = Math.min(page, pages - 1);
+      const shown = list.slice(page * PER, page * PER + PER);
+      const rowHTML = (r) => {
+        const age = r.kind === 'todo' ? ageText(days(r.c.submitted_at)) : r.kind === 'overdue' ? `${ageText(S.daysBetween(r.win.due, today))} late` : '–';
+        const href = r.href || `#client/${r.p.id}/checkins`;
+        return `<tr data-href="${href}" tabindex="0"><td><a href="${href}"><b>${esc(r.name)}</b></a><span class="ci-sub">${r.label ? esc(r.label) : `Week ${r.week}`}${r.p.email ? ` · ${esc(r.p.email)}` : ''}</span></td>
+          <td>${r.win ? esc(short(r.win.due)) : '–'}</td>
+          <td>${r.c ? esc(new Date(r.c.submitted_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })) : '<span class="ci-muted">Not yet</span>'}</td>
+          <td>${r.c && r.c.coach_feedback ? esc(new Date(r.c.updated_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })) : '<span class="ci-muted">–</span>'}</td>
+          <td>${age}</td><td><span class="ci-risk ${r.risk}">${r.risk[0].toUpperCase() + r.risk.slice(1)}</span></td></tr>`;
+      };
+      const empty = {
+        todo: ['Nothing to reply to', 'Weekly check-ins land here until you reply. Completed forms land here until you mark them reviewed.'],
+        today: ['Nothing due today', 'Clients whose check-in day is today show here until they send it.'],
+        overdue: ['Nothing overdue', 'Check-ins past their day that were never sent show here.'],
+        open: ['Nothing open', 'Check-ins open the day before each client’s check-in day.'],
+        done: ['No replies yet', 'Check-ins you have replied to, and forms you marked reviewed, show here.'],
+      }[INBOX.tab];
+      const filtered = lists[INBOX.tab].length && !list.length;
+      box.innerHTML = `<div class="table-wrap"><table class="crm-table"><thead><tr><th>Client</th><th>Due</th><th>Submitted</th><th>Responded</th><th>Ageing</th><th>Risk</th></tr></thead>
+        <tbody>${shown.map(rowHTML).join('')}</tbody></table></div>
+        ${list.length ? '' : `<div class="ci-empty"><span class="ci-empty-icon" aria-hidden="true">${ICONS.checkin}</span><p class="t">${filtered ? 'No matches' : clients.length ? empty[0] : 'No clients yet'}</p><p>${filtered ? 'Try a different search or risk filter.' : clients.length ? empty[1] : 'Add a client in Supabase and their check-ins land here.'}</p></div>`}
+        <div class="pager"><span>Showing ${list.length ? page * PER + 1 : 0}–${Math.min(list.length, page * PER + PER)} of ${list.length}</span><span class="pager-btns"><button type="button" class="btn btn-ghost btn-small" data-prev aria-label="Previous page"${page === 0 ? ' disabled' : ''}>‹</button><button type="button" class="btn btn-ghost btn-small" data-next aria-label="Next page"${page >= pages - 1 ? ' disabled' : ''}>›</button></span></div>`;
+      box.querySelector('[data-prev]').addEventListener('click', () => { page -= 1; draw(); });
+      box.querySelector('[data-next]').addEventListener('click', () => { page += 1; draw(); });
+      box.querySelectorAll('tr[data-href]').forEach((tr) => {
+        tr.addEventListener('click', (e) => { if (!e.target.closest('a')) location.hash = tr.dataset.href; });
+        tr.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target === tr) location.hash = tr.dataset.href; });
+      });
+    };
+    root.querySelectorAll('[data-ci-tab]').forEach((b) => b.addEventListener('click', () => {
+      INBOX.tab = b.dataset.ciTab;
+      page = 0;
+      root.querySelectorAll('[data-ci-tab]').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
+      draw();
+    }));
+    root.querySelector('[data-ci-q]').addEventListener('input', (e) => { INBOX.q = e.target.value; page = 0; draw(); });
+    root.querySelector('[data-ci-risk]').addEventListener('change', (e) => { INBOX.risk = e.target.value; page = 0; draw(); });
+    draw();
   }
 
   // ---------------------------------------------------------------- coach
 
-  async function renderClients() {
-    state.coachView = { section: 'clients' };
-    const since = S.addDays(S.today(), -21);
-    const [clients, logs, checkins] = await Promise.all([
-      sb.from('profiles').select('*').eq('role', 'client').order('full_name'),
-      sb.from('daily_logs').select('user_id, day, weight_kg, steps, trained, calories, meal_plan').gte('day', since).order('day'),
-      sb.from('weekly_checkins').select('user_id, week_number, coach_feedback'),
-    ]).then((rs) => rs.map(must));
-    // Check-in days arrive with migrations/2026-10-26-checkin-day.sql.
-    const days = await sb.from('targets').select('client_id, checkin_day');
-    const dayOf = new Map((days.error ? [] : days.data).map((t) => [t.client_id, t.checkin_day]));
+  const ROSTER = { tab: 'active', q: '', day: '', eng: '', trend: '', tag: '', page: 0 };
+  const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const PAY_SCHEDULES = [['none', 'Not set'], ['one_off', 'One-off'], ['three_payments', '3 payments'], ['weekly', 'Weekly'], ['fortnightly', 'Fortnightly'], ['monthly', 'Monthly']];
+  const PAY_LABEL = Object.fromEntries(PAY_SCHEDULES);
 
+  // Everything the Clients and Insights tabs need, worked out once.
+  async function rosterData() {
+    const since = S.addDays(S.today(), -35);
+    const [clients, logs, checkins, days, admin, msgs] = await Promise.all([
+      sb.from('profiles').select('*').eq('role', 'client').order('full_name'),
+      sb.from('daily_logs').select('user_id, day, weight_kg').gte('day', since).order('day'),
+      sb.from('weekly_checkins').select('user_id, week_number, submitted_at, coach_feedback'),
+      sb.from('targets').select('client_id, checkin_day'),
+      sb.from('client_admin').select('*'),
+      sb.from('messages').select('client_id, sender_id, created_at, read_at').is('read_at', null),
+    ]);
+    [clients, logs, checkins].forEach(must);
+    const dayOf = new Map((days.error ? [] : days.data).map((t) => [t.client_id, t.checkin_day]));
+    const adminOf = new Map((admin.error ? [] : admin.data).map((a) => [a.client_id, a]));
     const now = S.today();
-    const cards = clients.map((c) => {
-      const mine = logs.filter((l) => l.user_id === c.id);
+    const rows = clients.data.map((c) => {
+      const mine = logs.data.filter((l) => l.user_id === c.id);
       const last = mine.length ? mine[mine.length - 1].day : null;
       const daysSince = last ? S.daysBetween(last, now) : null;
+      const week7 = mine.filter((l) => S.daysBetween(l.day, now) < 7).length;
+      const ad = adminOf.get(c.id) || { status: 'active', tags: [], payment_schedule: 'none' };
+      const status = ad.status === 'inactive' ? 'inactive' : c.consent_at ? 'active' : 'invited';
       const week = S.currentWeek(c.start_date);
-      const ctx = { profile: c, targets: {}, macros: [], logs: mine };
-      const st = week ? S.weekStats(ctx, week) : null;
-      const prevSt = week > 1 ? S.weekStats(ctx, week - 1) : null;
-      const mineCheckins = checkins.filter((x) => x.user_id === c.id);
-      const flags = [];
-      if (!c.consent_at) flags.push('Not signed in yet');
-      else if (!c.start_date) flags.push('No start date');
-      if (week && (daysSince === null || daysSince >= 2)) flags.push(daysSince === null ? 'No logs yet' : `No log for ${daysSince} days`);
-      const lastClosed = [week, week - 1].map((w) => (w >= 1 ? S.checkinWindow(c.start_date, w, dayOf.get(c.id) || 0) : null))
-        .find((win) => win && S.checkinState(win, now) === 'closed');
-      if (lastClosed && !mineCheckins.some((x) => x.week_number === lastClosed.week)) flags.push(`Week ${lastClosed.week} check-in missing`);
-      const needsFeedback = mineCheckins.filter((x) => !x.coach_feedback).length;
-      if (needsFeedback) flags.push(`${needsFeedback} check-in${needsFeedback > 1 ? 's' : ''} to reply to`);
-      return { c, flags, week, st, prevSt, last, daysSince };
+      const cday = dayOf.has(c.id) ? dayOf.get(c.id) : 0;
+      // Weight: this week's average against the week before.
+      const avg = (from, to) => { const w = mine.filter((l) => l.weight_kg !== null && S.daysBetween(l.day, now) >= from && S.daysBetween(l.day, now) < to).map((l) => Number(l.weight_kg)); return w.length ? w.reduce((x, y) => x + y, 0) / w.length : null; };
+      const wNow = avg(0, 7);
+      const wPrev = avg(7, 14);
+      const change = wNow !== null && wPrev !== null ? wNow - wPrev : null;
+      const trend = change === null ? '' : change <= -0.2 ? 'down' : change >= 0.2 ? 'up' : 'flat';
+      const latestW = [...mine].reverse().find((l) => l.weight_kg !== null);
+      let eng = 'new';
+      if (status === 'invited') eng = 'invited';
+      else if (week) eng = week7 >= 5 ? 'good' : week7 >= 3 ? 'watch' : 'behind';
+      // Next check-in due from today on.
+      let next = null;
+      for (let wk = Math.max(1, week || 1); wk <= S.WEEKS && !next; wk++) {
+        const win = S.checkinWindow(c.start_date, wk, cday);
+        if (win && win.due >= now) next = win;
+      }
+      // Missed check-ins and unanswered messages, for the at-risk list.
+      const sent = new Set(checkins.data.filter((x) => x.user_id === c.id).map((x) => x.week_number));
+      let missedRun = 0;
+      for (let wk = (week || 0); wk >= 1; wk--) {
+        const win = S.checkinWindow(c.start_date, wk, cday);
+        if (!win || win.due >= now) continue;
+        if (sent.has(wk)) break;
+        missedRun += 1;
+      }
+      const waiting = (msgs.error ? [] : msgs.data).filter((m) => m.client_id === c.id && m.sender_id !== c.id && S.daysBetween(m.created_at.slice(0, 10), now) >= 3).length;
+      const signals = [];
+      if (status === 'active' && week && (daysSince === null || daysSince >= 4)) signals.push(daysSince === null ? 'No logs yet' : `Stopped logging (${daysSince} days)`);
+      if (missedRun >= 2) signals.push(`Missed ${missedRun} check-ins in a row`);
+      else if (missedRun === 1) signals.push('Missed last check-in');
+      if (waiting) signals.push('Left your message unanswered');
+      if (eng === 'behind') signals.push('Engagement dropped');
+      const risk = status !== 'active' ? '' : signals.length >= 2 || missedRun >= 2 ? 'high' : signals.length ? 'medium' : '';
+      return { c, ad, name: c.full_name || c.email || 'Client', status, eng, trend, change, latestW, next, cday, week, last, daysSince, signals, risk };
     });
-    cards.sort((a, b) => b.flags.length - a.flags.length);
+    return { rows, allTags: [...new Set(rows.flatMap((r) => r.ad.tags || []))].sort(), adminReady: !admin.error };
+  }
 
-    shell(
-      'Your clients',
-      `${clients.length} client${clients.length === 1 ? '' : 's'}`,
-      `
-      <div class="client-list">
-        ${
-          cards
-            .map(({ c, flags, week, st, prevSt, last, daysSince }) => {
-              const change = st && prevSt && st.avgWeight !== null && prevSt.avgWeight !== null ? st.avgWeight - prevSt.avgWeight : null;
-              return `<a class="card client-row" href="#client/${c.id}/overview">
-                <div>
-                  <div class="name">${esc(c.full_name || c.email)}</div>
-                  <div class="meta">${week ? `Week ${week} of 12` : c.start_date ? `Starts ${niceDate(c.start_date)}` : 'No start date'} · Last log: ${
-                    last ? (daysSince === 0 ? 'today' : daysSince === 1 ? 'yesterday' : `${daysSince} days ago`) : 'never'
-                  }</div>
-                  <div class="meta">${st ? `This week: ${st.logsCount}/7 days · ${fmt(st.avgWeight, 1)} kg${change !== null ? ` (${signed(change, 1)})` : ''} · ${st.sessions} sessions` : ''}</div>
-                  <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">${flags.map((f) => `<span class="flag">${esc(f)}</span>`).join('')}</div>
-                </div>
-                <div class="status" aria-hidden="true">›</div>
-              </a>`;
-            })
-            .join('') || '<div class="card"><p>No clients yet.</p></div>'
-        }
+  async function renderClients(view) {
+    state.coachView = {
+      section: 'clients',
+      actions: `<button type="button" class="btn btn-ghost btn-small cl-how" data-how>How client invitations work</button><button type="button" class="btn btn-small ci-dark" data-add-client>+ Add Client</button>`,
+    };
+    const data = await rosterData();
+    const tabs = `<nav class="crm-tabs" aria-label="Clients"><a href="#clients"${view !== 'insights' ? ' aria-current="page"' : ''}>Clients</a><a href="#clients/insights"${view === 'insights' ? ' aria-current="page"' : ''}>Insights</a></nav>`;
+    if (view === 'insights') renderClientInsights(data, tabs);
+    else renderRoster(data, tabs);
+    root.querySelector('[data-add-client]').addEventListener('click', () => addClientModal(data));
+    root.querySelector('[data-how]').addEventListener('click', howInvitesWork);
+  }
+
+  const ENG_LABEL = { good: 'Good', watch: 'Watch', behind: 'Behind', new: 'Not started', invited: 'Invited' };
+
+  function renderRoster(data, tabs) {
+    const { rows, allTags } = data;
+    const count = (k) => rows.filter((r) => r.status === k).length;
+    shell('Clients', 'Your roster, active and inactive, in one place', `${tabs}
+      <div class="ci-filters">
+        <label class="ci-search"><span class="sr-only">Search clients</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" placeholder="Search clients" value="${esc(ROSTER.q)}" data-r-q></label>
+        <div class="ci-seg" role="tablist" aria-label="Status">${[['active', 'Active'], ['invited', 'Invited'], ['inactive', 'Inactive']].map(([k, l]) => `<button type="button" role="tab" data-r-tab="${k}" aria-selected="${ROSTER.tab === k}">${l} <b>${count(k)}</b></button>`).join('')}</div>
+        <label class="ci-select"><span class="sr-only">Check-in day</span><select data-r="day"><option value="">Check-in day</option>${DAY_NAMES.map((d, i) => `<option value="${i}"${ROSTER.day === String(i) ? ' selected' : ''}>${d}</option>`).join('')}</select></label>
+        <label class="ci-select"><span class="sr-only">Engagement</span><select data-r="eng"><option value="">Engagement</option>${['good', 'watch', 'behind', 'new'].map((k) => `<option value="${k}"${ROSTER.eng === k ? ' selected' : ''}>${ENG_LABEL[k]}</option>`).join('')}</select></label>
+        <label class="ci-select"><span class="sr-only">Weight trend</span><select data-r="trend"><option value="">Weight trend</option>${[['down', 'Going down'], ['flat', 'Steady'], ['up', 'Going up']].map(([k, l]) => `<option value="${k}"${ROSTER.trend === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
+        <label class="ci-select"><span class="sr-only">Tags</span><select data-r="tag"${allTags.length ? '' : ' disabled'}><option value="">Tags</option>${allTags.map((t) => `<option${ROSTER.tag === t ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
       </div>
-      <section class="card">
-        <p class="kicker">Add a client</p>
-        <ol>
-          <li>In Supabase, open <b>Authentication → Users → Add user → Create new user</b>.</li>
-          <li>Enter their email, tick <b>Auto confirm user</b>, and create them. Leave the password blank or random; they sign in with an email code.</li>
-          <li>Send them the app link. They sign in, agree to the privacy notice and fill in their profile.</li>
-          <li>Come back here and set their targets and macros.</li>
-        </ol>
-      </section>`,
-    );
+      <div class="card table-card ci-table" data-r-table></div>`);
+    const box = root.querySelector('[data-r-table]');
+    const PER = 10;
+    const draw = () => {
+      const q = ROSTER.q.trim().toLowerCase();
+      const list = rows.filter((r) => r.status === ROSTER.tab
+        && (!q || `${r.name} ${r.c.email || ''} ${(r.ad.tags || []).join(' ')}`.toLowerCase().includes(q))
+        && (ROSTER.day === '' || String(r.cday) === ROSTER.day)
+        && (!ROSTER.eng || r.eng === ROSTER.eng)
+        && (!ROSTER.trend || r.trend === ROSTER.trend)
+        && (!ROSTER.tag || (r.ad.tags || []).includes(ROSTER.tag)));
+      const pages = Math.max(1, Math.ceil(list.length / PER));
+      ROSTER.page = Math.min(ROSTER.page, pages - 1);
+      const shown = list.slice(ROSTER.page * PER, ROSTER.page * PER + PER);
+      const arrow = { down: '↓', up: '↑', flat: '→' };
+      const rowHTML = (r) => `<tr data-href="#client/${r.c.id}/overview" tabindex="0">
+          <td><a href="#client/${r.c.id}/overview"><b>${esc(r.name)}</b></a><span class="ci-sub">${esc(r.c.email || '')}${r.week ? ` · Week ${r.week} of 12` : ''}</span></td>
+          <td><span class="cl-eng ${r.eng}">${ENG_LABEL[r.eng]}</span></td>
+          <td>${r.latestW ? `${fmt(r.latestW.weight_kg, 1)} kg${r.trend ? ` <span class="cl-trend ${r.trend}" title="Weekly average ${signed(r.change, 1)} kg">${arrow[r.trend]} ${signed(r.change, 1)}</span>` : ''}` : '<span class="ci-muted">–</span>'}</td>
+          <td>${r.ad.payment_amount ? `$${esc(Number(r.ad.payment_amount).toLocaleString('en-AU'))}${r.ad.payment_schedule !== 'none' ? ` <span class="ci-sub">${esc(PAY_LABEL[r.ad.payment_schedule] || '')}</span>` : ''}` : r.ad.payment_schedule && r.ad.payment_schedule !== 'none' ? esc(PAY_LABEL[r.ad.payment_schedule]) : '<span class="ci-muted">–</span>'}</td>
+          <td>${r.next ? `${esc(niceDate(r.next.due, { weekday: 'short', day: 'numeric', month: 'short' }))}` : `<span class="ci-muted">${r.c.start_date ? 'Program done' : 'No start date'}</span>`}</td>
+          <td><span class="cl-tags">${(r.ad.tags || []).map((t) => `<span class="cl-tag">${esc(t)}</span>`).join('')}</span></td>
+          <td class="cl-act">${r.status === 'invited' ? `<button type="button" class="btn btn-ghost btn-small" data-invite="${r.c.id}">Send invite</button>` : ''}
+            ${data.adminReady ? `<button type="button" class="btn btn-ghost btn-small" data-status="${r.c.id}">${r.status === 'inactive' ? 'Make active' : 'Make inactive'}</button>` : ''}</td>
+        </tr>`;
+      const empty = rows.length
+        ? { active: 'No active clients match.', invited: 'Nobody is waiting to sign in.', inactive: 'No inactive clients.' }[ROSTER.tab]
+        : 'You have not added any clients yet.';
+      box.innerHTML = `<div class="table-wrap"><table class="crm-table"><thead><tr><th>Name</th><th>Engagement</th><th>Weight</th><th>Payment</th><th>Next check-in</th><th>Tags</th><th><span class="sr-only">Actions</span></th></tr></thead>
+        <tbody>${shown.map(rowHTML).join('')}</tbody></table></div>
+        ${list.length ? '' : `<div class="ci-empty"><span class="ci-empty-icon" aria-hidden="true">${ICONS.profile}</span><p class="t">${esc(empty)}</p>${rows.length ? '' : '<button type="button" class="btn btn-ghost btn-small" data-add-client-empty>+ Add Client</button>'}</div>`}
+        <div class="pager"><span>Showing ${list.length ? ROSTER.page * PER + 1 : 0}–${Math.min(list.length, ROSTER.page * PER + PER)} of ${list.length}</span><span class="pager-btns"><button type="button" class="btn btn-ghost btn-small" data-prev aria-label="Previous page"${ROSTER.page === 0 ? ' disabled' : ''}>‹</button><button type="button" class="btn btn-ghost btn-small" data-next aria-label="Next page"${ROSTER.page >= pages - 1 ? ' disabled' : ''}>›</button></span></div>`;
+      box.querySelector('[data-prev]').addEventListener('click', () => { ROSTER.page -= 1; draw(); });
+      box.querySelector('[data-next]').addEventListener('click', () => { ROSTER.page += 1; draw(); });
+      const addEmpty = box.querySelector('[data-add-client-empty]');
+      if (addEmpty) addEmpty.addEventListener('click', () => addClientModal(data));
+      box.querySelectorAll('tr[data-href]').forEach((tr) => {
+        tr.addEventListener('click', (e) => { if (!e.target.closest('a, button')) location.hash = tr.dataset.href; });
+        tr.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target === tr) location.hash = tr.dataset.href; });
+      });
+      box.querySelectorAll('[data-invite]').forEach((b) => b.addEventListener('click', () => {
+        const r = rows.find((x) => x.c.id === b.dataset.invite);
+        inviteModal({ id: r.c.id, full_name: r.name, email: r.c.email, phone: r.c.phone });
+      }));
+      box.querySelectorAll('[data-status]').forEach((b) => b.addEventListener('click', async () => {
+        const r = rows.find((x) => x.c.id === b.dataset.status);
+        const next = r.status === 'inactive' ? 'active' : 'inactive';
+        if (next === 'inactive' && !window.confirm(`Move ${r.name} to Inactive? Their data and login are kept; you can make them active again.`)) return;
+        try {
+          must(await sb.from('client_admin').upsert({ client_id: r.c.id, status: next }, { onConflict: 'client_id' }));
+          toast(next === 'inactive' ? `${r.name} moved to Inactive.` : `${r.name} is active again.`);
+          route();
+        } catch (err) {
+          toast(friendlyError(err), true);
+        }
+      }));
+    };
+    root.querySelectorAll('[data-r-tab]').forEach((b) => b.addEventListener('click', () => {
+      ROSTER.tab = b.dataset.rTab;
+      ROSTER.page = 0;
+      root.querySelectorAll('[data-r-tab]').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
+      draw();
+    }));
+    root.querySelector('[data-r-q]').addEventListener('input', (e) => { ROSTER.q = e.target.value; ROSTER.page = 0; draw(); });
+    root.querySelectorAll('select[data-r]').forEach((sel) => sel.addEventListener('change', () => { ROSTER[sel.dataset.r] = sel.value; ROSTER.page = 0; draw(); }));
+    draw();
+  }
+
+  function renderClientInsights(data, tabs) {
+    const { rows } = data;
+    const now = S.today();
+    const monthsAgo = (n) => { const d = new Date(); d.setMonth(d.getMonth() - n); return d.toISOString().slice(0, 10); };
+    const joinedOn = (r) => (r.ad.invited_at || r.c.created_at || '').slice(0, 10);
+    const leftOn = (r) => (r.status === 'inactive' && r.ad.inactive_at ? r.ad.inactive_at.slice(0, 10) : null);
+    const from3 = monthsAgo(3);
+    const active = rows.filter((r) => r.status === 'active');
+    const joined3 = rows.filter((r) => joinedOn(r) >= from3).length;
+    const left3 = rows.filter((r) => leftOn(r) && leftOn(r) >= from3).length;
+    const activeAtStart = rows.filter((r) => joinedOn(r) < from3 && !(leftOn(r) && leftOn(r) < from3)).length;
+    const tenureMonths = (r) => (r.c.start_date ? Math.max(0, S.daysBetween(r.c.start_date, leftOn(r) || now) / 30.44) : null);
+    const tenures = active.map(tenureMonths).filter((x) => x !== null);
+    const avgTenure = tenures.length ? tenures.reduce((a, b) => a + b, 0) / tenures.length : null;
+    const old6 = rows.filter((r) => r.c.start_date && r.c.start_date <= monthsAgo(6));
+    const kept6 = old6.filter((r) => r.status === 'active' || (leftOn(r) && tenureMonths(r) >= 6)).length;
+    const atRisk = rows.filter((r) => r.risk);
+    const stat = (k, v, sub) => `<div class="ci-stat"><p class="k">${k}</p><p class="v">${v}</p><p class="s">${esc(sub)}</p></div>`;
+    // Joined and left per month, last 6 months.
+    const months = Array.from({ length: 6 }, (_, i) => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 5 + i); return d.toISOString().slice(0, 7); });
+    const perMonth = months.map((m) => ({ m, j: rows.filter((r) => joinedOn(r).startsWith(m)).length, l: rows.filter((r) => (leftOn(r) || '').startsWith(m)).length }));
+    const peak = Math.max(1, ...perMonth.map((x) => Math.max(x.j, x.l)));
+    const bars = perMonth.map((x) => `<div class="cl-bar"><div class="cl-bar-pair"><span class="j" style="height:${(x.j / peak) * 100}%" title="${x.j} joined"></span><span class="l" style="height:${(x.l / peak) * 100}%" title="${x.l} left"></span></div><small>${new Date(`${x.m}-01T00:00:00`).toLocaleDateString('en-AU', { month: 'short' })}</small></div>`).join('');
+    const buckets = [['<1 mo', 0, 1], ['1–3 mo', 1, 3], ['3–6 mo', 3, 6], ['6–12 mo', 6, 12], ['1 yr+', 12, Infinity]].map(([l, a, b]) => [l, tenures.filter((t) => t >= a && t < b).length]);
+    const riskRows = atRisk.sort((a, b) => (a.risk === b.risk ? 0 : a.risk === 'high' ? -1 : 1)).map((r) => `<tr data-href="#client/${r.c.id}/overview" tabindex="0">
+        <td><a href="#client/${r.c.id}/overview"><b>${esc(r.name)}</b></a></td>
+        <td><span class="ci-risk ${r.risk === 'high' ? 'high' : 'medium'}">${r.risk === 'high' ? 'High' : 'Medium'}</span></td>
+        <td><span class="cl-eng ${r.eng}">${ENG_LABEL[r.eng]}</span></td>
+        <td>${r.signals.map((x) => `<span class="cl-tag">${esc(x)}</span>`).join(' ')}</td>
+        <td>${r.last ? esc(r.daysSince === 0 ? 'Today' : r.daysSince === 1 ? 'Yesterday' : `${r.daysSince} days ago`) : '<span class="ci-muted">Never</span>'}</td>
+        <td><a class="btn btn-ghost btn-small" href="#messages/${r.c.id}">Message</a></td></tr>`).join('');
+    shell('Clients', 'How your roster is holding up', `${tabs}
+      <div class="ci-stats cl-six">
+        ${stat('Active clients', active.length, `Joined ${joined3}, left ${left3} in 3 months`)}
+        ${stat('Churn rate', activeAtStart ? `${Math.round((left3 / activeAtStart) * 100)}%` : '–', activeAtStart ? `${left3} of ${activeAtStart} left in 3 months` : 'Not enough history yet')}
+        ${stat('Average tenure', avgTenure === null ? '–' : avgTenure < 1 ? `${Math.round(avgTenure * 4.35)} wks` : `${avgTenure.toFixed(1)} mo`, 'Active clients, from their start date')}
+        ${stat('New clients', `${(joined3 / 3).toFixed(joined3 % 3 ? 1 : 0)} / mo`, 'Average over the last 3 months')}
+        ${stat('Retained', old6.length ? `${Math.round((kept6 / old6.length) * 100)}%` : '–', old6.length ? `At 6 months · ${kept6} of ${old6.length}` : 'Shows once clients reach 6 months')}
+        ${stat('At risk', atRisk.length, atRisk.length ? `${atRisk.filter((r) => r.risk === 'high').length} high` : 'Nobody flagged')}
+      </div>
+      <div class="cl-grid">
+        <section class="card cl-card"><div class="cl-card-h"><b>Joined and left per month</b><span class="cl-legend"><i class="j"></i>Joined <i class="l"></i>Left</span></div><p class="hint">Last 6 months</p>
+          ${perMonth.some((x) => x.j || x.l) ? `<div class="cl-bars">${bars}</div>` : '<p class="cl-none">Nobody joined or left in this window.</p>'}</section>
+        <section class="card cl-card"><div class="cl-card-h"><b>Why clients are flagged</b></div><p class="hint">${atRisk.length} at risk now</p>
+          ${['Stopped logging', 'Missed', 'Left your message unanswered', 'Engagement dropped'].map((k) => { const n = atRisk.filter((r) => r.signals.some((x) => x.startsWith(k))).length; return `<div class="cl-sig"><span>${k === 'Missed' ? 'Missed check-ins' : k}</span><b>${n}</b></div>`; }).join('')}</section>
+        <section class="card cl-card"><div class="cl-card-h"><b>Tenure of active clients</b></div><p class="hint">${tenures.length} active with a start date</p>
+          <div class="cl-buckets">${buckets.map(([l, n]) => `<div><small>${l}</small><b>${n}</b></div>`).join('')}</div></section>
+      </div>
+      <section class="card cl-how-card"><b>How the at-risk list works</b>
+        <p>Each active client is checked against four signals: stopped logging (4 days or more), missed check-ins, your message unanswered for 3 days or more, and fewer than 3 days logged this week. One signal lists them as Medium; two or more, or two missed check-ins in a row, as High. It is a rule of thumb from your own data, not a prediction.</p></section>
+      <h2 class="cl-h2">Clients at risk of leaving <small>${atRisk.length} listed</small></h2>
+      <div class="card table-card"><div class="table-wrap"><table class="crm-table"><thead><tr><th>Client</th><th>Likelihood</th><th>Engagement</th><th>Signals</th><th>Last active</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody>${riskRows}</tbody></table></div>
+        ${atRisk.length ? '' : `<div class="ci-empty"><p class="t">Nobody looks like leaving.</p><p>No signal lists any of your ${active.length} active clients.</p></div>`}</div>`);
+    root.querySelectorAll('tr[data-href]').forEach((tr) => tr.addEventListener('click', (e) => { if (!e.target.closest('a, button')) location.hash = tr.dataset.href; }));
+  }
+
+  // A small modal on the coach side (same look as the Forms dialogs).
+  function crmDialog(html) {
+    const back = document.createElement('div');
+    back.className = 'f-back';
+    back.innerHTML = html;
+    document.body.appendChild(back);
+    const box = back.firstElementChild;
+    const before = document.activeElement;
+    const close = () => { back.remove(); document.removeEventListener('keydown', onKey, true); if (before && before.focus) before.focus(); };
+    const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); close(); } };
+    document.addEventListener('keydown', onKey, true);
+    back.addEventListener('mousedown', (e) => { if (e.target === back) close(); });
+    box.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', close));
+    const first = box.querySelector('input, select, textarea, button');
+    if (first) first.focus();
+    return { box, close };
+  }
+
+  function howInvitesWork() {
+    crmDialog(`<div class="fm cl-modal cl-how-modal" role="dialog" aria-modal="true" aria-labelledby="how-h">
+      <div class="fm-head"><h2 id="how-h">How client invitations work</h2><button type="button" class="fm-x" data-close aria-label="Close">✕</button></div>
+      <ol class="cl-steps">
+        <li><b>Add Client</b> creates their login with the email you enter. No Supabase steps.</li>
+        <li><b>Send the invite.</b> Copy the message, or open it in WhatsApp, and send it to them. It has the app link and the email to sign in with.</li>
+        <li><b>They sign in</b> with a code emailed to them, agree to the privacy notice and fill in their profile. Until then they sit under <b>Invited</b>.</li>
+        <li>Any forms you picked are waiting on their Home screen the first time they open the app.</li>
+      </ol>
+      <p class="fm-help">Sign-in codes are emailed by Supabase, so Resend needs to be set up in Supabase before clients can sign in.</p>
+      <div class="fm-foot"><button type="button" class="f-btn f-dark" data-close>Got it</button></div></div>`);
+  }
+
+  function inviteText(c) {
+    const first = (c.full_name || '').split(' ')[0] || 'there';
+    return `Hi ${first}, welcome to Rewired Coaching! Your coaching app is ready: ${location.origin}/app/\n\nSign in with ${c.email} and the code that gets emailed to you. Save it to your home screen so it works like an app.\n\nAny questions, message me here. ${COACH}`;
+  }
+
+  function inviteModal(c, fresh) {
+    const text = inviteText(c);
+    const digits = String(c.phone || '').replace(/[^\d]/g, '');
+    const d = crmDialog(`<div class="fm cl-modal" role="dialog" aria-modal="true" aria-labelledby="inv-h">
+      <div class="fm-head"><h2 id="inv-h">${fresh ? 'Client added' : 'Send invite'}</h2><button type="button" class="fm-x" data-close aria-label="Close">✕</button></div>
+      <p class="cl-lead">${fresh ? `<b>${esc(c.full_name)}</b> has a login now. ` : ''}Send ${esc((c.full_name || '').split(' ')[0] || 'them')} this message so they can sign in.</p>
+      <textarea class="cl-invite" rows="7" readonly>${esc(text)}</textarea>
+      <div class="fm-foot cl-inv-foot">
+        ${digits ? `<a class="f-btn" href="https://wa.me/${digits}?text=${encodeURIComponent(text)}" target="_blank" rel="noopener">Open in WhatsApp</a>` : ''}
+        <button type="button" class="f-btn f-dark" data-copy>Copy message</button>
+      </div></div>`);
+    d.box.querySelector('[data-copy]').addEventListener('click', async (e) => {
+      try {
+        await navigator.clipboard.writeText(text);
+        e.target.textContent = 'Copied';
+      } catch (err) {
+        const ta = d.box.querySelector('textarea');
+        ta.focus();
+        ta.select();
+        e.target.textContent = 'Press Ctrl+C to copy';
+      }
+    });
+  }
+
+  async function addClientModal(data) {
+    const forms = await sb.from('forms').select('id, name, category, is_default, published_version_id, archived_at').order('name');
+    const live = forms.error ? [] : forms.data.filter((f) => f.published_version_id && !f.archived_at);
+    const formSelect = (cat, label, id) => {
+      const list = live.filter((f) => f.category === cat);
+      const def = list.find((f) => f.is_default);
+      return `<label class="fb-field cl-f"><span>${label}</span><span class="fb-select"><select id="${id}"><option value="">None</option>${list.map((f) => `<option value="${f.id}"${def && def.id === f.id ? ' selected' : ''}>${esc(f.name)}</option>`).join('')}</select></span></label>`;
+    };
+    let tags = [];
+    const d = crmDialog(`<form class="fm cl-modal cl-add" role="dialog" aria-modal="true" aria-labelledby="add-h" novalidate>
+      <div class="fm-head"><h2 id="add-h" class="cl-title">Add Client</h2><button type="button" class="fm-x" data-close aria-label="Close">✕</button></div>
+      <div class="cl-cols">
+        <div>
+          <p class="cl-k">Client</p>
+          <div class="cl-two"><label class="fb-field cl-f"><span>First name</span><input id="ac-first" maxlength="60" autocomplete="off" placeholder="John" required></label>
+            <label class="fb-field cl-f"><span>Last name</span><input id="ac-last" maxlength="60" autocomplete="off" placeholder="Smith"></label></div>
+          <div class="cl-two"><label class="fb-field cl-f"><span>Email address</span><input id="ac-email" type="email" maxlength="254" autocomplete="off" placeholder="john@email.com" required></label>
+            <label class="fb-field cl-f"><span>Phone number</span><span class="cl-phone"><select id="ac-cc" aria-label="Country code"><option value="+61">🇦🇺 +61</option><option value="+64">🇳🇿 +64</option><option value="+44">🇬🇧 +44</option><option value="+1">🇺🇸 +1</option><option value="+91">🇮🇳 +91</option><option value="">Other</option></select><input id="ac-phone" type="tel" maxlength="20" autocomplete="off" placeholder="400 000 000"></span></label></div>
+          <p class="cl-k">Payment</p>
+          <div class="cl-two"><label class="fb-field cl-f"><span>Payment amount (AUD)</span><input id="ac-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="750"></label>
+            <label class="fb-field cl-f"><span>Payment schedule</span><span class="fb-select"><select id="ac-sched">${PAY_SCHEDULES.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></span></label></div>
+          <p class="fm-help">For your records. It doesn’t charge the client.</p>
+        </div>
+        <div>
+          <p class="cl-k">Check-ins</p>
+          <label class="fb-field cl-f"><span>Check-in day</span><span class="fb-select"><select id="ac-day">${DAY_NAMES.map((n, i) => `<option value="${i}"${i === 0 ? ' selected' : ''}>${n}</option>`).join('')}</select></span></label>
+          <p class="fm-help">Weekly. The check-in opens the day before.</p>
+          <p class="cl-k">Forms</p>
+          ${formSelect('Onboarding', 'Onboarding form', 'ac-f-onb')}
+          ${formSelect('Contract', 'Contract', 'ac-f-con')}
+          ${formSelect('Health screen', 'Health screen', 'ac-f-hs')}
+          ${live.length ? '<p class="fm-help">Waiting on their Home screen when they first sign in.</p>' : '<p class="fm-help">Publish a form in Forms to send it here.</p>'}
+        </div>
+        <div>
+          <p class="cl-k">Tags &amp; notes</p>
+          <label class="fb-field cl-f"><span>Tags</span><span class="cl-tagbox"><span class="cl-tagchips"></span><input id="ac-tag" list="ac-tags" maxlength="40" placeholder="Type a tag, press Enter"></span></label>
+          <datalist id="ac-tags">${data.allTags.map((t) => `<option value="${esc(t)}">`).join('')}</datalist>
+          <label class="fb-field cl-f"><span>Notes <small class="cl-count" data-count>0/2000</small></span><textarea id="ac-notes" rows="8" maxlength="2000" placeholder="Anything you want to remember about this client. Only you see this."></textarea></label>
+        </div>
+      </div>
+      <p class="fm-err" role="alert"></p>
+      <div class="fm-foot"><button type="button" class="f-btn" data-close>Cancel</button><button type="submit" class="f-btn f-dark" data-save disabled>Save</button></div>
+    </form>`);
+    const box = d.box;
+    const $ = (id) => box.querySelector(`#${id}`);
+    const save = box.querySelector('[data-save]');
+    const err = box.querySelector('.fm-err');
+    const valid = () => $('ac-first').value.trim() && /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test($('ac-email').value.trim());
+    box.addEventListener('input', () => { save.disabled = !valid(); });
+    $('ac-notes').addEventListener('input', (e) => { box.querySelector('[data-count]').textContent = `${e.target.value.length}/2000`; });
+    const drawTags = () => {
+      box.querySelector('.cl-tagchips').innerHTML = tags.map((t, i) => `<span class="cl-tag">${esc(t)}<button type="button" data-untag="${i}" aria-label="Remove ${esc(t)}">✕</button></span>`).join('');
+    };
+    const addTag = () => {
+      const t = $('ac-tag').value.trim().slice(0, 40);
+      if (t && !tags.some((x) => x.toLowerCase() === t.toLowerCase()) && tags.length < 20) tags.push(t);
+      $('ac-tag').value = '';
+      drawTags();
+    };
+    $('ac-tag').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(); }
+      else if (e.key === 'Backspace' && !$('ac-tag').value && tags.length) { tags.pop(); drawTags(); }
+    });
+    $('ac-tag').addEventListener('change', addTag);
+    box.querySelector('.cl-tagchips').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-untag]');
+      if (b) { tags.splice(Number(b.dataset.untag), 1); drawTags(); }
+    });
+    box.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!valid() || save.disabled) return;
+      if ($('ac-tag').value.trim()) addTag();
+      save.disabled = true;
+      save.textContent = 'Adding…';
+      err.textContent = '';
+      const rawPhone = $('ac-phone').value.trim();
+      const phone = rawPhone ? (rawPhone.startsWith('+') || !$('ac-cc').value ? rawPhone : `${$('ac-cc').value} ${rawPhone.replace(/^0/, '')}`) : '';
+      try {
+        const res = await fetch('/.netlify/functions/add-client', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${state.session.access_token}` },
+          body: JSON.stringify({ first_name: $('ac-first').value.trim(), last_name: $('ac-last').value.trim(), email: $('ac-email').value.trim(), phone }),
+        });
+        const out = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(out.error || (res.status === 404 ? 'Adding clients isn’t switched on yet. Add the Netlify keys and redeploy.' : 'Couldn’t add the client.'));
+        const id = out.id;
+        // The login exists now; the rest is saved as the coach.
+        const problems = [];
+        const amount = $('ac-amount').value;
+        const ad = await sb.from('client_admin').upsert({
+          client_id: id, tags, notes: $('ac-notes').value.trim() || null,
+          payment_amount: amount === '' ? null : Number(amount), payment_schedule: $('ac-sched').value, invited_at: new Date().toISOString(),
+        }, { onConflict: 'client_id' });
+        if (ad.error) problems.push('tags, notes and payment');
+        const tg = await sb.from('targets').update({ checkin_day: Number($('ac-day').value) }).eq('client_id', id);
+        if (tg.error) problems.push('check-in day');
+        for (const fid of ['ac-f-onb', 'ac-f-con', 'ac-f-hs'].map((x) => $(x).value).filter(Boolean)) {
+          const r = await sb.rpc('assign_form', { p_form: fid, p_clients: [id] });
+          if (r.error) problems.push('a form');
+        }
+        d.close();
+        if (problems.length) toast(`Client added, but ${[...new Set(problems)].join(', ')} didn’t save. Set them on their page.`, true);
+        inviteModal({ id, full_name: out.full_name, email: out.email, phone }, true);
+        ROSTER.tab = 'invited';
+        route();
+      } catch (ex) {
+        err.textContent = friendlyError(ex);
+        save.disabled = false;
+        save.textContent = 'Save';
+      }
+    });
   }
 
   // Old links (#client/<id>/dashboard, /targets, /profile, /logs, /photos)
@@ -3345,6 +3862,8 @@
     sb, state, root, S, COACH, ICONS, esc, fmt, toast, friendlyError, readForm, withBusy, must, niceDate,
     shell, loadCtx, invalidate, sectionTabs, statCards, dotCell,
   });
+  FUI.init({ sb, state, COACH, esc, fmt, friendlyError, must, shell, invalidate });
+  MSG.init({ sb, state, COACH, esc, friendlyError, toast, shell });
 
   // ---------------------------------------------------------------- router
 
@@ -3360,8 +3879,13 @@
 
       if (state.me.role === 'coach') {
         if (parts[0] === 'client' && parts[1]) return await renderClient(parts[1], parts[2], parts[3], parts[4]);
-        if (parts[0] === 'inbox') return await renderInbox();
+        if (parts[0] === 'inbox') return await renderInbox(parts[1]);
+        if (parts[0] === 'messages') return await MSG.coachInbox(parts[1]);
         if (parts[0] === 'library') return await NUI.library(parts[1], parts[2], parts[3]);
+        if (parts[0] === 'forms' && parts[1] && parts[2] === 'responses') return await FUI.responses(parts[1], parts[3]);
+        if (parts[0] === 'forms' && parts[1]) return await FUI.builder(parts[1]);
+        if (parts[0] === 'forms') return await FUI.library();
+        if (parts[0] === 'clients') return await renderClients(parts[1]);
         return await renderClients();
       }
 
@@ -3392,6 +3916,12 @@
           return await renderProgress();
         case 'profile':
           return await renderProfile();
+        case 'forms':
+          return await FUI.clientList();
+        case 'form':
+          return await FUI.clientForm(parts[1]);
+        case 'messages':
+          return await MSG.clientThread();
         default:
           // #today/<day> was the old home; keep it working.
           return await renderHome(parts[1]);

@@ -44,7 +44,9 @@ async function rest(path, { method = 'GET', body, token, service, prefer } = {},
     method,
     headers: {
       apikey: key,
-      Authorization: `Bearer ${service ? key : token}`,
+      // New secret keys (sb_secret_...) are not JWTs: Supabase reads them
+      // from apikey alone. A legacy service_role JWT also goes here.
+      ...(service && key.startsWith('sb_') ? {} : { Authorization: `Bearer ${service ? key : token}` }),
       'Content-Type': 'application/json',
       ...(prefer ? { Prefer: prefer } : {}),
     },
