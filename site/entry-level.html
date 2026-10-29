@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Start Rewired Coaching · Abhey Pal</title>
+  <meta name="description" content="Start Rewired Coaching, ongoing coaching with Abhey Pal at AUD $80 per week: a customised meal or macro plan, a workout program in the Rewired app, and fortnightly check-ins by email.">
+  <meta name="theme-color" content="#0b2545">
+  <link rel="icon" href="/app/icons/favicon-32.png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/app/icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Source+Sans+3:ital,wght@0,400..700;1,400&display=swap">
+  <link rel="preload" href="/assets/fonts/montserrat-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/home.css?rev=hook-2">
+  <link rel="stylesheet" href="/plans.css?rev=entry-1">
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap">
+      <a class="brand" href="/" aria-label="Rewired Coaching with Abhey Pal, home">
+        <img src="/assets/app-icon.png" alt="" width="34" height="34">
+        <span><b>Rewired Coaching</b><small>WITH ABHEY PAL</small></span>
+      </a>
+      <nav class="nav-links" aria-label="Main">
+        <a href="/">Home</a>
+        <a href="pricing.html" aria-current="page">Pricing</a>
+        <a href="resources.html">Resources</a>
+        <a href="faq.html">FAQ</a>
+      </nav>
+      <div class="nav-actions">
+        <a class="btn btn-ghost btn-small" href="/app/">Client login</a>
+        <a class="btn btn-dark btn-small" data-book href="https://calendly.com/coaching-abheyrewired/30min" target="_blank" rel="noopener noreferrer">Book a call</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero hero-short" aria-labelledby="entry-page-title">
+      <div class="wrap">
+        <div class="hero-copy">
+          <p class="eyebrow">Ongoing Coaching · AUD $80 per week</p>
+          <h1 id="entry-page-title">Start Rewired <em>Coaching.</em></h1>
+          <p class="lead">AUD $80 per week. Personalised nutrition guidance, a structured workout program and a check-in every fortnight, with your plans in the Custom Rewired Coaching App and coaching by email.</p>
+          <a class="text-link light" href="pricing.html#compare">Compare it with Premium Coaching</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section soft" aria-label="Start Rewired Coaching">
+      <div class="wrap apply-page">
+        <div class="apply-aside reveal">
+          <div class="entry-card">
+            <p class="plan-label">Your package</p>
+            <p class="price-name">Rewired Coaching</p>
+            <p class="amount">AUD $80 <span>per week</span></p>
+            <p>A customised meal plan or macro plan, a meal plan ebook, a workout program in the app, check-ins and plan updates every two weeks, and coaching by email.</p>
+          </div>
+          <div class="terms-box">
+            <h3>The terms</h3>
+            <h4>First-month commitment</h4>
+            <p>Your first four weeks are a committed coaching period. Once your fourth weekly payment has been taken, you can cancel your subscription at any time.</p>
+            <h4>Eight-week satisfaction policy</h4>
+            <p>If you’re not satisfied with your results after completing eight weeks of coaching, I’ll refund the coaching fees you paid for the previous four weeks.</p>
+            <small>Full details are in the <a href="terms.html#entry-level">Terms &amp; Conditions</a>.</small>
+          </div>
+          <ol class="ways compact">
+            <li><h3>Your details</h3><p>Tell me about your goal, your food and your training.</p></li>
+            <li><h3>Subscribe</h3><p>Secure weekly subscription checkout with Stripe.</p></li>
+            <li><h3>Get set up</h3><p>I build your plan and set up your app account, then email you to sign in.</p></li>
+          </ol>
+        </div>
+        <div class="apply-main">
+          <form class="apply-form" id="entry-form" name="entry-level" method="POST" action="/entry-level.html" data-netlify="true" netlify-honeypot="company">
+            <input type="hidden" name="form-name" value="entry-level">
+            <input type="hidden" name="package" value="Rewired Coaching, AUD $80 per week">
+            <p class="hp"><label>Leave this empty <input name="company" tabindex="-1" autocomplete="off"></label></p>
+            <fieldset>
+              <legend>About you</legend>
+              <div class="pair">
+                <div class="field"><label for="e-name">Full name</label><input id="e-name" name="name" autocomplete="name" required></div>
+                <div class="field"><label for="e-age">Age</label><input id="e-age" name="age" type="number" inputmode="numeric" min="18" max="90" required></div>
+              </div>
+              <div class="pair">
+                <div class="field"><label for="e-email">Email <span class="opt">(where we’ll talk)</span></label><input id="e-email" name="email" type="email" autocomplete="email" required></div>
+                <div class="field"><label for="e-phone">Mobile <span class="opt">(optional)</span></label><input id="e-phone" name="phone" type="tel" autocomplete="tel"></div>
+              </div>
+              <div class="pair">
+                <div class="field"><label for="e-height">Height <span class="opt">(cm)</span></label><input id="e-height" name="height_cm" type="number" inputmode="numeric" min="120" max="230" required></div>
+                <div class="field"><label for="e-weight">Current weight <span class="opt">(kg)</span></label><input id="e-weight" name="weight_kg" type="number" inputmode="decimal" step="0.1" min="35" max="250" required></div>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend>Your goal</legend>
+              <div class="field"><label for="e-goal">What’s the main goal?</label>
+              <select id="e-goal" name="goal" required>
+                <option value="">Pick one</option>
+                <option>Lose the belly and get lean</option>
+                <option>Build visible muscle</option>
+                <option>Both: body recomposition</option>
+                <option>Get in shape for an event</option>
+              </select></div>
+              <div class="field"><label for="e-before">What’s stopped you getting results before?</label><textarea id="e-before" name="blockers" required></textarea></div>
+            </fieldset>
+            <fieldset>
+              <legend>Food</legend>
+              <div class="field"><label for="e-plan">Would you like a meal plan or a macro plan?</label>
+              <select id="e-plan" name="plan_type" required>
+                <option value="">Pick one</option>
+                <option>A meal plan</option>
+                <option>A macro plan</option>
+                <option>Not sure, help me choose</option>
+              </select></div>
+              <div class="field"><label for="e-diet">Diet preference</label>
+              <select id="e-diet" name="diet" required>
+                <option value="">Pick one</option>
+                <option>No restrictions</option>
+                <option>Vegetarian</option>
+                <option>Vegan</option>
+                <option>Pescatarian</option>
+                <option>Halal</option>
+                <option>Other</option>
+              </select></div>
+              <div class="field"><label for="e-food">What food did you grow up on, and what do you eat most weeks?</label><input id="e-food" name="food" required></div>
+              <div class="field"><label for="e-allergy">Allergies or intolerances <span class="opt">(optional)</span></label><input id="e-allergy" name="allergies"></div>
+            </fieldset>
+            <fieldset>
+              <legend>Training</legend>
+              <div class="pair">
+                <div class="field"><label for="e-where">Where will you train?</label>
+                <select id="e-where" name="train_where" required>
+                <option value="">Pick one</option>
+                <option>Gym</option>
+                <option>Home</option>
+                <option>Hotel gyms when travelling</option>
+                <option>A mix</option>
+              </select></div>
+                <div class="field"><label for="e-days">Days a week you can train</label>
+                <select id="e-days" name="train_days" required>
+                <option value="">Pick one</option>
+                <option>2</option>
+                <option>3</option>
+                <option>4</option>
+                <option>5 or more</option>
+              </select></div>
+              </div>
+              <div class="field"><label for="e-exp">Training experience</label>
+              <select id="e-exp" name="experience" required>
+                <option value="">Pick one</option>
+                <option>New to the gym</option>
+                <option>Some experience, on and off</option>
+                <option>Training consistently for a year or more</option>
+              </select></div>
+              <div class="field"><label for="e-injury">Injuries or medical conditions I should know about <span class="opt">(optional)</span></label><textarea id="e-injury" name="injuries"></textarea></div>
+            </fieldset>
+            <fieldset>
+              <legend>Before you subscribe</legend>
+              <label class="check"><input type="checkbox" name="terms" value="agreed" required><span>I understand Rewired Coaching is AUD $80 per week, billed weekly, my first four weeks are a committed coaching period, and I can cancel at any time once my fourth weekly payment has been taken.</span></label>
+              <label class="check"><input type="checkbox" name="consent" value="yes" required><span>I agree to Rewired Coaching using these details to build my plan and contact me. I’ve read the <a href="/privacy.html">Privacy Policy</a> and the <a href="/terms.html#entry-level">Terms &amp; Conditions</a>.</span></label>
+            </fieldset>
+            <p class="error" id="entry-error" role="alert" hidden>Something went wrong sending your details. Please try again, or email coaching@abheyrewired.com.</p>
+            <button class="btn btn-dark" type="submit">Continue to checkout</button>
+          </form>
+          <div class="apply-done" id="entry-done" tabindex="-1" hidden>
+            <h2>Details received.</h2>
+            <p>Last step. Subscribe to <strong>Rewired Coaching</strong> at <strong>AUD $80 per week</strong>, billed weekly. Your first four weeks are a committed coaching period, and after your fourth weekly payment you can cancel at any time.</p>
+            <div class="actions">
+              <a class="btn btn-dark" data-join-entry href="mailto:coaching@abheyrewired.com">Subscribe for AUD $80 a week</a>
+            </div>
+            <p class="fine" data-join-entry-note hidden>Online checkout is being set up. Email me and I’ll send your secure payment link.</p>
+            <p class="fine">Payment is handled securely by Stripe. Your plans arrive in the Custom Rewired Coaching App, and our coaching conversation happens by email.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <div class="contact" aria-label="Contact">
+        <a class="ig" href="mailto:coaching@abheyrewired.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7 8 6 8-6"/></svg>coaching@abheyrewired.com</a>
+        <a class="ig" href="https://www.instagram.com/abhey.rewired/" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>@abhey.rewired</a>
+      </div>
+      <nav aria-label="Footer">
+        <a href="resources.html">Resources</a>
+        <a href="faq.html">FAQ</a>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms &amp; Conditions</a>
+        <a href="/app/?coach">Coach login</a>
+      </nav>
+      <span class="legal">© Rewired Coaching with Abhey Pal · ABN 73 322 472 368</span>
+    </div>
+  </footer>
+
+  <script src="/booking.js?rev=entry-1"></script>
+  <script>
+    // Send the details to Netlify Forms, then show the checkout step.
+    (function () {
+      var form = document.getElementById('entry-form');
+      var done = document.getElementById('entry-done');
+      var error = document.getElementById('entry-error');
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        error.hidden = true;
+        var button = form.querySelector('button[type=submit]');
+        button.disabled = true;
+        fetch('/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams(new FormData(form)).toString()
+        }).then(function (res) {
+          if (!res.ok) throw new Error(res.status);
+          form.hidden = true;
+          done.hidden = false;
+          done.focus();
+          done.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }).catch(function () {
+          error.hidden = false;
+          button.disabled = false;
+        });
+      });
+    })();
+  </script>
+  <script src="/home.js?rev=faq-1"></script>
+</body>
+</html>

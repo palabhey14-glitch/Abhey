@@ -1,0 +1,72 @@
+/* Pricing page: Premium Coaching (headline) and Entry Level Guidance
+   (monthly). Loaded after home.css and reuses its tokens. */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+.plan-label { font: 600 14px/1.2 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--sand-ink); }
+.price-card .plan-label { padding: 6px 12px; border-radius: 999px; background: var(--navy); color: var(--sand); }
+.hero .text-link.light { font-size: 17px; }
+
+.btn-outline { border: 2px solid var(--navy); background: var(--white); color: var(--navy); }
+.btn-outline:hover { background: var(--navy); color: var(--white); }
+.btn-outline:focus-visible { outline: 3px solid var(--sand); outline-offset: 3px; }
+
+/* Entry Level Guidance */
+.entry { display: grid; grid-template-columns: 5fr 7fr; gap: 40px 72px; align-items: start; }
+.entry-head { display: grid; gap: 16px; justify-items: start; }
+.entry-head > p:not(.plan-label) { color: var(--ink-2); max-width: 30em; }
+.entry-card { display: grid; gap: 10px; justify-items: start; width: 100%; margin-top: 8px; padding: 28px; border-radius: 14px; background: var(--white); border: 1px solid var(--line); }
+.entry-card .amount { font: 500 clamp(36px, 4.4vw, 44px)/1.05 var(--serif); letter-spacing: -.02em; color: var(--navy); font-variant-numeric: lining-nums; }
+.entry-card .amount span { font: 500 18px var(--sans); letter-spacing: 0; color: var(--ink-2); }
+.entry-card p { color: var(--ink-2); }
+.entry-card .btn { margin-top: 6px; }
+.entry-body { display: grid; gap: 24px; min-width: 0; }
+.list-title { font-size: 24px; color: var(--navy); }
+.entry-body .list { margin-top: -12px; }
+.where { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.where p { padding: 18px 20px; border-radius: 12px; background: var(--white); border: 1px solid var(--line); color: var(--ink-2); }
+.where strong { display: block; margin-bottom: 4px; font: 600 19px var(--serif); color: var(--navy); }
+.terms-box { display: grid; gap: 8px; padding: clamp(22px, 4vw, 32px); border-left: 4px solid var(--blue); border-radius: 0 12px 12px 0; background: var(--white); }
+.terms-box h3 { font-size: 24px; color: var(--navy); margin-bottom: 4px; }
+.terms-box h4 { margin: 10px 0 0; font: 600 17px var(--sans); color: var(--navy); }
+.terms-box p { color: #3b4a60; }
+.terms-box small { margin-top: 8px; color: var(--ink-2); font-size: 15px; }
+.terms-box a { color: var(--blue); text-underline-offset: 3px; }
+
+/* Comparison */
+.compare { margin-top: 40px; }
+.compare table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
+.compare th, .compare td { padding: 16px 18px; text-align: left; vertical-align: top; border-top: 1px solid var(--line); }
+.compare thead th, .compare thead td { border-top: 0; }
+.compare thead th { font: 600 21px/1.25 var(--serif); color: var(--navy); padding-block: 20px; }
+.compare thead th.col-premium { background: var(--navy); color: var(--white); border-radius: 14px 14px 0 0; }
+.compare tbody th { width: 20%; font: 600 17px/1.35 var(--sans); color: var(--navy); }
+.compare td { color: var(--ink-2); }
+.compare td b { font: 500 22px var(--serif); color: var(--navy); }
+.compare td.col-premium { background: var(--sky); color: var(--ink); border-top-color: #cfdcf3; }
+.compare tfoot td { border-top: 1px solid var(--line); padding-block: 20px; }
+.compare tfoot td.col-premium { border-radius: 0 0 14px 14px; }
+.compare tfoot .btn { width: 100%; white-space: normal; text-align: center; }
+
+.faq.soft { background: var(--cloud); }
+.faq-head .text-link { font-size: inherit; }
+
+@media (max-width: 860px) {
+  .entry { grid-template-columns: 1fr; }
+}
+@media (max-width: 760px) {
+  .compare table, .compare tbody, .compare tfoot, .compare tr, .compare th, .compare td { display: block; width: 100%; }
+  .compare thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .compare tbody tr { padding: 18px 0; border-top: 1px solid var(--line); }
+  .compare tbody th { width: auto; padding: 0 0 10px; border: 0; font-size: 18px; }
+  .compare tbody td { padding: 12px 16px; border: 0; border-radius: 10px; }
+  .compare tbody td + td { margin-top: 8px; background: var(--white); border: 1px solid var(--line); }
+  .compare tbody td::before { content: attr(data-plan); display: block; margin-bottom: 2px; font: 600 13px var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--sand-ink); }
+  .compare tfoot tr { display: grid; gap: 12px; padding-top: 18px; border-top: 1px solid var(--line); }
+  .compare tfoot td { padding: 0; border: 0; background: none; }
+  .compare tfoot td:empty { display: none; }
+}
+@media (max-width: 520px) {
+  .where { grid-template-columns: 1fr; }
+  .entry-card { padding: 22px; }
+}
+.price-card .amount { font-size: clamp(34px, 4.6vw, 56px); white-space: nowrap; }
