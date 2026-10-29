@@ -88,7 +88,7 @@ const num = (s) => Number(String(s).replace(/[^0-9.\-]/g, ''));
   console.log('Coach: template');
   const coach = await session(browser, COACH, false);
   await go(coach, '#library');
-  check(await coach.locator('.crm-rail a[aria-current]').filter({ hasText: 'Foods & plans' }).count() === 1, 'Foods & plans is in the coach rail');
+  check(await coach.locator('.crm-rail a[aria-current]').filter({ hasText: 'Meal plans' }).count() === 1, 'Meal plans is current in the coach side menu');
   await coach.locator('[data-new="daily"]').click();
   await coach.waitForURL(/#library\/template\//);
   await coach.waitForSelector('.tp-meals .meal-card');

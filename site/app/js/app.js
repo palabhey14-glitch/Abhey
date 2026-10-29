@@ -7,6 +7,7 @@
   const S = window.RewiredStats;
   const NUI = window.RewiredNutritionUI;
   const X = window.RewiredExercises;
+  const FUI = window.RewiredFormsUI;
   const cfg = window.REWIRED_CONFIG || {};
   const root = document.getElementById('root');
   const configured =
@@ -206,6 +207,12 @@
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
     sun:
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+    forms:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>',
+    recipes:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/><path d="M10 8h5"/></svg>',
+    foods:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 8c-3-3-8-1-8 4 0 5 4 9 6 9 1 0 1.5-.5 2-.5s1 .5 2 .5c2 0 6-4 6-9 0-5-5-7-8-4z"/><path d="M12 8c0-2 1-4 3-5"/></svg>',
     phone:
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/></svg>',
   };
@@ -284,7 +291,7 @@
   // Screens without their own tab (reached from Home) keep Home lit.
   const TAB_OF = {
     checkin: 'home', photos: 'home', supps: 'home', profile: 'home', log: 'home', today: 'home', progress: 'home', hub: 'home',
-    recipes: 'meals', recipe: 'meals', 'recipe-import': 'meals',
+    recipes: 'meals', recipe: 'meals', 'recipe-import': 'meals', forms: 'home', form: 'home',
   };
 
   const COACH_SECTIONS = [
@@ -326,12 +333,24 @@
   function coachShell(title, sub, body) {
     const v = state.coachView || {};
     document.body.classList.add('crm-body');
+    const hash = location.hash || '#clients';
+    const lib = v.section === 'library' ? (hash.match(/^#library\/(recipes?|recipe-import|foods)/) ? (/foods/.test(hash) ? 'foods' : 'recipes') : 'templates') : '';
+    const item = (href, on, icon, label) => `<a href="${href}"${on ? ' aria-current="page"' : ''}>${icon}<span>${label}</span></a>`;
+    const me = state.me || {};
+    const name = (me.full_name || 'Coach').trim();
+    const initials = name.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
     const rail = `<aside class="crm-rail">
         <a class="crm-brand" href="#clients"><img src="icons/icon-192.png" alt=""><span>Rewired<small>Coach</small></span></a>
-        <a href="#clients"${v.section !== 'inbox' && v.section !== 'library' ? ' aria-current="page"' : ''}>${ICONS.profile}<span>Clients</span></a>
-        <a href="#inbox"${v.section === 'inbox' ? ' aria-current="page"' : ''}>${ICONS.checkin}<span>Check-ins</span></a>
-        <a href="#library"${v.section === 'library' ? ' aria-current="page"' : ''}>${ICONS.meals}<span>Foods &amp; plans</span></a>
-        <button type="button" class="crm-signout" data-signout>Sign out</button>
+        <p class="crm-group">Workspace</p>
+        ${item('#clients', !['inbox', 'library', 'forms'].includes(v.section), ICONS.profile, 'Clients')}
+        ${item('#inbox', v.section === 'inbox', ICONS.checkin, 'Check-ins')}
+        <p class="crm-group">Content</p>
+        ${item('#library/templates', lib === 'templates', ICONS.meals, 'Meal plans')}
+        ${item('#library/recipes', lib === 'recipes', ICONS.recipes, 'Recipes')}
+        ${item('#library/foods', lib === 'foods', ICONS.foods, 'Foods')}
+        ${item('#forms', v.section === 'forms', ICONS.forms, 'Forms')}
+        <div class="crm-me"><span class="crm-avatar" aria-hidden="true">${esc(initials)}</span><span class="crm-me-name">${esc(name)}<small>Rewired Coaching</small></span>
+          <button type="button" class="crm-signout" data-signout>Sign out</button></div>
       </aside>`;
     const sections = v.clientId
       ? `<nav class="crm-sections" aria-label="Client sections">
@@ -344,7 +363,7 @@
       ? `<button type="button" class="btn btn-ghost btn-small crm-preview" data-client-view>${ICONS.phone}<span>Client view</span></button>`
       : '';
     root.innerHTML = `<div class="crm${v.clientId ? ' with-sections' : ''}">${rail}${sections}
-      <main class="crm-main"><header class="crm-head"><h1>${esc(title)}</h1>${sub ? `<p>${esc(sub)}</p>` : ''}${(v.badges || []).map((b) => `<span class="crm-badge">${esc(b)}</span>`).join('')}${preview}</header>${body}</main></div>`;
+      <main class="crm-main"><header class="crm-head"><h1>${esc(title)}</h1>${sub ? `<p>${esc(sub)}</p>` : ''}${(v.badges || []).map((b) => `<span class="crm-badge">${esc(b)}</span>`).join('')}${preview}${v.actions ? `<div class="crm-actions">${v.actions}</div>` : ''}</header>${body}</main></div>`;
     root.querySelector('[data-signout]').addEventListener('click', signOut);
     const pv = root.querySelector('[data-client-view]');
     if (pv) pv.addEventListener('click', () => openClientView(v));
@@ -1250,6 +1269,8 @@
     const homeDue = checkinDue(ctx);
     const due = day === now ? homeDue : null;
     const exercises = session && Array.isArray(session.exercises) ? session.exercises.length : 0;
+    // Forms the coach has sent and the client hasn't finished.
+    const formsCard = state.preview ? '' : await FUI.homeCardHTML();
     const greet = !session ? `Good to see you,<br>${first}.` : session.is_rest_day ? `Recovery day,<br>${first}.` : `Ready to train,<br>${first}?`;
 
     const pills = [
@@ -1295,6 +1316,7 @@
         </div>
       </section>
 
+      ${formsCard}
       <section class="score">
         <p class="label">${day === now ? "Today's score" : 'Day score'}</p>
         <a class="big-num" href="#habits/${day}">${hit}<span>/${rows.length}</span></a>
@@ -2296,19 +2318,175 @@
       });
   }
 
-  async function renderInbox() {
-    const [clients, open] = await Promise.all([
-      sb.from('profiles').select('id, full_name, email').eq('role', 'client'),
-      sb.from('weekly_checkins').select('user_id, week_number, submitted_at, biggest_win, biggest_struggle').is('coach_feedback', null).order('submitted_at'),
-    ]).then((rs) => rs.map(must));
-    const name = new Map(clients.map((c) => [c.id, c.full_name || c.email]));
-    const rows = open.map(
-      (c) => `<tr><td><a href="#client/${c.user_id}/checkins">${esc(name.get(c.user_id) || 'Client')}</a></td><td>Week ${c.week_number}</td>
-        <td>${new Date(c.submitted_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</td><td class="wrap-text">${esc(c.biggest_struggle || c.biggest_win || '–')}</td></tr>`,
-    );
-    state.coachView = { section: 'inbox' };
-    shell('Check-ins', `${open.length} waiting for your reply`, pagedTable(['Client', 'Week', 'Sent', 'Note'], rows, 15));
-    bindPaged();
+  // Coach check-ins inbox. Every row is one week's check-in for one client:
+  // sent and waiting on the coach's reply (To do), open and due today, past
+  // its due day and not sent (Overdue), open but due tomorrow (Open), or
+  // replied to (Done). Nothing here is stored; it is worked out from
+  // weekly_checkins, each client's start date and check-in day.
+  const INBOX = { tab: 'todo', q: '', risk: '' };
+
+  // A rough flag so the coach knows who to look at first. High: two or more
+  // missed weeks, or a low score (energy, stress or digestion 4 or under,
+  // sleep under 6 hours). Medium: one missed week or a score of 5 or 6.
+  function checkinRisk(missed, c) {
+    const low = (v, n) => v !== null && v !== undefined && Number(v) <= n;
+    if (missed >= 2 || (c && (low(c.energy, 4) || low(c.stress, 4) || low(c.digestion, 4) || (c.sleep_hours !== null && Number(c.sleep_hours) < 6)))) return 'high';
+    if (missed === 1 || (c && (low(c.energy, 6) || low(c.stress, 6) || low(c.digestion, 6) || (c.sleep_hours !== null && Number(c.sleep_hours) < 7)))) return 'medium';
+    return 'low';
+  }
+
+  async function renderInbox(view) {
+    const [clients, targets, checkins] = await Promise.all([
+      sb.from('profiles').select('id, full_name, email, start_date').eq('role', 'client'),
+      sb.from('targets').select('client_id, checkin_day'),
+      sb.from('weekly_checkins').select('user_id, week_number, submitted_at, updated_at, coach_feedback, sleep_hours, stress, energy, hunger, digestion, biggest_win, biggest_struggle'),
+    ]).then((rs) => rs.map((r, i) => (i === 1 && r.error ? [] : must(r))));
+    const today = S.today();
+    const now = Date.now();
+    const dayOf = new Map(targets.map((t) => [t.client_id, t.checkin_day]));
+    const byClient = new Map();
+    checkins.forEach((c) => {
+      if (!byClient.has(c.user_id)) byClient.set(c.user_id, new Map());
+      byClient.get(c.user_id).set(c.week_number, c);
+    });
+    const days = (from) => Math.max(0, Math.floor((now - new Date(from).getTime()) / 86400000));
+    const ageText = (n) => (n === 0 ? 'Today' : n === 1 ? '1 day' : `${n} days`);
+    const short = (iso) => niceDate(iso, { day: 'numeric', month: 'short' });
+    const rows = [];
+    const perClient = [];
+    clients.forEach((p) => {
+      const sent = byClient.get(p.id) || new Map();
+      const name = p.full_name || p.email || 'Client';
+      const cday = dayOf.has(p.id) ? dayOf.get(p.id) : 0;
+      let missed = 0;
+      const items = [];
+      if (p.start_date) {
+        for (let week = 1; week <= S.WEEKS; week++) {
+          const win = S.checkinWindow(p.start_date, week, cday);
+          if (!win || win.opens > today) break;
+          const c = sent.get(week);
+          if (c) items.push({ week, win, c, kind: c.coach_feedback ? 'done' : 'todo' });
+          else if (win.due < today) { missed += 1; items.push({ week, win, kind: 'overdue' }); }
+          else items.push({ week, win, kind: win.due === today ? 'today' : 'open' });
+        }
+      }
+      // Sent check-ins outside the dated weeks (no start date yet) still count.
+      sent.forEach((c, week) => {
+        if (!items.some((it) => it.week === week)) items.push({ week, win: null, c, kind: c.coach_feedback ? 'done' : 'todo' });
+      });
+      const latest = [...sent.values()].sort((a, b) => b.week_number - a.week_number)[0];
+      const risk = checkinRisk(missed, latest);
+      items.forEach((it) => rows.push({ ...it, p, name, risk }));
+      perClient.push({ p, name, sent, missed, latest, risk, expected: items.filter((it) => it.kind !== 'open' && it.kind !== 'today').length });
+    });
+
+    const todo = rows.filter((r) => r.kind === 'todo').sort((a, b) => a.c.submitted_at.localeCompare(b.c.submitted_at));
+    const dueToday = rows.filter((r) => r.kind === 'today');
+    const overdue = rows.filter((r) => r.kind === 'overdue');
+    const open = rows.filter((r) => r.kind === 'open');
+    const done = rows.filter((r) => r.kind === 'done');
+    const weekAgo = new Date(now - 7 * 86400000).toISOString();
+    const sentThisWeek = rows.filter((r) => r.c && r.c.submitted_at >= weekAgo);
+    const reviewedThisWeek = sentThisWeek.filter((r) => r.c.coach_feedback);
+    const oldest = todo[0];
+
+    const stat = (k, v, sub, extra) => `<div class="ci-stat${extra || ''}"><p class="k">${k}</p><p class="v">${v}</p><p class="s">${esc(sub)}</p></div>`;
+    const stats = `<div class="ci-stats">
+        ${stat('Waiting on you', todo.length, todo.length ? `${todo.length === 1 ? 'Check-in' : 'Check-ins'} to reply to` : 'Nothing to review')}
+        ${stat('Oldest waiting', oldest ? ageText(days(oldest.c.submitted_at)) : 'None', oldest ? oldest.name : 'Queue is clear')}
+        ${stat('Due today', dueToday.length, dueToday.length ? 'Not sent yet' : 'Nothing due today')}
+      </div><div class="ci-stats two">
+        ${stat('Overdue', overdue.length, overdue.length ? 'Past the check-in day, not sent' : 'Nothing past due')}
+        ${stat('Reviewed this week', reviewedThisWeek.length, `Of ${sentThisWeek.length} submitted in the last 7 days`)}
+      </div>`;
+
+    const tabs = `<nav class="crm-tabs" aria-label="Check-ins"><a href="#inbox"${view !== 'insights' ? ' aria-current="page"' : ''}>Inbox</a><a href="#inbox/insights"${view === 'insights' ? ' aria-current="page"' : ''}>Insights</a></nav>`;
+    const actions = '';
+    state.coachView = { section: 'inbox', actions: '<a class="btn btn-small ci-dark" href="#forms">Send form</a>' };
+
+    if (view === 'insights') {
+      const avg = (vals) => { const v = vals.filter((x) => x !== null && x !== undefined).map(Number); return v.length ? (v.reduce((a, b) => a + b, 0) / v.length).toFixed(1) : '–'; };
+      const replyDays = [];
+      const body = perClient.sort((a, b) => a.name.localeCompare(b.name)).map((x) => {
+        const list = [...x.sent.values()];
+        const replied = list.filter((c) => c.coach_feedback);
+        replied.forEach((c) => replyDays.push((new Date(c.updated_at) - new Date(c.submitted_at)) / 86400000));
+        const recent = list.sort((a, b) => b.week_number - a.week_number).slice(0, 4);
+        const rate = x.expected ? `${Math.round((Math.min(list.length, x.expected) / x.expected) * 100)}%` : '–';
+        return `<tr><td><a href="#client/${x.p.id}/checkins">${esc(x.name)}</a></td><td>${list.length} of ${x.expected}</td><td>${rate}</td>
+          <td>${avg(recent.map((c) => c.energy))}</td><td>${avg(recent.map((c) => c.stress))}</td><td>${avg(recent.map((c) => c.sleep_hours))}</td>
+          <td><span class="ci-risk ${x.risk}">${x.risk[0].toUpperCase() + x.risk.slice(1)}</span></td></tr>`;
+      });
+      const avgReply = replyDays.length ? replyDays.reduce((a, b) => a + b, 0) / replyDays.length : null;
+      const totalExpected = perClient.reduce((a, x) => a + x.expected, 0);
+      const totalSent = perClient.reduce((a, x) => a + Math.min(x.sent.size, x.expected), 0);
+      shell('Check-ins', 'How check-ins are going across your clients', `${actions}${tabs}
+        <div class="ci-stats">
+          ${stat('Submission rate', totalExpected ? `${Math.round((totalSent / totalExpected) * 100)}%` : '–', `${totalSent} of ${totalExpected} check-ins that were due`)}
+          ${stat('Average reply time', avgReply === null ? '–' : avgReply < 1 ? 'Same day' : `${avgReply.toFixed(1)} days`, 'From sent to your feedback')}
+          ${stat('Clients at high risk', perClient.filter((x) => x.risk === 'high').length, 'Missed weeks or low scores')}
+        </div>
+        ${body.length ? `<div class="card table-card"><div class="table-wrap"><table class="crm-table"><thead><tr><th>Client</th><th>Sent</th><th>On record</th><th>Energy (last 4)</th><th>Stress (last 4, 10 = low)</th><th>Sleep h (last 4)</th><th>Risk</th></tr></thead><tbody>${body.join('')}</tbody></table></div></div>` : '<div class="card"><p>No clients yet.</p></div>'}
+        <p class="hint">Risk is a rough flag. High means two or more missed check-ins, or a latest score of 4 or under (or under 6 hours of sleep). Medium means one missed check-in, or a latest score of 5 or 6 (or under 7 hours of sleep).</p>`);
+      return;
+    }
+
+    const lists = { todo, today: dueToday, overdue, open, done };
+    const TABS = [['todo', 'To do'], ['today', 'Due today'], ['overdue', 'Overdue'], ['open', 'Open'], ['done', 'Done']];
+    const head = `${actions}${tabs}${stats}
+      <div class="ci-filters">
+        <label class="ci-search"><span class="sr-only">Search client or email</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" placeholder="Search client or email" value="${esc(INBOX.q)}" data-ci-q></label>
+        <div class="ci-seg" role="tablist" aria-label="Show">${TABS.map(([k, l]) => `<button type="button" role="tab" data-ci-tab="${k}" aria-selected="${INBOX.tab === k}">${l} <b>${lists[k].length}</b></button>`).join('')}</div>
+        <label class="ci-select"><span class="sr-only">Risk</span><select data-ci-risk><option value="">Risk: all</option><option value="high"${INBOX.risk === 'high' ? ' selected' : ''}>High</option><option value="medium"${INBOX.risk === 'medium' ? ' selected' : ''}>Medium</option><option value="low"${INBOX.risk === 'low' ? ' selected' : ''}>Low</option></select></label>
+      </div>
+      <div class="card table-card ci-table" data-ci-table></div>`;
+    shell('Check-ins', todo.length ? `${todo.length} waiting on you` : 'Nothing waiting on you', head);
+
+    const box = root.querySelector('[data-ci-table]');
+    const PER = 10;
+    let page = 0;
+    const draw = () => {
+      const q = INBOX.q.trim().toLowerCase();
+      const list = lists[INBOX.tab].filter((r) => (!q || `${r.name} ${r.p.email || ''}`.toLowerCase().includes(q)) && (!INBOX.risk || r.risk === INBOX.risk));
+      const pages = Math.max(1, Math.ceil(list.length / PER));
+      page = Math.min(page, pages - 1);
+      const shown = list.slice(page * PER, page * PER + PER);
+      const rowHTML = (r) => {
+        const age = r.kind === 'todo' ? ageText(days(r.c.submitted_at)) : r.kind === 'overdue' ? `${ageText(S.daysBetween(r.win.due, today))} late` : '–';
+        return `<tr data-href="#client/${r.p.id}/checkins" tabindex="0"><td><a href="#client/${r.p.id}/checkins"><b>${esc(r.name)}</b></a><span class="ci-sub">Week ${r.week}${r.p.email ? ` · ${esc(r.p.email)}` : ''}</span></td>
+          <td>${r.win ? esc(short(r.win.due)) : '–'}</td>
+          <td>${r.c ? esc(new Date(r.c.submitted_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })) : '<span class="ci-muted">Not yet</span>'}</td>
+          <td>${r.c && r.c.coach_feedback ? esc(new Date(r.c.updated_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })) : '<span class="ci-muted">–</span>'}</td>
+          <td>${age}</td><td><span class="ci-risk ${r.risk}">${r.risk[0].toUpperCase() + r.risk.slice(1)}</span></td></tr>`;
+      };
+      const empty = {
+        todo: ['Nothing to reply to', 'When a client sends their weekly check-in it lands here until you reply.'],
+        today: ['Nothing due today', 'Clients whose check-in day is today show here until they send it.'],
+        overdue: ['Nothing overdue', 'Check-ins past their day that were never sent show here.'],
+        open: ['Nothing open', 'Check-ins open the day before each client’s check-in day.'],
+        done: ['No replies yet', 'Check-ins you have replied to show here.'],
+      }[INBOX.tab];
+      const filtered = lists[INBOX.tab].length && !list.length;
+      box.innerHTML = `<div class="table-wrap"><table class="crm-table"><thead><tr><th>Client</th><th>Due</th><th>Submitted</th><th>Responded</th><th>Ageing</th><th>Risk</th></tr></thead>
+        <tbody>${shown.map(rowHTML).join('')}</tbody></table></div>
+        ${list.length ? '' : `<div class="ci-empty"><span class="ci-empty-icon" aria-hidden="true">${ICONS.checkin}</span><p class="t">${filtered ? 'No matches' : clients.length ? empty[0] : 'No clients yet'}</p><p>${filtered ? 'Try a different search or risk filter.' : clients.length ? empty[1] : 'Add a client in Supabase and their check-ins land here.'}</p></div>`}
+        <div class="pager"><span>Showing ${list.length ? page * PER + 1 : 0}–${Math.min(list.length, page * PER + PER)} of ${list.length}</span><span class="pager-btns"><button type="button" class="btn btn-ghost btn-small" data-prev aria-label="Previous page"${page === 0 ? ' disabled' : ''}>‹</button><button type="button" class="btn btn-ghost btn-small" data-next aria-label="Next page"${page >= pages - 1 ? ' disabled' : ''}>›</button></span></div>`;
+      box.querySelector('[data-prev]').addEventListener('click', () => { page -= 1; draw(); });
+      box.querySelector('[data-next]').addEventListener('click', () => { page += 1; draw(); });
+      box.querySelectorAll('tr[data-href]').forEach((tr) => {
+        tr.addEventListener('click', (e) => { if (!e.target.closest('a')) location.hash = tr.dataset.href; });
+        tr.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target === tr) location.hash = tr.dataset.href; });
+      });
+    };
+    root.querySelectorAll('[data-ci-tab]').forEach((b) => b.addEventListener('click', () => {
+      INBOX.tab = b.dataset.ciTab;
+      page = 0;
+      root.querySelectorAll('[data-ci-tab]').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
+      draw();
+    }));
+    root.querySelector('[data-ci-q]').addEventListener('input', (e) => { INBOX.q = e.target.value; page = 0; draw(); });
+    root.querySelector('[data-ci-risk]').addEventListener('change', (e) => { INBOX.risk = e.target.value; page = 0; draw(); });
+    draw();
   }
 
   // ---------------------------------------------------------------- coach
@@ -3345,6 +3523,7 @@
     sb, state, root, S, COACH, ICONS, esc, fmt, toast, friendlyError, readForm, withBusy, must, niceDate,
     shell, loadCtx, invalidate, sectionTabs, statCards, dotCell,
   });
+  FUI.init({ sb, state, COACH, esc, fmt, friendlyError, must, shell, invalidate });
 
   // ---------------------------------------------------------------- router
 
@@ -3360,8 +3539,11 @@
 
       if (state.me.role === 'coach') {
         if (parts[0] === 'client' && parts[1]) return await renderClient(parts[1], parts[2], parts[3], parts[4]);
-        if (parts[0] === 'inbox') return await renderInbox();
+        if (parts[0] === 'inbox') return await renderInbox(parts[1]);
         if (parts[0] === 'library') return await NUI.library(parts[1], parts[2], parts[3]);
+        if (parts[0] === 'forms' && parts[1] && parts[2] === 'responses') return await FUI.responses(parts[1], parts[3]);
+        if (parts[0] === 'forms' && parts[1]) return await FUI.builder(parts[1]);
+        if (parts[0] === 'forms') return await FUI.library();
         return await renderClients();
       }
 
@@ -3392,6 +3574,10 @@
           return await renderProgress();
         case 'profile':
           return await renderProfile();
+        case 'forms':
+          return await FUI.clientList();
+        case 'form':
+          return await FUI.clientForm(parts[1]);
         default:
           // #today/<day> was the old home; keep it working.
           return await renderHome(parts[1]);

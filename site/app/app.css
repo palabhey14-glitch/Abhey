@@ -1687,3 +1687,67 @@ svg.mx text { fill: #7a879b; font: 600 9px var(--font); letter-spacing: 0.06em; 
 .cn-mk b { color: var(--navy); margin-right: 4px; }
 .cn-meals .fi-list { margin: 0 0 10px; }
 .cn-flex { margin: 4px 0 0; }
+
+/* ----- Coach side menu: grouped, dark ----- */
+.crm-rail { background: #14181f; color: #c3cad6; border-right: 0; gap: 2px; overflow-y: auto; }
+.crm-brand { color: var(--white) !important; margin-bottom: 14px; }
+.crm-brand small { color: #8fb0ff; }
+.crm-group { margin: 16px 12px 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #7c8594; }
+.crm-rail > a:not(.crm-brand) { color: #d5dae3; font-weight: 500; border-radius: 10px; padding: 9px 12px; }
+.crm-rail > a:hover { background: rgba(255, 255, 255, 0.06); }
+.crm-rail > a[aria-current='page'] { background: rgba(143, 176, 255, 0.16); color: var(--white); box-shadow: inset 3px 0 0 #8fb0ff; }
+.crm-rail > a[aria-current='page'] svg { color: #8fb0ff; }
+.crm-me { margin-top: auto; display: grid; grid-template-columns: 34px 1fr; align-items: center; gap: 4px 10px; padding: 12px 6px 2px; border-top: 1px solid rgba(255, 255, 255, 0.08); }
+.crm-avatar { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: var(--brand-blue); color: var(--white); font-size: 13px; font-weight: 700; }
+.crm-me-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--white); font-size: 14px; font-weight: 600; }
+.crm-me-name small { display: block; color: #8b93a1; font-size: 12px; font-weight: 500; }
+.crm-me .crm-signout { grid-column: 1 / -1; margin-top: 8px; border-color: rgba(255, 255, 255, 0.14); color: #c3cad6; border-radius: 10px; }
+.crm-me .crm-signout:hover { background: rgba(255, 255, 255, 0.06); }
+@media (max-width: 900px) {
+  /* Phones keep the light bottom bar; it scrolls sideways when it is full. */
+  .crm-rail { background: rgba(255, 255, 255, 0.96); justify-content: flex-start; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+  .crm-rail::-webkit-scrollbar { display: none; }
+  .crm-rail > a:not(.crm-brand) { flex: none; padding: 6px 10px; box-shadow: none !important; color: var(--muted); }
+  .crm-rail > a[aria-current='page'] { color: var(--navy); }
+  .crm-rail > a[aria-current='page'] svg { color: var(--brand-blue); }
+  .crm-group, .crm-me-name, .crm-avatar { display: none; }
+  .crm-me { flex: none; margin: 0; padding: 0; border: 0; display: block; align-self: center; }
+  .crm-me .crm-signout { margin: 0; border: 0; color: var(--muted); }
+}
+
+/* ----- Coach check-ins inbox ----- */
+.crm-actions { margin-left: auto; display: flex; gap: 8px; align-self: center; }
+.ci-dark { background: #14181f; color: var(--white); border-color: #14181f; }
+.ci-dark:hover { background: #262c36; }
+.ci-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.ci-stats.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ci-stat { padding: 16px 18px; background: var(--white); border-radius: 16px; box-shadow: var(--soft); }
+.ci-stat .k { margin: 0; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
+.ci-stat .v { margin: 8px 0 2px; font: 600 28px var(--display); letter-spacing: -0.02em; color: var(--navy); }
+.ci-stat .s { margin: 0; font-size: 13px; color: var(--ink-2); }
+.ci-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.ci-search { position: relative; flex: 1 1 240px; max-width: 300px; }
+.ci-search svg { position: absolute; left: 12px; top: 50%; width: 16px; height: 16px; transform: translateY(-50%); color: var(--ink-2); pointer-events: none; }
+.ci-search input { width: 100%; min-height: 38px; padding: 0 12px 0 36px; border: 1px solid var(--hair); border-radius: 10px; background: var(--white); font: inherit; font-size: 14px; }
+.ci-seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; background: #e8ebf1; border-radius: 10px; }
+.ci-seg button { min-height: 32px; padding: 0 12px; border: 0; border-radius: 8px; background: none; color: var(--ink-2); font: inherit; font-size: 14px; cursor: pointer; }
+.ci-seg button b { font-weight: 600; }
+.ci-seg button[aria-selected='true'] { background: var(--white); color: var(--navy); box-shadow: 0 1px 2px rgba(20, 24, 31, 0.12); }
+.ci-select select { min-height: 38px; padding: 0 30px 0 12px; border: 1px solid var(--hair); border-radius: 10px; background-color: var(--white); font: inherit; font-size: 14px; }
+.ci-table th { text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px; }
+.ci-table tbody tr { cursor: pointer; }
+.ci-sub { display: block; font-size: 12px; color: var(--ink-2); }
+.ci-muted { color: var(--ink-2); }
+.ci-risk { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+.ci-risk.low { background: #e4f3eb; color: #1f7a55; }
+.ci-risk.medium { background: #fff1d6; color: #9a6200; }
+.ci-risk.high { background: #fde4e4; color: #b42318; }
+.ci-empty { display: grid; justify-items: center; gap: 4px; padding: 34px 16px 30px; text-align: center; color: var(--ink-2); }
+.ci-empty p { margin: 0; }
+.ci-empty .t { margin-top: 6px; font: 600 20px var(--display); color: var(--navy); }
+.ci-empty-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: #eef1f6; color: var(--navy); }
+.ci-empty-icon svg { width: 20px; height: 20px; }
+@media (max-width: 900px) {
+  .ci-stats, .ci-stats.two { grid-template-columns: 1fr 1fr; }
+  .ci-search { max-width: none; }
+}
