@@ -8,6 +8,7 @@
   const NUI = window.RewiredNutritionUI;
   const X = window.RewiredExercises;
   const FUI = window.RewiredFormsUI;
+  const MSG = window.RewiredMessages;
   const cfg = window.REWIRED_CONFIG || {};
   const root = document.getElementById('root');
   const configured =
@@ -181,6 +182,8 @@
   }
 
   const ICONS = {
+    messages:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>',
     home:
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>',
     habits:
@@ -287,6 +290,7 @@
     ['meals', 'Meal plan'],
     ['training', 'Training'],
     ['habits', 'Habits'],
+    ['messages', 'Messages'],
   ];
   // Screens without their own tab (reached from Home) keep Home lit.
   const TAB_OF = {
@@ -324,8 +328,9 @@
       </header>
       <main class="screen">${body}</main>
       <nav class="tabs" aria-label="Main">${CLIENT_TABS.map(
-        ([id, label]) => `<a href="#${id}"${active === id ? ' aria-current="page"' : ''}>${ICONS[id]}<span>${label}</span></a>`,
+        ([id, label]) => `<a href="#${id}"${active === id ? ' aria-current="page"' : ''}>${ICONS[id]}<span>${label}</span>${id === 'messages' ? '<b class="nav-badge" data-msg-badge hidden></b>' : ''}</a>`,
       ).join('')}</nav>`;
+    if (!state.preview) MSG.badge();
     window.scrollTo(0, 0);
   }
 
@@ -342,8 +347,9 @@
     const rail = `<aside class="crm-rail">
         <a class="crm-brand" href="#clients"><img src="icons/icon-192.png" alt=""><span>Rewired<small>Coach</small></span></a>
         <p class="crm-group">Workspace</p>
-        ${item('#clients', !['inbox', 'library', 'forms'].includes(v.section), ICONS.profile, 'Clients')}
+        ${item('#clients', !['inbox', 'library', 'forms', 'messages'].includes(v.section), ICONS.profile, 'Clients')}
         ${item('#inbox', v.section === 'inbox', ICONS.checkin, 'Check-ins')}
+        ${item('#messages', v.section === 'messages', ICONS.messages, 'Messages<b class="nav-badge" data-msg-badge hidden></b>')}
         <p class="crm-group">Content</p>
         ${item('#library/templates', lib === 'templates', ICONS.meals, 'Meal plans')}
         ${item('#library/recipes', lib === 'recipes', ICONS.recipes, 'Recipes')}
@@ -365,6 +371,7 @@
     root.innerHTML = `<div class="crm${v.clientId ? ' with-sections' : ''}">${rail}${sections}
       <main class="crm-main"><header class="crm-head"><h1>${esc(title)}</h1>${sub ? `<p>${esc(sub)}</p>` : ''}${(v.badges || []).map((b) => `<span class="crm-badge">${esc(b)}</span>`).join('')}${preview}${v.actions ? `<div class="crm-actions">${v.actions}</div>` : ''}</header>${body}</main></div>`;
     root.querySelector('[data-signout]').addEventListener('click', signOut);
+    MSG.badge();
     const pv = root.querySelector('[data-client-view]');
     if (pv) pv.addEventListener('click', () => openClientView(v));
     const current = root.querySelector('.crm-sections [aria-current]');
@@ -3536,6 +3543,7 @@
     shell, loadCtx, invalidate, sectionTabs, statCards, dotCell,
   });
   FUI.init({ sb, state, COACH, esc, fmt, friendlyError, must, shell, invalidate });
+  MSG.init({ sb, state, COACH, esc, friendlyError, toast, shell });
 
   // ---------------------------------------------------------------- router
 
@@ -3552,6 +3560,7 @@
       if (state.me.role === 'coach') {
         if (parts[0] === 'client' && parts[1]) return await renderClient(parts[1], parts[2], parts[3], parts[4]);
         if (parts[0] === 'inbox') return await renderInbox(parts[1]);
+        if (parts[0] === 'messages') return await MSG.coachInbox(parts[1]);
         if (parts[0] === 'library') return await NUI.library(parts[1], parts[2], parts[3]);
         if (parts[0] === 'forms' && parts[1] && parts[2] === 'responses') return await FUI.responses(parts[1], parts[3]);
         if (parts[0] === 'forms' && parts[1]) return await FUI.builder(parts[1]);
@@ -3590,6 +3599,8 @@
           return await FUI.clientList();
         case 'form':
           return await FUI.clientForm(parts[1]);
+        case 'messages':
+          return await MSG.clientThread();
         default:
           // #today/<day> was the old home; keep it working.
           return await renderHome(parts[1]);

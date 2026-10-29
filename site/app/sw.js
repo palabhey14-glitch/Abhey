@@ -17,6 +17,7 @@ const SHELL = [
   'js/nutrition-ui.js',
   'js/forms.js',
   'js/forms-ui.js',
+  'js/messages.js',
   'js/app.js',
   'manifest.webmanifest',
   '../assets/fonts/montserrat-latin.woff2',
