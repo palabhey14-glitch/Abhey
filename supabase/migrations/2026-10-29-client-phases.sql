@@ -34,7 +34,7 @@ create policy "coach deletes phases" on public.client_phases for delete to authe
 
 -- The active switch runs as one transaction so there is never a partial swap.
 create or replace function public.activate_client_phase(p_phase_id uuid)
-returns void language plpgsql security definer set search_path = public as $$
+returns void language plpgsql security invoker set search_path = '' as $$
 declare target_client uuid;
 begin
   if not public.is_coach() then raise exception 'Coach access required'; end if;
@@ -45,6 +45,6 @@ begin
     where client_id = target_client and status = 'active' and id <> p_phase_id;
   update public.client_phases set status = 'active', completed_at = null, updated_at = now()
     where id = p_phase_id;
-end $$;
+end; $$;
 revoke all on function public.activate_client_phase(uuid) from public, anon;
 grant execute on function public.activate_client_phase(uuid) to authenticated;
