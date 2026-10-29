@@ -20,12 +20,14 @@ and answers, even after the form changes. Forms can be paused or archived.
 
 ## Activation
 
-This feature was prepared and tested locally; it has not been deployed.
+This feature was deployed on 30 October 2026 after approval. The live app assets,
+public lead-form endpoint and new database tables were verified. Armin's existing
+client records matched before and after deployment.
 
-After preview approval, apply migration
-`20261029232718_prospects_and_lead_forms.sql` before deploying the app assets and
-`netlify/functions/lead-forms.js`. It only adds prospect/form tables, policies and
-functions; it does not update existing client, training or log rows.
+Migration `20261029232718_prospects_and_lead_forms.sql` was applied before the app
+assets and `netlify/functions/lead-forms.js` were deployed. It only adds prospect
+and form tables, policies and functions; it does not update existing client,
+training or log rows.
 
 The public endpoint uses the existing server Supabase configuration. It returns
 only published form fields, validates submissions and stores a hash of the
