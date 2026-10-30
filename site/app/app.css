@@ -1555,8 +1555,11 @@ svg.mx text { fill: #7a879b; font: 600 9px var(--font); letter-spacing: 0.06em; 
 .nutrition-date-row label { margin: 0; color: var(--navy); font-weight: 700; }
 .nutrition-date-row input { width: auto; min-height: 38px; }
 .nutrition-supps-link { display: flex; align-items: center; gap: 12px; padding: 16px; border-radius: 16px; background: var(--white); color: var(--navy); text-decoration: none; box-shadow: var(--soft); }
+.nutrition-supps-icon { display: grid; place-items: center; flex: 0 0 38px; width: 38px; height: 38px; border-radius: 11px; background: #e9edff; color: var(--brand-blue); }
+.nutrition-supps-icon svg { display: block; width: 20px; height: 20px; }
 .nutrition-supps-link > span:nth-child(2) { flex: 1; display: grid; gap: 3px; }
 .nutrition-supps-link small { color: var(--muted); }
+.nutrition-supps-chevron { flex: none; font-size: 22px; line-height: 1; color: var(--muted); }
 .client-intake ul, .client-exercise-library ul { list-style: none; margin: 0 0 14px; padding: 0; }
 .client-intake li, .client-exercise-library li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
 .client-intake li span { display: grid; gap: 3px; }
@@ -1590,7 +1593,7 @@ svg.mx text { fill: #7a879b; font: 600 9px var(--font); letter-spacing: 0.06em; 
 .training-plan-extra span:last-child { display: grid; gap: 3px; }
 .training-plan-extra small { color: var(--muted); }
 .back-link { display: inline-block; margin: 0 0 12px; color: var(--brand-blue); text-decoration: none; font-weight: 700; }
-.wl-prestart .wl-set-labels, .wl-prestart .wl-sets, .wl-prestart .wl-ex-actions, .wl-prestart .wl-ex-note, .wl-prestart .wl-active-toolbar, .wl-prestart .wl-finish, .wl-prestart > label:last-of-type { display: none !important; }
+.wl-prestart .wl-set-labels, .wl-prestart .wl-sets, .wl-prestart .wl-ex-actions, .wl-prestart .wl-ex-note, .wl-prestart .wl-active-toolbar, .wl-prestart .wl-save-line, .wl-prestart .wl-finish, .wl-prestart > label:last-of-type { display: none !important; }
 .wl:not(.wl-prestart) .wl-start { display: none; }
 .wl-set-labels, .wl-set { display: grid; grid-template-columns: 36px minmax(0, 1fr) minmax(0, 1fr) minmax(95px, 1.1fr) 28px; gap: 8px; align-items: center; }
 .wl-set-labels { color: var(--muted); font-size: 11px; }
@@ -1606,6 +1609,9 @@ svg.mx text { fill: #7a879b; font: 600 9px var(--font); letter-spacing: 0.06em; 
 .wl-ex-actions { display: flex; justify-content: center; gap: 30px; }
 .wl-ex-note { width: 100%; }
 .wl-active-toolbar { display: flex; align-items: center; justify-content: space-between; }
+.wl-active-toolbar [data-rest-display] { color: var(--brand-blue); font-size: 12px; font-weight: 700; }
+.wl-save-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 12px; }
+.wl-save-line button { border: 0; background: none; color: var(--brand-blue); font: 700 12px var(--font); cursor: pointer; }
 .wl-finish { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .wl-finish > * { text-align: center; }
 .workout-menu { display: grid; }
@@ -1615,10 +1621,36 @@ svg.mx text { fill: #7a879b; font: 600 9px var(--font); letter-spacing: 0.06em; 
 .workout-menu button[data-menu-action="delete"] { color: #bd3131; }
 .workout-ex-picker { display: grid; max-height: 55vh; overflow: auto; }
 .workout-ex-picker button { padding: 12px; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--navy); text-align: left; cursor: pointer; }
+.training-cancel { justify-self: start; border: 0; background: none; color: #b82434; font: 700 13px var(--font); cursor: pointer; }
+body.app.has-active-workout { padding-bottom: calc(156px + env(safe-area-inset-bottom)); }
+.workout-mini { position: fixed; z-index: 6; left: 50%; bottom: calc(68px + env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(696px, calc(100% - 24px)); box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #b9c6ff; border-radius: 16px; background: #f2f5ff; color: var(--navy); box-shadow: 0 12px 30px rgba(19, 39, 105, .18); }
+.workout-mini-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--brand-blue); box-shadow: 0 0 0 4px #dce4ff; }
+.workout-mini > span:nth-child(2) { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.workout-mini b { font-size: 12px; }
+.workout-mini small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 11px; }
+.workout-mini strong { font-size: 13px; font-variant-numeric: tabular-nums; }
+.workout-mini a { color: var(--brand-blue); font-size: 12px; font-weight: 800; white-space: nowrap; text-decoration: none; }
+.supp-today { display: grid; gap: 14px; }
+.supp-today-head h2 { margin: 3px 0 5px; }
+.supp-today-head .hint { margin: 0; }
+.supp-today-list { display: grid; gap: 10px; }
+.supp-today-item { display: flex; align-items: center; gap: 12px; padding: 13px; border: 1px solid var(--line); border-radius: 15px; background: #fbfcff; }
+.supp-today-icon { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 11px; background: #e9edff; color: var(--brand-blue); }
+.supp-today-icon svg { display: block; width: 19px; height: 19px; }
+.supp-today-copy { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.supp-today-copy b { font-size: 14px; }
+.supp-today-copy small { color: var(--muted); font-size: 12px; }
+.supp-frequency { width: fit-content; padding: 3px 7px; border-radius: 99px; background: #e9edff; color: var(--brand-blue); font-size: 10px; font-weight: 800; }
+.supp-today-action { display: grid; justify-items: end; gap: 6px; text-align: right; }
+.supp-today-action > span { color: var(--muted); font-size: 11px; }
+.supp-today-action > span.is-taken { color: #137451; font-weight: 800; }
+.supp-today-action button { min-height: 34px; padding: 7px 9px; border: 0; border-radius: 9px; background: var(--brand-blue); color: white; font: 700 11px var(--font); cursor: pointer; }
 @media (max-width: 560px) {
   .wl-set-labels, .wl-set { grid-template-columns: 24px minmax(52px, 1fr) minmax(52px, 1fr) minmax(76px, 1.1fr) 24px; gap: 4px; }
   .wl-set input, .wl-set select { padding: 7px 3px; font-size: 12px; }
   .training-shortcuts a { font-size: 12px; padding: 12px; }
+  .supp-today-item { align-items: flex-start; flex-wrap: wrap; }
+  .supp-today-action { width: 100%; display: flex; align-items: center; justify-content: space-between; text-align: left; }
 }
 
 /* Extra meals a client adds on the meal plan page */

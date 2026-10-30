@@ -19,6 +19,7 @@
   const PRUI = window.RewiredProspectsUI;
   const FUI = window.RewiredFormsUI;
   const MSG = window.RewiredMessages;
+  const FILES = window.RewiredFilesUI;
   const cfg = window.REWIRED_CONFIG || {};
   const root = document.getElementById('root');
   const configured =
@@ -76,7 +77,7 @@
     { name: 'Magnesium (glycinate)', dose: '200–350 mg', when: 'Evening', why: 'Only if dietary intake is low. May help sleep quality', evidence: 'Limited', priority: 'Optional' },
   ];
 
-  const state = { session: null, me: null, ctx: {}, renderId: 0 };
+  const state = { session: null, me: null, ctx: {}, renderId: 0, workoutSession: null, workoutSaveQueue: Promise.resolve() };
 
   // ---------------------------------------------------------------- helpers
 
@@ -193,6 +194,7 @@
 
   const ICONS = {
     prospects: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="7" r="4"/><path d="M2 21c0-5 3-7 7-7s7 2 7 7M19 7v6m-3-3h6"/></svg>',
+    files: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 10h18"/></svg>',
     messages:
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>',
     home:
@@ -241,6 +243,11 @@
       state.me = { ...must(await sb.from('profiles').select('*').eq('id', PREVIEW).single()), role: 'client' };
       state.preview = true;
       document.body.classList.add('is-preview');
+    }
+    if (state.me.role === 'client' && !state.preview) {
+      const session = await sb.from('client_workout_sessions').select('*').eq('user_id', state.me.id).maybeSingle();
+      setActiveWorkout(session.error ? null : session.data);
+      state.workoutSessionReady = !session.error;
     }
   }
 
@@ -337,6 +344,24 @@
     ['checkins', 'Check-ins'],
   ];
 
+  function workoutElapsed() {
+    if (!state.workoutSession) return '00:00';
+    const seconds = Math.max(0, Math.floor((Date.now() - Date.parse(state.workoutSession.started_at)) / 1000));
+    return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+  }
+
+  function updateWorkoutTimer() {
+    document.querySelectorAll('[data-workout-timer], [data-elapsed]').forEach((el) => (el.textContent = workoutElapsed()));
+  }
+
+  function setActiveWorkout(session) {
+    state.workoutSession = session;
+    document.body.classList.toggle('has-active-workout', Boolean(session));
+    if (state.workoutClock) clearInterval(state.workoutClock);
+    state.workoutClock = session ? setInterval(updateWorkoutTimer, 1000) : null;
+    updateWorkoutTimer();
+  }
+
   // opts.center replaces the title with other markup (Home puts its day picker there).
   function shell(title, sub, body, tab, opts) {
     const isCoach = state.me && state.me.role === 'coach';
@@ -352,10 +377,12 @@
         <a class="icon-btn avatar" href="#profile" aria-label="Profile">${esc(initial)}</a>
       </header>
       <main class="screen">${body}</main>
+      ${state.workoutSession ? `<aside class="workout-mini" aria-label="Workout in progress"><span class="workout-mini-dot" aria-hidden="true"></span><span><b>Workout in progress</b><small>${esc(state.workoutSession.session_name || 'Training session')}</small></span><strong data-workout-timer>${workoutElapsed()}</strong><a href="#training/log/${esc(state.workoutSession.day)}/${Number(state.workoutSession.cycle_day)}">Resume ›</a></aside>` : ''}
       <nav class="tabs" aria-label="Main">${CLIENT_TABS.map(
         ([id, label]) => `<a href="#${id}"${active === id ? ' aria-current="page"' : ''}>${ICONS[id]}<span>${label}</span>${id === 'messages' ? '<b class="nav-badge" data-msg-badge hidden></b>' : ''}</a>`,
       ).join('')}</nav>`;
     if (!state.preview) MSG.badge();
+    updateWorkoutTimer();
     window.scrollTo(0, 0);
   }
 
@@ -372,10 +399,11 @@
     const rail = `<aside class="crm-rail">
         <a class="crm-brand" href="#clients"><img src="icons/icon-192.png" alt=""><span>Rewired<small>Coach</small></span></a>
         <p class="crm-group">Workspace</p>
-        ${item('#clients', !['prospects', 'inbox', 'library', 'exercise-library', 'forms', 'messages'].includes(v.section), ICONS.profile, 'Clients')}
+        ${item('#clients', !['prospects', 'inbox', 'library', 'exercise-library', 'forms', 'messages', 'files'].includes(v.section), ICONS.profile, 'Clients')}
         ${item('#prospects', v.section === 'prospects', ICONS.prospects, 'Prospects')}
         ${item('#inbox', v.section === 'inbox', ICONS.checkin, 'Check-ins')}
         ${item('#messages', v.section === 'messages', ICONS.messages, 'Messages<b class="nav-badge" data-msg-badge hidden></b>')}
+        ${item('#files', v.section === 'files', ICONS.files, 'Files')}
         <p class="crm-group">Content</p>
         ${item('#library/templates', lib === 'templates', ICONS.meals, 'Meal plans')}
         ${item('#library/recipes', lib === 'recipes', ICONS.recipes, 'Recipes')}
@@ -1458,6 +1486,7 @@
         : nextSent ? `Week ${next.week} sent` : `Week ${next.week} due ${niceDate(next.due, { weekday: 'long', day: 'numeric', month: 'short' })}`],
       ['#photos', ICONS.photos, 'Progress photos', 'Front, side and back each week'],
       ['#supps', ICONS.supps, 'Supplements', ctx.supplements.length ? `${ctx.supplements.length} from ${COACH}` : 'Your plan and the general guide'],
+      ['#files', ICONS.files, 'Files', 'Guides and resources shared by your coach'],
       ['#profile', ICONS.profile, 'Profile and targets', 'Your details and 12-week goals'],
     ];
     shell(
@@ -1548,16 +1577,17 @@
     const prog = programFor(ctx, day);
     const training = prog.sessions.filter((r) => !r.is_rest_day);
     const existing = ctx.workouts.find((w) => w.day === day);
-    const chosen = cycleDay || (existing && existing.cycle_day) || (training.some((r) => r.cycle_day === prog.scheduled) ? prog.scheduled : training[0] && training[0].cycle_day);
+    const active = state.workoutSession && state.workoutSession.day === day ? state.workoutSession : null;
+    const chosen = (active && active.cycle_day) || cycleDay || (existing && existing.cycle_day) || (training.some((r) => r.cycle_day === prog.scheduled) ? prog.scheduled : training[0] && training[0].cycle_day);
     const session = prog.sessions.find((r) => r.cycle_day === chosen);
     const scheduledRest = prog.sessions.find((r) => r.cycle_day === prog.scheduled && r.is_rest_day);
-    const sameSession = existing && existing.cycle_day === chosen;
-    const exerciseRows = sameSession ? existing.exercises.map((entry) => {
-      const assigned = session?.exercises?.find((ex) => ex.exercise_id && ex.exercise_id === entry.exercise_id || X.normalise(ex.name) === X.normalise(entry.name));
+    const saved = active?.draft?.exercises ? active.draft : existing && existing.cycle_day === chosen ? existing : null;
+    const exerciseRows = saved ? saved.exercises.map((entry) => {
+      const assigned = session?.exercises?.find((ex) => (ex.exercise_id && ex.exercise_id === entry.exercise_id) || X.normalise(ex.name) === X.normalise(entry.name));
       return assigned ? { ...assigned, name: entry.name, exercise_id: entry.exercise_id || assigned.exercise_id, primary: entry.primary || assigned.primary } : { ...entry, sets: entry.sets.length, reps_min: null, reps_max: null };
     }) : (session?.exercises || []);
-    const rows = session && !session.is_rest_day ? exerciseRows.map((ex, i) => {
-      const logged = sameSession ? ((existing.exercises || []).find((e) => ex.exercise_id && e.exercise_id === ex.exercise_id) || (existing.exercises || []).find((e) => X.normalise(e.name) === X.normalise(ex.name))) : null;
+    const rows = (active || (session && !session.is_rest_day)) ? exerciseRows.map((ex, i) => {
+      const logged = saved?.exercises?.[i] || null;
       const prev = lastSets(ctx, ex.name, day);
       const count = Math.max(Number(ex.sets) || 1, logged ? logged.sets.length : 0);
       const reps = ex.reps_min === ex.reps_max ? fmt(ex.reps_min) : `${fmt(ex.reps_min)}–${fmt(ex.reps_max)}`;
@@ -1565,13 +1595,14 @@
         const v = logged && logged.sets[n] ? logged.sets[n] : {};
         const p = prev && prev.sets[n] ? prev.sets[n] : {};
         const prescription = ex.prescriptions?.[n];
-        return `<div class="wl-set${v.reps != null ? ' completed' : ''}"><span class="wl-n">${n + 1}</span>
+        const done = active ? Boolean(v.completed) : v.reps != null;
+        return `<div class="wl-set${done ? ' completed' : ''}"><span class="wl-n">${n + 1}</span>
           <label><span>kg</span><input data-kg type="number" inputmode="decimal" step="0.5" min="0" max="500" value="${esc(v.kg ?? '')}" placeholder="${esc(p.kg ?? '')}"></label>
           <label><span>reps</span><input data-reps type="number" inputmode="numeric" min="0" max="100" value="${esc(v.reps ?? '')}" placeholder="${esc(p.reps ?? '')}"></label>
           <select data-set-type aria-label="Set type">${T.SET_TYPES.map((type) => `<option${type === (v.set_type || prescription?.set_type || 'Working set') ? ' selected' : ''}>${esc(type)}</option>`).join('')}</select>
-          <input type="checkbox" data-done aria-label="Complete set ${n + 1}"${v.reps != null ? ' checked' : ''}></div>`;
+          <input type="checkbox" data-done aria-label="Complete set ${n + 1}"${done ? ' checked' : ''}></div>`;
       }).join('');
-      return `<li class="wl-ex" data-wl-ex="${i}" data-name="${esc(ex.name)}" data-exercise-id="${esc(ex.exercise_id || '')}" data-primary="${esc(JSON.stringify(ex.primary || []))}" data-rest-seconds="${Number(ex.prescriptions?.[0]?.rest_seconds ?? ex.rest_seconds_min ?? 90)}" data-superset="${esc(logged?.superset || '')}">
+      return `<li class="wl-ex${logged?.superset ? ' is-superset' : ''}" data-wl-ex="${i}" data-name="${esc(ex.name)}" data-exercise-id="${esc(ex.exercise_id || '')}" data-primary="${esc(JSON.stringify(ex.primary || []))}" data-rest-seconds="${Number(logged?.rest_seconds ?? ex.prescriptions?.[0]?.rest_seconds ?? ex.rest_seconds_min ?? 90)}" data-superset="${esc(logged?.superset || '')}">
         <div class="wl-ex-head"><div class="wl-ex-map" aria-hidden="true">${(withMuscles(ex).primary || []).length ? X.bodyDiagram(withMuscles(ex).primary, withMuscles(ex).secondary, { small: true }) : ''}</div>
           <div><strong>${esc(ex.name)}</strong><small>Target: ${fmt(ex.sets)} sets × ${esc(reps)} reps${ex.rir && ex.rir_target != null ? ` · ${fmt(ex.rir_target)} RIR` : ''}</small>
           ${prev ? `<small class="wl-prev">Last time (${esc(niceDate(prev.day))}): ${esc(setsText(prev.sets))}</small>` : ''}</div>
@@ -1582,19 +1613,20 @@
         <textarea class="wl-ex-note" data-ex-note maxlength="500" hidden placeholder="Notes about this exercise">${esc(logged?.note || '')}</textarea>
       </li>`;
     }).join('') : '';
-    return `<form id="workout-log" class="card wl wl-prestart" novalidate>
+    return `<form id="workout-log" class="card wl${active ? '' : ' wl-prestart'}" novalidate>
       <div class="wl-top"><div><p class="kicker">Log your workout</p>
         <h2>${existing ? 'Workout logged <span class="wl-done">✓</span>' : scheduledRest && !cycleDay ? 'Rest day today' : 'How did it go?'}</h2>
         <p class="hint" style="margin-top:0">${scheduledRest && !existing ? 'Rest day on your plan. Trained anyway? Pick the session below.' : 'Enter the weight and reps you did for each set. Grey numbers are from last time.'}</p></div></div>
       <div class="wl-meta">
-        <label>Date<input type="date" id="wl-day" value="${esc(day)}" max="${esc(S.today())}" min="${esc(S.addDays(S.today(), -14))}"></label>
-        <label>Session<select id="wl-session">${training.map((r) => `<option value="${r.cycle_day}"${r.cycle_day === chosen ? ' selected' : ''}>Day ${r.cycle_day} · ${esc(r.session_name)}${r.cycle_day === prog.scheduled ? ' · today' : ''}</option>`).join('')}</select></label>
+        <label>Date<input type="date" id="wl-day" value="${esc(day)}" max="${esc(S.today())}" min="${esc(S.addDays(S.today(), -14))}"${active ? ' disabled' : ''}></label>
+        <label>Session<select id="wl-session"${active ? ' disabled' : ''}>${active && !training.some((r) => r.cycle_day === chosen) ? `<option value="${chosen}" selected>${esc(active.session_name || 'Current workout')}</option>` : ''}${training.map((r) => `<option value="${r.cycle_day}"${r.cycle_day === chosen ? ' selected' : ''}>Day ${r.cycle_day} · ${esc(r.session_name)}${r.cycle_day === prog.scheduled ? ' · today' : ''}</option>`).join('')}</select></label>
       </div>
       ${rows ? `<ol class="wl-list">${rows}</ol>` : '<p>No exercises in this session.</p>'}
       <button type="button" class="btn-dark wide wl-start" data-start-workout>Start workout</button>
-      <div class="wl-active-toolbar"><button type="button" class="wl-add" data-add-exercise>⊕ Add Exercise</button><span data-elapsed>00:00</span></div>
-      <label>Notes (optional)<textarea id="wl-note" maxlength="2000" placeholder="How it felt, anything to tell ${esc(COACH)}">${esc((sameSession && existing.note) || '')}</textarea></label>
-      ${ctx.workoutsReady ? `<div class="wl-finish"><a class="btn btn-ghost" href="#training">Cancel Workout</a><button class="btn" type="submit">${existing ? 'Update workout' : 'Finish Workout'}</button></div>` : `<p class="hint">Workout logging switches on once ${esc(COACH)} finishes the app update.</p>`}
+      <div class="wl-active-toolbar"><button type="button" class="wl-add" data-add-exercise>⊕ Add Exercise</button><span data-rest-display></span><span data-elapsed>${workoutElapsed()}</span></div>
+      <div class="wl-save-line"><span data-save-status>Changes save automatically</span><button type="button" data-retry-save>Save now</button></div>
+      <label>Notes (optional)<textarea id="wl-note" maxlength="2000" placeholder="How it felt, anything to tell ${esc(COACH)}">${esc(saved?.note || '')}</textarea></label>
+      ${ctx.workoutsReady ? `<div class="wl-finish"><button class="btn btn-ghost" type="button" data-cancel-workout>Cancel Workout</button><button class="btn" type="submit">${existing ? 'Update workout' : 'Finish Workout'}</button></div>` : `<p class="hint">Workout logging switches on once ${esc(COACH)} finishes the app update.</p>`}
     </form>`;
   }
 
@@ -1606,6 +1638,59 @@
         <ul>${(w.exercises || []).filter((e) => (e.sets || []).some((x) => x.reps)).map((e) => `<li><strong>${esc(e.name)}</strong><span>${esc(setsText(e.sets))}</span></li>`).join('')}</ul>
         ${w.note ? `<p class="exercise-note">${esc(w.note)}</p>` : ''}</details>`).join('')}
     </section>`;
+  }
+
+  function readWorkoutDraft(form) {
+    return {
+      note: form.querySelector('#wl-note').value.trim() || null,
+      exercises: [...form.querySelectorAll('[data-wl-ex]')].map((li, index) => ({
+        index,
+        name: li.dataset.name,
+        exercise_id: li.dataset.exerciseId || null,
+        primary: JSON.parse(li.dataset.primary || '[]'),
+        superset: li.dataset.superset || null,
+        rest_seconds: Number(li.dataset.restSeconds) || 0,
+        note: li.querySelector('[data-ex-note]').value.trim() || null,
+        sets: [...li.querySelectorAll('.wl-set')].map((row) => {
+          const kg = row.querySelector('[data-kg]').value.trim();
+          const reps = row.querySelector('[data-reps]').value.trim();
+          return { kg: kg === '' ? null : Number(kg), reps: reps === '' ? null : Number(reps), set_type: row.querySelector('[data-set-type]').value, completed: row.querySelector('[data-done]').checked };
+        }),
+      })),
+    };
+  }
+
+  function saveWorkoutDraft(form) {
+    if (!state.workoutSession) return Promise.resolve();
+    const draft = readWorkoutDraft(form);
+    state.workoutSession = { ...state.workoutSession, draft };
+    const status = form.querySelector('[data-save-status]');
+    if (status) status.textContent = 'Saving…';
+    const write = state.workoutSaveQueue.catch(() => {}).then(async () => {
+      const saved = must(await sb.from('client_workout_sessions').update({ draft, updated_at: new Date().toISOString() }).eq('user_id', state.me.id).select('user_id').maybeSingle());
+      if (!saved) throw new Error('This workout session is no longer active.');
+      if (status?.isConnected) status.textContent = 'Saved';
+    });
+    state.workoutSaveQueue = write;
+    write.catch((err) => { if (status?.isConnected) status.textContent = 'Not saved · retry'; toast(friendlyError(err), true); });
+    return write;
+  }
+
+  function cancelWorkoutSession() {
+    if (!state.workoutSession) { location.hash = '#training'; return; }
+    const sheet = clientSheet('Cancel workout?', `<p class="hint">This will discard the in-progress workout and stop its timer. Completed workout logs and your coach's plan will stay as they are.</p>
+      <div class="wl-finish"><button type="button" class="btn btn-ghost" data-close>Keep workout</button><button type="button" class="btn" data-confirm-cancel>Cancel workout</button></div>`);
+    sheet.wrap.querySelector('[data-confirm-cancel]').addEventListener('click', (e) => withBusy(e.target, async () => {
+      clearTimeout(state.workoutDraftTimer);
+      await state.workoutSaveQueue.catch(() => {});
+      must(await sb.from('client_workout_sessions').delete().eq('user_id', state.me.id));
+      setActiveWorkout(null);
+      sheet.close();
+      const alreadyOnTraining = location.hash === '#training';
+      location.hash = '#training';
+      if (alreadyOnTraining) await renderTraining();
+      toast('Workout cancelled.');
+    }));
   }
 
   async function renderTraining(view) {
@@ -1629,20 +1714,24 @@
     const prog = programFor(ctx, today);
     const session = prog.sessions.find((r) => r.cycle_day === prog.scheduled);
     const count = session?.exercises?.length || 0;
+    const active = state.workoutSession;
+    const workoutHref = active ? `#training/log/${active.day}/${active.cycle_day}` : '#training/log';
     shell('Training', 'Your activity and workout plan', `
-      <a class="client-training-hero" href="#training/log"><span class="kicker">Log Training</span><b>${session && !session.is_rest_day ? esc(session.session_name) : 'Start a workout'}</b><span>Open workout log ›</span></a>
+      <a class="client-training-hero" href="${workoutHref}"><span class="kicker">${active ? 'Workout in progress' : 'Log Training'}</span><b>${active ? esc(active.session_name || 'Training session') : session && !session.is_rest_day ? esc(session.session_name) : 'Start a workout'}</b><span>${active ? `Resume workout · ${workoutElapsed()} ›` : 'Open workout log ›'}</span></a>
+      ${active ? '<button type="button" class="training-cancel" data-cancel-workout>Cancel workout</button>' : ''}
       <section class="card training-activity"><div class="home-section-head"><h2>Activity</h2><button type="button" class="activity-plus" data-log-activity aria-label="Log activity">+</button></div>
         <p>${niceDate(today, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
         <div class="activity-line">${CI.icon('steps')}<span><b>Steps</b><small>${t.steps_target ? `Goal ${fmt(t.steps_target)}` : 'Daily movement'}</small></span><strong>${fmt(log.steps || 0)} steps</strong></div>
         <div class="activity-line">${CI.icon('activity')}<span><b>Cardio</b><small>Minutes logged</small></span><strong>${fmt(log.cardio_min || 0)} min</strong></div>
       </section>
       <section class="card workout-plan-card"><div class="plan-card-head">${CI.icon('training')}<div><h2>Workout Plan</h2><small>${esc(prog.sessions[0]?.program_name || 'No assigned plan')}</small></div></div>
-        ${session ? `<a href="#training/log"><span><b>${esc(session.session_name)}</b><small>${session.is_rest_day ? 'Recovery day' : `${count} exercise${count === 1 ? '' : 's'}`}</small></span><span>›</span></a>` : '<p>Your coach has not assigned a workout for today.</p>'}</section>
+        ${session ? `<a href="${workoutHref}"><span><b>${esc(session.session_name)}</b><small>${session.is_rest_day ? 'Recovery day' : `${count} exercise${count === 1 ? '' : 's'}`}</small></span><span>›</span></a>` : '<p>Your coach has not assigned a workout for today.</p>'}</section>
       <div class="training-shortcuts"><a class="card" href="#training/plans">${CI.icon('training')} Training Plans ›</a><a class="card" href="#training/library">${CI.icon('foodlog')} Exercise Library ›</a></div>
       <section class="card training-plan-extra">${CI.icon('activity')}<span><b>Cardio Plan</b><small>${t.cardio_target_min ? `${fmt(t.cardio_target_min)} min target` : 'No cardio plan assigned yet'}</small></span></section>
       <section class="card training-plan-extra">${CI.icon('steps')}<span><b>Steps Plan</b><small>${t.steps_target ? `${fmt(t.steps_target)} steps target` : 'No steps plan assigned yet'}</small></span></section>
       <section><h2 class="sec-title">Workout History</h2>${workoutHistoryHTML(ctx) || '<p class="hint">No workouts logged yet.</p>'}</section>
     `, 'training');
+    root.querySelector('[data-cancel-workout]')?.addEventListener('click', cancelWorkoutSession);
     root.querySelector('[data-log-activity]')?.addEventListener('click', () => {
       const sheet = clientSheet('Log activity', `<form id="activity-log-form" class="client-supp-form">
         <label>Steps<input name="steps" type="number" min="0" max="100000" inputmode="numeric" value="${esc(log.steps ?? '')}"></label>
@@ -1661,26 +1750,35 @@
   }
 
   async function renderWorkoutLog(day, cycleDay) {
-    if (state.workoutClock) clearInterval(state.workoutClock);
     if (state.restClock) clearInterval(state.restClock);
     const ctx = await loadCtx(state.me.id, true);
-    const d = day || S.today();
+    const d = day || state.workoutSession?.day || S.today();
+    if (state.workoutSession && d !== state.workoutSession.day) {
+      location.hash = `#training/log/${state.workoutSession.day}/${state.workoutSession.cycle_day}`;
+      return;
+    }
     state.trainingView = { day: d, cycleDay };
     const log = ctx.training.length ? workoutFormHTML(ctx, d, cycleDay) : '';
     shell('Log', 'Record this workout', `<a class="back-link" href="#training">← Training</a>${log}`, 'training');
     const form = root.querySelector('#workout-log');
     if (!form) return;
-    let startedAt = null;
-    form.querySelector('[data-start-workout]')?.addEventListener('click', () => {
-      startedAt = Date.now();
-      form.dataset.dirty = '1';
-      form.classList.remove('wl-prestart');
-      state.workoutClock = setInterval(() => {
-        const sec = Math.floor((Date.now() - startedAt) / 1000);
-        form.querySelector('[data-elapsed]').textContent = `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
-      }, 1000);
-      form.querySelector('.wl-set input[data-kg]')?.focus();
-    });
+    form.querySelector('[data-start-workout]')?.addEventListener('click', (e) => withBusy(e.target, async () => {
+      if (!state.workoutSessionReady) throw new Error('Workout saving is not enabled yet.');
+      if (state.workoutSession) return renderWorkoutLog(state.workoutSession.day, state.workoutSession.cycle_day);
+      const dayValue = form.querySelector('#wl-day').value;
+      const cd = Number(form.querySelector('#wl-session').value);
+      const session = programFor(ctx, dayValue).sessions.find((r) => r.cycle_day === cd);
+      if (!dayValue || dayValue > S.today() || !session) throw new Error('Choose a valid workout day.');
+      const active = { user_id: state.me.id, day: dayValue, cycle_day: cd, session_name: session.session_name,
+        started_at: new Date().toISOString(), draft: readWorkoutDraft(form) };
+      must(await sb.from('client_workout_sessions').upsert(active, { onConflict: 'user_id' }));
+      setActiveWorkout(active);
+      await renderWorkoutLog(dayValue, cd);
+      root.querySelector('.wl-set input[data-kg]')?.focus();
+      toast('Workout started. Sets save as you log them.');
+    }));
+    form.querySelector('[data-cancel-workout]')?.addEventListener('click', cancelWorkoutSession);
+    form.querySelector('[data-retry-save]')?.addEventListener('click', () => saveWorkoutDraft(form));
     const pickExercise = async (onPick) => {
       const library = await loadExerciseLibrary();
       if (!library.ready) return toast('Exercise library is unavailable.', true);
@@ -1711,15 +1809,20 @@
       if (!seconds) return;
       if (state.restClock) clearInterval(state.restClock);
       let left = seconds;
-      const label = form.querySelector('[data-elapsed]');
+      const label = form.querySelector('[data-rest-display]');
       state.restClock = setInterval(() => {
-        if (!label || !label.isConnected || left <= 0) { clearInterval(state.restClock); if (label && label.isConnected && startedAt) label.textContent = 'Rest complete'; return; }
+        if (!label || !label.isConnected || left <= 0) { clearInterval(state.restClock); if (label && label.isConnected) label.textContent = 'Rest complete'; return; }
         label.textContent = `Rest ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
         left -= 1;
       }, 1000);
     };
-    // Sets typed but not saved yet: the background refresh leaves the page alone.
-    form.addEventListener('input', () => (form.dataset.dirty = '1'));
+    form.addEventListener('input', () => {
+      form.dataset.dirty = '1';
+      if (!state.workoutSession) return;
+      state.workoutSession.draft = readWorkoutDraft(form);
+      clearTimeout(state.workoutDraftTimer);
+      state.workoutDraftTimer = setTimeout(() => saveWorkoutDraft(form), 500);
+    });
     form.querySelector('#wl-day').addEventListener('change', (e) => {
       const v = e.target.value;
       if (v && v <= S.today()) renderWorkoutLog(v);
@@ -1728,8 +1831,17 @@
     form.addEventListener('change', (e) => {
       if (e.target.matches('[data-done]')) {
         const row = e.target.closest('.wl-set');
+        const reps = Number(row.querySelector('[data-reps]').value);
+        const kgField = row.querySelector('[data-kg]');
+        const kg = kgField.value === '' ? null : Number(kgField.value);
+        if (e.target.checked && (!Number.isFinite(reps) || reps < 1 || reps > 100 || (kg !== null && (!Number.isFinite(kg) || kg < 0 || kg > 500)))) {
+          e.target.checked = false;
+          toast('Enter valid reps before completing this set.', true);
+          return;
+        }
         row.classList.toggle('completed', e.target.checked);
-        if (e.target.checked) startRest(row.closest('[data-wl-ex]'));
+        clearTimeout(state.workoutDraftTimer);
+        saveWorkoutDraft(form).then(() => { if (e.target.checked) startRest(row.closest('[data-wl-ex]')); }).catch(() => {});
       }
     });
     form.addEventListener('click', (e) => {
@@ -1742,10 +1854,13 @@
         form.dataset.dirty = '1';
         li.dataset.wlEx = String(Date.now());
         li.dataset.superset = '';
+        li.dataset.restSeconds = '90';
+        li.classList.remove('is-superset');
         li.querySelector('[data-ex-note]').value = '';
         li.querySelector('[data-ex-note]').hidden = true;
         renameExercise(li, ex, true, true);
         form.querySelector('.wl-list').appendChild(li);
+        saveWorkoutDraft(form);
         li.scrollIntoView({ behavior: 'smooth', block: 'center' });
       });
       const menu = e.target.closest('[data-ex-menu]');
@@ -1759,13 +1874,14 @@
           sheet.close();
           if (act === 'timer') {
             const edit = clientSheet('Rest Timer', `<label>Rest after each set (seconds)<input type="number" min="0" max="1200" value="${esc(li.dataset.restSeconds || '90')}" data-rest-value></label><button type="button" class="btn-dark wide" data-save-rest>Save timer</button>`);
-            edit.wrap.querySelector('[data-save-rest]').addEventListener('click', () => { li.dataset.restSeconds = String(Math.max(0, Math.min(1200, Number(edit.wrap.querySelector('[data-rest-value]').value) || 0))); edit.close(); toast('Rest timer updated for this workout.'); });
-          } else if (act === 'replace') pickExercise((ex) => renameExercise(li, ex, true, false));
+            edit.wrap.querySelector('[data-save-rest]').addEventListener('click', () => { li.dataset.restSeconds = String(Math.max(0, Math.min(1200, Number(edit.wrap.querySelector('[data-rest-value]').value) || 0))); edit.close(); saveWorkoutDraft(form); toast('Rest timer updated for this workout.'); });
+          } else if (act === 'replace') pickExercise((ex) => { renameExercise(li, ex, true, false); saveWorkoutDraft(form); });
           else if (act === 'reorder') {
             const edit = clientSheet('Reorder exercise', `<div class="workout-menu"><button type="button" data-move="up">↑ Move up</button><button type="button" data-move="down">↓ Move down</button></div>`);
             edit.wrap.querySelectorAll('[data-move]').forEach((move) => move.addEventListener('click', () => {
               if (move.dataset.move === 'up' && li.previousElementSibling) li.parentElement.insertBefore(li, li.previousElementSibling);
               if (move.dataset.move === 'down' && li.nextElementSibling) li.parentElement.insertBefore(li.nextElementSibling, li);
+              saveWorkoutDraft(form);
               edit.close();
             }));
           } else if (act === 'superset') {
@@ -1777,9 +1893,13 @@
               const group = `S${Date.now()}`; li.dataset.superset = group; other.dataset.superset = group;
               li.classList.add('is-superset'); other.classList.add('is-superset');
               li.parentElement.insertBefore(other, li.nextElementSibling);
+              saveWorkoutDraft(form);
               edit.close(); toast('Superset paired for this workout.');
             }));
-          } else if (act === 'delete') { li.remove(); toast('Exercise removed from this workout.'); }
+          } else if (act === 'delete') {
+            if (form.querySelectorAll('[data-wl-ex]').length <= 1) return toast('Keep one exercise so you can finish this workout.', true);
+            li.remove(); saveWorkoutDraft(form); toast('Exercise removed from this workout.');
+          }
         }));
         return;
       }
@@ -1792,6 +1912,7 @@
         <label><span>reps</span><input data-reps type="number" inputmode="numeric" min="0" max="100"></label>
         <select data-set-type aria-label="Set type">${T.SET_TYPES.map((type) => `<option>${esc(type)}</option>`).join('')}</select>
         <input type="checkbox" data-done aria-label="Complete set ${n}"></div>`);
+      saveWorkoutDraft(form);
       box.lastElementChild.querySelector('[data-kg]').focus();
     });
     form.addEventListener('submit', (e) => {
@@ -1802,20 +1923,8 @@
         const prog = programFor(ctx, dayValue);
         const cd = Number(form.querySelector('#wl-session').value);
         const session = prog.sessions.find((r) => r.cycle_day === cd);
-        const exercises = [...form.querySelectorAll('[data-wl-ex]')].map((li, index) => ({
-          index,
-          name: li.dataset.name,
-          exercise_id: li.dataset.exerciseId || null,
-          primary: JSON.parse(li.dataset.primary || '[]'),
-          superset: li.dataset.superset || null,
-          rest_seconds: Number(li.dataset.restSeconds) || 0,
-          note: li.querySelector('[data-ex-note]').value.trim() || null,
-          sets: [...li.querySelectorAll('.wl-set')].map((row) => {
-            const kg = row.querySelector('[data-kg]').value.trim();
-            const reps = row.querySelector('[data-reps]').value.trim();
-            return { kg: kg === '' ? null : Number(kg), reps: reps === '' ? null : Number(reps), set_type: row.querySelector('[data-set-type]').value, completed: row.querySelector('[data-done]').checked };
-          }).filter((x) => x.reps !== null || x.kg !== null),
-        }));
+        const draft = readWorkoutDraft(form);
+        const exercises = draft.exercises.map((ex) => ({ ...ex, sets: ex.sets.filter((x) => x.reps !== null || x.kg !== null) }));
         for (const ex of exercises) {
           for (const x of ex.sets) {
             if (x.reps === null) throw new Error(`${ex.name}: add the reps for each set you entered a weight for.`);
@@ -1823,14 +1932,17 @@
           }
         }
         if (!exercises.some((ex) => ex.sets.some((x) => x.reps > 0))) throw new Error('Add the reps for at least one set.');
+        clearTimeout(state.workoutDraftTimer);
+        await state.workoutSaveQueue.catch(() => {});
         must(await sb.from('workout_logs').upsert({
           user_id: state.me.id, day: dayValue, program_start_date: prog.start || null, cycle_day: cd,
-          session_name: session ? session.session_name : null, exercises, note: form.querySelector('#wl-note').value.trim() || null,
+          session_name: session ? session.session_name : state.workoutSession?.session_name || null, exercises, note: draft.note,
         }, { onConflict: 'user_id,day' }));
         must(await sb.from('daily_logs').upsert({ user_id: state.me.id, day: dayValue, trained: 'Yes' }, { onConflict: 'user_id,day' }));
+        must(await sb.from('client_workout_sessions').delete().eq('user_id', state.me.id));
+        setActiveWorkout(null);
         invalidate(state.me.id);
         toast('Workout saved. Training is ticked on your Habits.');
-        if (state.workoutClock) clearInterval(state.workoutClock);
         if (state.restClock) clearInterval(state.restClock);
         location.hash = '#training';
       });
@@ -1839,9 +1951,27 @@
 
   // ------------------------------------------------------ client: supplements
 
+  function supplementSchedule(timing) {
+    const text = String(timing || '').trim();
+    if (/\b(twice|two times|2 times|2x)\b/i.test(text)) return { count: 2, label: 'Twice daily' };
+    if (/\b(three times|3 times|3x)\b/i.test(text)) return { count: 3, label: 'Three times daily' };
+    if (/\b(once|daily|every day|each day|breakfast|lunch|dinner|morning|evening|bedtime)\b/i.test(text)) return { count: 1, label: 'Once daily' };
+    return { count: null, label: text || 'Follow coach timing' };
+  }
+
   function suppsHTML(ctx) {
+    const today = S.today();
+    const todayIntake = ctx.supplementIntake.filter((entry) => entry.day === today);
+    const dueToday = `<section class="card supp-today"><div class="supp-today-head"><p class="kicker">Today · ${esc(niceDate(today, { weekday: 'long', day: 'numeric', month: 'long' }))}</p><h2>Supplements to take today</h2><p class="hint">Your coach's assigned doses and timing. Mark each dose after taking it.</p></div>
+      ${ctx.supplements.length ? `<div class="supp-today-list">${ctx.supplements.map((item) => {
+        const schedule = supplementSchedule(item.timing);
+        const taken = todayIntake.filter((entry) => entry.name.toLowerCase() === item.name.toLowerCase()).length;
+        const complete = schedule.count !== null && taken >= schedule.count;
+        const status = complete ? 'Taken today' : taken ? `${taken} logged today${schedule.count ? ` · ${schedule.count} planned` : ''}` : 'Not taken yet';
+        return `<article class="supp-today-item"><span class="supp-today-icon" aria-hidden="true">${ICONS.supps}</span><div class="supp-today-copy"><b>${esc(item.name)}</b><small>${esc(item.dose)} · ${esc(item.timing || 'Follow coach timing')}</small><span class="supp-frequency">${esc(schedule.label)}</span></div><div class="supp-today-action"><span class="${complete ? 'is-taken' : ''}">${esc(status)}</span>${complete ? '' : `<button type="button" data-mark-supp="${esc(item.id)}">${taken ? 'Log another dose' : 'Mark taken'}</button>`}</div></article>`;
+      }).join('')}</div>` : '<p class="hint">No supplements assigned for today.</p>'}</section>`;
     const assigned = ctx.supplements.length
-      ? `<section class="assigned-supps"><p class="kicker">From your coach</p><h2>Your supplements</h2>
+      ? `<section class="assigned-supps"><p class="kicker">From your coach</p><h2>Your assigned plan</h2>
         <div class="supp-grid">${ctx.supplements.map((item) => `<article class="supp-card card">
           <h3>${esc(item.name)}</h3><div class="supp-facts"><div><span>Dose</span><strong>${esc(item.dose)}</strong></div><div><span>When</span><strong>${esc(item.timing)}</strong></div></div>
           ${item.coach_note ? `<p class="supp-coach-note">${esc(item.coach_note)}</p>` : ''}
@@ -1854,7 +1984,7 @@
       <p>${esc(item.why)}</p>
     </article>`).join('');
     const intake = ctx.supplementIntake.slice(0, 20).map((entry) => `<li><span><b>${esc(entry.name)}</b><small>${esc(niceDate(entry.day))}${entry.dose ? ` · ${esc(entry.dose)}` : ''}</small></span><button type="button" data-delete-intake="${esc(entry.id)}" aria-label="Remove ${esc(entry.name)}">×</button></li>`).join('');
-    return `<a class="back-link" href="#meals">← Nutrition</a>${assigned}
+    return `<a class="back-link" href="#meals">← Nutrition</a>${dueToday}${assigned}
       <section class="card client-intake"><h2>Supplements you took</h2>
         ${intake ? `<ul>${intake}</ul>` : '<p class="hint">Nothing logged yet.</p>'}
         <button type="button" class="btn-dark" data-custom-supp>+ Add custom supplement</button>
@@ -1867,6 +1997,15 @@
   async function renderSupps() {
     const ctx = await loadCtx(state.me.id, true);
     shell('Supps', 'Your plan and general guide', suppsHTML(ctx), 'supps');
+    root.querySelectorAll('[data-mark-supp]').forEach((button) => button.addEventListener('click', () => withBusy(button, async () => {
+      if (!ctx.supplementIntakeReady) throw new Error('Supplement logging is not enabled yet.');
+      const item = ctx.supplements.find((entry) => String(entry.id) === button.dataset.markSupp);
+      if (!item) throw new Error('This supplement is no longer assigned.');
+      must(await sb.from('client_supplement_intake').insert({ user_id: state.me.id, day: S.today(), name: item.name, dose: item.dose, note: 'From assigned plan' }));
+      invalidate(state.me.id);
+      await renderSupps();
+      toast('Supplement marked taken.');
+    })));
     root.querySelector('[data-custom-supp]')?.addEventListener('click', () => {
       const sheet = clientSheet('Add custom supplement', `<form id="custom-supp-form" class="client-supp-form">
         <label>Name<input name="name" maxlength="120" required placeholder="e.g. Creatine"></label>
@@ -4217,6 +4356,7 @@
   WUI.init({ sb, state, root, S, W, esc, fmt, shell, toast, friendlyError, must, withBusy, invalidate, rerender: route, refreshHabits: renderHabits });
   TUI.init({ sb, state, root, S, T, X, EUI, CI, esc, fmt, shell, toast, friendlyError, must, withBusy, invalidate, loadExerciseLibrary });
   MSG.init({ sb, state, COACH, esc, friendlyError, toast, shell });
+  FILES.init({ sb, state, root, esc, friendlyError, toast, shell });
 
   // ---------------------------------------------------------------- router
 
@@ -4229,6 +4369,14 @@
     try {
       if (!state.me) await loadMe();
       if (id !== state.renderId) return;
+      if (state.me.role === 'client' && state.workoutSession && !location.hash.startsWith('#training/log')) {
+        const leavingWorkout = root.querySelector('#workout-log');
+        if (leavingWorkout) {
+          clearTimeout(state.workoutDraftTimer);
+          await saveWorkoutDraft(leavingWorkout).catch(() => {});
+        }
+      }
+      if (id !== state.renderId) return;
       const [path] = location.hash.replace(/^#/, '').split('?');
       const parts = path.split('/');
 
@@ -4237,6 +4385,7 @@
         if (parts[0] === 'client' && parts[1]) return await renderClient(parts[1], parts[2], parts[3], parts[4]);
         if (parts[0] === 'inbox') return await renderInbox(parts[1]);
         if (parts[0] === 'messages') return await MSG.coachInbox(parts[1]);
+        if (parts[0] === 'files') return await FILES.coach(parts[1]);
         if (parts[0] === 'library') return await NUI.library(parts[1], parts[2], parts[3]);
         if (parts[0] === 'exercise-library') return await EUI.library();
         if (parts[0] === 'forms' && parts[1] && parts[2] === 'responses') return await FUI.responses(parts[1], parts[3]);
@@ -4261,6 +4410,8 @@
           return await NUI.library(parts[0], parts[1]);
         case 'hub':
           return await renderHub();
+        case 'files':
+          return await FILES.client(parts[1]);
         case 'training':
           return parts[1] === 'log' ? await renderWorkoutLog(parts[2], Number(parts[3]) || undefined) : await renderTraining(parts[1]);
         case 'supps':
@@ -4347,6 +4498,8 @@
       if (changedUser) {
         state.me = null;
         state.ctx = {};
+        clearTimeout(state.workoutDraftTimer);
+        setActiveWorkout(null);
       }
       // SIGNED_IN also fires when a tab regains focus; only re-render when the
       // person actually changed, so a half-filled form isn't wiped.

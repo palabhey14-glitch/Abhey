@@ -674,7 +674,7 @@
       const log = ctx.logs.find((l) => l.day === day) || {};
       h.shell('Nutrition', `Week ${week} of 12`, `${header}${target ? `<div class="macro-grid">${macroTile('Calories', log.calories, target.calories, 'calories', 'kcal')}${macroTile('Protein', log.protein_g, target.protein_g, 'protein', 'g')}</div>` : ''}
         <div class="plan-empty"><span class="qt-ic" aria-hidden="true">${h.ICONS.meals}</span><div><b>Meal logging is on its way</b><p>${esc(h.COACH)} is setting it up. Until then, log your daily totals in the check-in.</p></div></div>
-        <a class="btn-dark wide" href="#log/${day}">Open the daily check-in</a><a class="nutrition-supps-link" href="#supps">Supps <span>Assigned supplements and your intake ›</span></a>`, 'meals');
+        <a class="btn-dark wide" href="#log/${day}">Open the daily check-in</a><a class="nutrition-supps-link" href="#supps"><span class="nutrition-supps-icon" aria-hidden="true">${h.ICONS.supps}</span><span><b>Supps</b><small>Assigned supplements and your intake</small></span><span class="nutrition-supps-chevron" aria-hidden="true">›</span></a>`, 'meals');
       bindDate();
       return;
     }
@@ -728,7 +728,7 @@
       ${a && a.coach_note ? `<div class="note-card"><span class="note-mark" aria-hidden="true">R<i>.</i></span><div><p class="kicker">From ${esc(h.COACH)}</p><p>${esc(a.coach_note)}</p></div></div>` : ''}
       ${day > now ? '<p class="hint">You can log these meals on the day.</p>' : ''}
       ${main}
-      <a class="nutrition-supps-link" href="#supps">${h.ICONS.supps}<span><b>Supps</b><small>View assigned supplements or log one you took</small></span><span>›</span></a>
+      <a class="nutrition-supps-link" href="#supps"><span class="nutrition-supps-icon" aria-hidden="true">${h.ICONS.supps}</span><span><b>Supps</b><small>View assigned supplements or log one you took</small></span><span class="nutrition-supps-chevron" aria-hidden="true">›</span></a>
       <p class="hint"><a href="#recipes">My recipes</a>: save a dish you cook often and log it in one tap.</p>
       ${creditsHTML()}`,
       'meals',
