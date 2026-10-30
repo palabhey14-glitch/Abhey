@@ -652,7 +652,7 @@
   async function clientMeals(dayParam) {
     const now = S.today();
     const tomorrow = S.addDays(now, 1);
-    const day = dayParam && /^\d{4}-\d{2}-\d{2}$/.test(dayParam) && dayParam <= tomorrow ? dayParam : now;
+    const day = dayParam && /^\d{4}-\d{2}-\d{2}$/.test(dayParam) && !Number.isNaN(Date.parse(dayParam)) ? dayParam : now;
     const ctx = await h.loadCtx(me().id);
     const p = ctx.profile;
     const country = p.country || 'AU';
@@ -664,14 +664,19 @@
     const header = `<div class="daybar">
         <a class="btn btn-ghost" href="#meals/${S.addDays(day, -1)}" aria-label="Previous day">‹</a>
         <h2>${esc(label)}<div class="hint">${h.niceDate(day, { weekday: 'long', day: 'numeric', month: 'long' })}</div></h2>
-        ${day < tomorrow ? `<a class="btn btn-ghost" href="#meals/${S.addDays(day, 1)}" aria-label="Next day">›</a>` : '<span style="width:48px"></span>'}
-      </div>`;
+        <a class="btn btn-ghost" href="#meals/${S.addDays(day, 1)}" aria-label="Next day">›</a>
+      </div><div class="nutrition-date-row"><label for="nutrition-date">◫ Choose a date</label><input id="nutrition-date" type="date" value="${esc(day)}" aria-label="Choose a nutrition date"></div>`;
+    const bindDate = () => h.root.querySelector('#nutrition-date')?.addEventListener('change', (e) => {
+      if (e.target.value) location.hash = `#meals/${e.target.value}`;
+    });
 
     if (!ctx.nutritionReady) {
       const log = ctx.logs.find((l) => l.day === day) || {};
-      return h.shell('Meal plan', `Week ${week} of 12`, `${header}${target ? `<div class="macro-grid">${macroTile('Calories', log.calories, target.calories, 'calories', 'kcal')}${macroTile('Protein', log.protein_g, target.protein_g, 'protein', 'g')}</div>` : ''}
+      h.shell('Nutrition', `Week ${week} of 12`, `${header}${target ? `<div class="macro-grid">${macroTile('Calories', log.calories, target.calories, 'calories', 'kcal')}${macroTile('Protein', log.protein_g, target.protein_g, 'protein', 'g')}</div>` : ''}
         <div class="plan-empty"><span class="qt-ic" aria-hidden="true">${h.ICONS.meals}</span><div><b>Meal logging is on its way</b><p>${esc(h.COACH)} is setting it up. Until then, log your daily totals in the check-in.</p></div></div>
-        <a class="btn-dark wide" href="#log/${day}">Open the daily check-in</a>`, 'meals');
+        <a class="btn-dark wide" href="#log/${day}">Open the daily check-in</a><a class="nutrition-supps-link" href="#supps">Supps <span>Assigned supplements and your intake ›</span></a>`, 'meals');
+      bindDate();
+      return;
     }
 
     const r = report(ctx, day);
@@ -705,7 +710,7 @@
     }
 
     h.shell(
-      'Meal plan',
+      'Nutrition',
       `Week ${week} of 12`,
       `${header}
       <section class="score left">
@@ -723,10 +728,12 @@
       ${a && a.coach_note ? `<div class="note-card"><span class="note-mark" aria-hidden="true">R<i>.</i></span><div><p class="kicker">From ${esc(h.COACH)}</p><p>${esc(a.coach_note)}</p></div></div>` : ''}
       ${day > now ? '<p class="hint">You can log these meals on the day.</p>' : ''}
       ${main}
+      <a class="nutrition-supps-link" href="#supps">${h.ICONS.supps}<span><b>Supps</b><small>View assigned supplements or log one you took</small></span><span>›</span></a>
       <p class="hint"><a href="#recipes">My recipes</a>: save a dish you cook often and log it in one tap.</p>
       ${creditsHTML()}`,
       'meals',
     );
+    bindDate();
     bindClientMeals(ctx, r, day, country);
   }
 
