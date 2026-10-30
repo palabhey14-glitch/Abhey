@@ -1432,6 +1432,7 @@
         <p class="label">habits on target${due ? ' · <button type="button" class="due-chip" data-goto="checkin-due">Check-in due</button>' : ''}</p>
       </section>
 
+      <a class="home-choice home-calendar-link" href="#calendar">${ICONS.today}<span><b>Calendar</b><small>Your schedule, targets and logged activity</small></span><span aria-hidden="true">›</span></a>
       <a class="home-choice home-coach-notes-link" href="#coach-notes">${ICONS.messages}<span><b>Coach Notes</b><small>${t.coach_note ? 'Read the latest note from your coach' : 'No note from your coach yet'}</small></span><span aria-hidden="true">›</span></a>
 
       <a class="home-choice home-files-link" href="#files">${ICONS.files}<span><b>Files</b><small>Shared resources and your photo gallery</small></span><span>›</span></a>
@@ -4505,6 +4506,8 @@
           return await FILES.client(parts[1], parts[2], parts[3]);
         case 'coach-notes':
           return await renderClientCoachNotes();
+        case 'calendar':
+          return await CUI.calendar(await loadCtx(state.me.id, true), 'Calendar', 'Your coaching schedule', parts[1], parts[2]);
         case 'training':
           return parts[1] === 'log' ? await renderWorkoutLog(parts[2], Number(parts[3]) || undefined) : await renderTraining(parts[1]);
         case 'supps':
