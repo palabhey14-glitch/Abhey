@@ -1645,9 +1645,10 @@ body.app.has-active-workout { padding-bottom: calc(156px + env(safe-area-inset-b
 .supp-today-action > span { color: var(--muted); font-size: 11px; }
 .supp-today-action > span.is-taken { color: #137451; font-weight: 800; }
 .supp-today-action button { min-height: 34px; padding: 7px 9px; border: 0; border-radius: 9px; background: var(--brand-blue); color: white; font: 700 11px var(--font); cursor: pointer; }
+#workout-log input:not([type="checkbox"]), #workout-log select, #workout-log textarea { font-size: 16px; }
 @media (max-width: 560px) {
   .wl-set-labels, .wl-set { grid-template-columns: 24px minmax(52px, 1fr) minmax(52px, 1fr) minmax(76px, 1.1fr) 24px; gap: 4px; }
-  .wl-set input, .wl-set select { padding: 7px 3px; font-size: 12px; }
+  .wl-set input, .wl-set select { padding: 7px 3px; }
   .training-shortcuts a { font-size: 12px; padding: 12px; }
   .supp-today-item { align-items: flex-start; flex-wrap: wrap; }
   .supp-today-action { width: 100%; display: flex; align-items: center; justify-content: space-between; text-align: left; }
