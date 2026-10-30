@@ -642,7 +642,6 @@
         <div class="tile"><div class="k">Latest avg steps</div><div class="v">${fmt(d.latestAvgSteps)}</div></div>
         <div class="tile"><div class="k">Avg adherence</div><div class="v">${pct(d.avgAdherence)}</div></div>
       </div>
-      ${targets.coach_note && !(opts && opts.coach) ? `<div class="card"><p class="kicker">Coach note: biggest lever this week</p><div class="feedback">${esc(targets.coach_note)}</div></div>` : ''}
       <section class="card">
         <p class="kicker">${lw ? `Week ${lw.week}` : 'Latest week'} vs target</p>
         <ul class="metrics">${rows.join('')}</ul>
@@ -1433,7 +1432,7 @@
         <p class="label">habits on target${due ? ' · <button type="button" class="due-chip" data-goto="checkin-due">Check-in due</button>' : ''}</p>
       </section>
 
-      ${t.coach_note ? `<div class="note-card"><span class="note-mark" aria-hidden="true">R<i>.</i></span><div><p class="kicker">From ${esc(COACH)} · biggest lever this week</p><p>${esc(t.coach_note)}</p></div></div>` : ''}
+      <a class="home-choice home-coach-notes-link" href="#coach-notes">${ICONS.messages}<span><b>Coach Notes</b><small>${t.coach_note ? 'Read the latest note from your coach' : 'No note from your coach yet'}</small></span><span aria-hidden="true">›</span></a>
 
       <a class="home-choice home-files-link" href="#files">${ICONS.files}<span><b>Files</b><small>Shared resources and your photo gallery</small></span><span>›</span></a>
       <section class="home-pinned">
@@ -1483,6 +1482,12 @@
     }));
     root.querySelector('[data-data-metrics]')?.addEventListener('click', () => clientSheet('Data Metrics',
       `<p class="hint">Track or review these metrics from your daily log and health pages.</p><div class="pin-options">${HOME_METRICS.map(([key, name, icon]) => `<a href="${key === 'steps' || key === 'cardio' ? '#training' : '#habits'}">${CI.icon(icon)}<b>${esc(name)}</b><span>›</span></a>`).join('')}</div>`));
+  }
+
+  async function renderClientCoachNotes() {
+    const ctx = await loadCtx(state.me.id);
+    const note = ctx.targets.coach_note;
+    shell('Coach Notes', 'A message from your coach', `<a class="files-back" href="#home">‹ Home</a><section class="note-card client-coach-note"><span class="note-mark" aria-hidden="true">R<i>.</i></span><div><p class="kicker">From ${esc(COACH)}</p>${note ? `<p>${esc(note)}</p>` : '<p class="hint">Your coach has not added a note yet.</p>'}</div></section>`, 'home');
   }
 
   // ---------------------------------------------------------------- client: coach hub
@@ -3488,21 +3493,57 @@
 
   // Overview: the dashboard, with the week's daily logs as a column beside it.
   function renderCoachOverview(ctx, title, sub, week) {
-    const note = `<form id="note-form" class="card coach-note" novalidate>
-        <label class="kicker" for="t-coach_note">Coach note: biggest lever this week</label>
-        <textarea id="t-coach_note" name="coach_note" rows="2" maxlength="2000" placeholder="e.g. Hit 160 g protein every day before worrying about anything else.">${esc(ctx.targets.coach_note || '')}</textarea>
-        <div class="row-actions"><button class="btn btn-small" type="submit">Save note</button><span class="hint">Shows at the top of ${esc((ctx.profile.full_name || 'the client').split(' ')[0])}'s dashboard.</span></div>
-      </form>`;
+    const note = `<details id="coach-note-panel" class="card coach-note">
+        <summary><span class="note-mark" aria-hidden="true">R<i>.</i></span><span><b>Coach Notes</b><small>Open to view and manage the client's note</small></span><span class="coach-note-chevron" aria-hidden="true">⌄</span></summary>
+        <div class="coach-note-content">
+          <div data-note-display><p class="kicker">Note visible to ${esc((ctx.profile.full_name || 'the client').split(' ')[0])}</p><p class="coach-note-text" data-note-text></p><div class="row-actions"><button type="button" class="btn btn-small" data-note-edit></button><button type="button" class="btn btn-ghost btn-small" data-note-delete>Delete note</button></div></div>
+          <form id="note-form" novalidate hidden><label class="kicker" for="t-coach_note">Coach note</label><textarea id="t-coach_note" name="coach_note" rows="4" maxlength="2000" placeholder="Write a note for your client.">${esc(ctx.targets.coach_note || '')}</textarea><div class="row-actions"><button class="btn btn-small" type="submit">Save note</button><button class="btn btn-ghost btn-small" type="button" data-note-cancel>Cancel</button></div></form>
+        </div>
+      </details>`;
     shell(title, sub, `<div class="ov-grid"><div class="ov-main">${note}${dashboardHTML(ctx, { coach: true })}</div>${dailyLogsColumn(ctx, week)}</div>`);
-    const nf = document.getElementById('note-form');
-    nf.addEventListener('submit', (e) => {
-      e.preventDefault();
-      withBusy(nf.querySelector('button'), async () => {
-        const rows = must(await sb.from('targets').update({ coach_note: nf.coach_note.value.trim() || null }).eq('client_id', ctx.profile.id).select('client_id'));
-        if (!rows.length) throw new Error('Not saved. Check you are signed in as the coach.');
-        invalidate(ctx.profile.id);
-        toast('Coach note saved.');
+    const panel = document.getElementById('coach-note-panel');
+    const nf = panel.querySelector('#note-form');
+    const display = panel.querySelector('[data-note-display]');
+    const text = panel.querySelector('[data-note-text]');
+    const edit = panel.querySelector('[data-note-edit]');
+    const remove = panel.querySelector('[data-note-delete]');
+    let current = ctx.targets.coach_note || '';
+    const showNote = () => {
+      text.textContent = current || 'No note added yet.';
+      text.classList.toggle('hint', !current);
+      edit.textContent = current ? 'Edit note' : 'Add note';
+      remove.hidden = !current;
+      display.hidden = false;
+      nf.hidden = true;
+    };
+    showNote();
+    edit.addEventListener('click', () => {
+      nf.elements.namedItem('coach_note').value = current;
+      display.hidden = true;
+      nf.hidden = false;
+      nf.elements.namedItem('coach_note').focus();
+    });
+    nf.querySelector('[data-note-cancel]').addEventListener('click', showNote);
+    const saveNote = async (value) => {
+      const rows = must(await sb.from('targets').update({ coach_note: value || null }).eq('client_id', ctx.profile.id).select('client_id'));
+      if (!rows.length) throw new Error('Not saved. Check you are signed in as the coach.');
+      current = value;
+      ctx.targets.coach_note = value || null;
+      invalidate(ctx.profile.id);
+      showNote();
+      toast(value ? 'Coach note saved.' : 'Coach note deleted.');
+    };
+    nf.addEventListener('submit', (event) => {
+      event.preventDefault();
+      withBusy(nf.querySelector('[type="submit"]'), async () => {
+        const value = nf.elements.namedItem('coach_note').value.trim();
+        if (!value) throw new Error('Write a note, or use Delete note.');
+        await saveNote(value);
       });
+    });
+    remove.addEventListener('click', () => {
+      if (!confirm('Delete this coach note? The client will no longer see it.')) return;
+      withBusy(remove, () => saveNote(''));
     });
     const pick = document.getElementById('dl-week');
     if (pick) pick.addEventListener('change', (e) => (location.hash = `#client/${ctx.profile.id}/overview/${e.target.value}`));
@@ -4462,6 +4503,8 @@
           return await renderHub();
         case 'files':
           return await FILES.client(parts[1], parts[2], parts[3]);
+        case 'coach-notes':
+          return await renderClientCoachNotes();
         case 'training':
           return parts[1] === 'log' ? await renderWorkoutLog(parts[2], Number(parts[3]) || undefined) : await renderTraining(parts[1]);
         case 'supps':

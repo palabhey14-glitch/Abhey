@@ -1545,6 +1545,11 @@ svg.mx text { fill: #7a879b; font: 600 9px var(--font); letter-spacing: 0.06em; 
 .home-choice > span:last-child { font-size: 24px; }
 .home-files-link { text-decoration: none; margin: 4px 0 20px; }
 .home-files-link > svg { width: 22px; height: 22px; flex: none; color: var(--brand-blue); }
+.home-coach-notes-link { text-decoration: none; margin: 18px 0 10px; }
+.home-coach-notes-link > svg { width: 22px; height: 22px; flex: none; color: var(--brand-blue); }
+.client-coach-note { margin-top: 20px; }
+.client-coach-note > div { min-width: 0; }
+.client-coach-note p:not(.kicker) { white-space: pre-wrap; overflow-wrap: anywhere; }
 .pinned-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
 .pinned-tile { display: flex; align-items: center; gap: 10px; min-height: 70px; padding: 14px; border-radius: 16px; background: var(--white); color: var(--navy); text-decoration: none; box-shadow: var(--soft); }
 .pinned-tile > span:last-child { display: grid; gap: 4px; }
@@ -1792,6 +1797,16 @@ body.app.has-active-workout { padding-bottom: calc(156px + env(safe-area-inset-b
 
 /* Coach note on Overview */
 .coach-note { display: block; }
+.coach-note summary { display: flex; align-items: center; gap: 12px; list-style: none; cursor: pointer; }
+.coach-note summary::-webkit-details-marker { display: none; }
+.coach-note summary > span:nth-child(2) { flex: 1; display: grid; gap: 3px; min-width: 0; }
+.coach-note summary b { font-size: 15px; color: var(--navy); }
+.coach-note summary small { font-size: 12px; color: var(--muted); }
+.coach-note-chevron { font-size: 22px; color: var(--ink-2); transition: transform .2s ease; }
+.coach-note[open] .coach-note-chevron { transform: rotate(180deg); }
+.coach-note > .coach-note-content { margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--hair); white-space: normal; }
+.coach-note-text { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0 0 14px; }
+.coach-note [hidden] { display: none !important; }
 .coach-note .kicker { display: block; margin-bottom: 8px; }
 .coach-note textarea { width: 100%; min-height: 64px; }
 .coach-note .row-actions { align-items: center; margin-top: 8px; }
