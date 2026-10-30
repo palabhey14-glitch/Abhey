@@ -992,6 +992,17 @@
     Lifestyle: '☀️',
   };
 
+  const HABIT_ICON_KEYS = {
+    steps: 'steps', training: 'training', protein: 'protein', calories: 'flame',
+    fibre: 'fibre', water: 'water', sleep: 'sleep',
+    Activity: 'activity', Nutrition: 'food', Hydration: 'water',
+    Recovery: 'recovery', Mindset: 'goals', Lifestyle: 'sun',
+  };
+
+  function habitIcon(row) {
+    return CI.icon(HABIT_ICON_KEYS[row.key] || HABIT_ICON_KEYS[row.cat || row.category] || 'habits');
+  }
+
   const STATE_ICONS = {
     good: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 12.5 3.2 3.2L17 9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     warn: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 12h9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>',
@@ -1086,7 +1097,7 @@
           return `<td><span class="dot-s ${days[j] > now ? 'future' : st.level || 'empty'}" title="${esc(niceDate(days[j]))}: ${esc(st.label || '')}"></span></td>`;
         })
         .join('');
-      return `<tr><th scope="row"><span class="habit-icon sm" aria-hidden="true">${r.icon}</span>${esc(r.name)}<small>${r.choice ? 'Daily' : `Daily · ${fmt(r.target, r.decimal && r.target % 1 ? 1 : 0)} ${esc(unitLabel(r))}`}</small></th>${cells}<td class="hits">${hits}/7</td></tr>`;
+      return `<tr><th scope="row"><span class="habit-icon sm" aria-hidden="true">${habitIcon(r)}</span>${esc(r.name)}<small>${r.choice ? 'Daily' : `Daily · ${fmt(r.target, r.decimal && r.target % 1 ? 1 : 0)} ${esc(unitLabel(r))}`}</small></th>${cells}<td class="hits">${hits}/7</td></tr>`;
     });
     return `<div class="table-wrap"><table class="habit-week">
       <thead><tr><th>Habit</th>${days.map((d) => `<th>${niceDate(d, { weekday: 'narrow' })}<br>${niceDate(d, { day: 'numeric' })}</th>`).join('')}<th>Hit</th></tr></thead>
@@ -1117,7 +1128,7 @@
         .map(
           (r) => `<li class="habit" data-key="${esc(r.key)}">
             <button type="button" class="habit-row" aria-expanded="false">
-              <span class="habit-icon" aria-hidden="true">${r.icon}</span>
+              <span class="habit-icon" aria-hidden="true">${habitIcon(r)}</span>
               <span class="habit-text"><b>${esc(r.name)}</b><small>${esc(r.cat)} · ${habitValueText(r)}</small></span>
               ${stateBadge(r.status)}<span class="chev" aria-hidden="true">›</span>
             </button>
@@ -1136,7 +1147,7 @@
     } else {
       body = `<section class="card">${habitWeekHTML(ctx, day)}</section>
       ${ctx.habits.length ? `<section class="card"><p class="kicker">Your own habits</p><ul class="own-habits">${ctx.habits
-        .map((h) => `<li><span class="habit-icon sm" aria-hidden="true">${h.icon || HABIT_CATEGORIES[h.category]}</span><span>${esc(h.name)}<small>${esc(h.category)} · ${fmt(h.target, h.target % 1 ? 1 : 0)} ${esc(h.unit)} a day</small></span><button class="btn btn-ghost btn-small" type="button" data-del-habit="${esc(h.id)}">Remove</button></li>`)
+        .map((h) => `<li><span class="habit-icon sm" aria-hidden="true">${habitIcon(h)}</span><span>${esc(h.name)}<small>${esc(h.category)} · ${fmt(h.target, h.target % 1 ? 1 : 0)} ${esc(h.unit)} a day</small></span><button class="btn btn-ghost btn-small" type="button" data-del-habit="${esc(h.id)}">Remove</button></li>`)
         .join('')}</ul></section>` : ''}
       ${ctx.habitsReady ? `<form id="add-habit" class="card" novalidate><p class="kicker">Add your own habit</p>
         <div class="field"><label for="nh-name">Habit</label><input id="nh-name" name="name" maxlength="60" placeholder="e.g. Morning walk outside" required></div>
@@ -1431,7 +1442,7 @@
       </section>
       <section class="home-pinned">
         <div class="home-section-head"><h2 class="sec-title">Pinned Habits</h2><button type="button" data-pin="habit_keys">Edit</button></div>
-        ${pinnedHabits.length ? `<div class="pinned-grid">${pinnedHabits.map((r) => `<a class="pinned-tile" href="#habits/${day}"><span class="habit-icon" aria-hidden="true">${r.icon}</span><span><b>${esc(r.name)}</b><small>${esc(r.status.label || 'Not logged')}</small></span></a>`).join('')}</div>` : `<button type="button" class="home-choice" data-pin="habit_keys">${CI.icon('habits')}<span><b>Add Pinned Habits</b><small>Choose the habits you want on your home screen.</small></span><span>›</span></button>`}
+        ${pinnedHabits.length ? `<div class="pinned-grid">${pinnedHabits.map((r) => `<a class="pinned-tile" href="#habits/${day}"><span class="habit-icon" aria-hidden="true">${habitIcon(r)}</span><span><b>${esc(r.name)}</b><small>${esc(r.status.label || 'Not logged')}</small></span></a>`).join('')}</div>` : `<button type="button" class="home-choice" data-pin="habit_keys">${CI.icon('habits')}<span><b>Add Pinned Habits</b><small>Choose the habits you want on your home screen.</small></span><span>›</span></button>`}
       </section>
 
       ${d ? `<section class="trend-card">
@@ -1458,7 +1469,7 @@
     if (chip) chip.addEventListener('click', () => document.getElementById(chip.dataset.goto).scrollIntoView({ behavior: 'smooth', block: 'center' }));
     root.querySelectorAll('[data-pin]').forEach((button) => button.addEventListener('click', () => {
       const field = button.dataset.pin;
-      const options = field === 'metric_keys' ? HOME_METRICS.map(([key, name, icon]) => ({ key, name, icon: CI.icon(icon) })) : rows.map((r) => ({ key: r.key, name: r.name, icon: r.icon }));
+      const options = field === 'metric_keys' ? HOME_METRICS.map(([key, name, icon]) => ({ key, name, icon: CI.icon(icon) })) : rows.map((r) => ({ key: r.key, name: r.name, icon: habitIcon(r) }));
       const selected = ctx.homePrefs[field] || [];
       const sheet = clientSheet(field === 'metric_keys' ? 'Choose Pinned Metrics' : 'Choose Pinned Habits',
         `<p class="hint">Choose what appears on your home screen. Nothing is added until you save.</p><div class="pin-options">${options.map((o) => `<label><input type="checkbox" value="${esc(o.key)}"${selected.includes(o.key) ? ' checked' : ''}><span aria-hidden="true">${o.icon}</span><b>${esc(o.name)}</b></label>`).join('')}</div><button type="button" class="btn-dark wide" data-save-pins>Save choices</button>`);
@@ -2631,42 +2642,49 @@
         : r.choice
           ? '<div class="field"><span class="label">Daily target</span><p class="ha-note">Yes, Rest day or Missed</p></div>'
           : `<div class="field"><span class="label">Daily target</span><p class="ha-note">${r.target ? `${fmt(r.target)} ${esc(r.unit)} · ` : ''}<a href="#client/${id}/nutrition/builder">Set in Nutrition</a></p></div>`;
-      return `<li><form class="ha-row${r.hidden ? ' is-hidden' : ''}" data-builtin="${r.key}" novalidate>
-        <span class="habit-icon sm" aria-hidden="true">${r.icon}</span>
+      return `<li class="ha-item"><div class="ha-summary">
+        <span class="habit-icon sm" aria-hidden="true">${habitIcon(r)}</span>
+        <span class="ha-summary-text"><b>${esc(r.name)}</b><small>${esc(r.cat)}${r.hidden ? ' · Hidden from tracker' : r.target ? ` · ${fmt(r.target, r.decimal && r.target % 1 ? 1 : 0)} ${esc(r.unit)}/day` : ''}</small></span>
+        <button class="btn btn-ghost btn-small" type="button" data-edit-habit aria-expanded="false" aria-controls="ha-builtin-${r.key}">Edit</button>
+      </div><form id="ha-builtin-${r.key}" class="ha-row${r.hidden ? ' is-hidden' : ''}" data-builtin="${r.key}" hidden novalidate>
         <div class="ha-fields">
           <div class="field"><label for="hb-${r.key}-n">Name</label><input id="hb-${r.key}-n" name="name" maxlength="60" value="${esc(r.name)}" required></div>
           <div class="field"><label for="hb-${r.key}-c">Category</label><select id="hb-${r.key}-c" name="category">${categoryOptions(r.cat)}</select></div>
           ${target}
           <label class="check ha-show"><input type="checkbox" name="show"${r.hidden ? '' : ' checked'}> Show on ${first}'s tracker</label>
         </div>
-        <div class="ha-actions"><button class="btn btn-small" type="submit">Save</button></div>
+        <div class="ha-actions"><button class="btn btn-small" type="submit">Save</button><button class="btn btn-ghost btn-small" type="button" data-cancel-edit>Cancel</button></div>
       </form></li>`;
     });
-    const own = ctx.habits.map((h) => `<li><form class="ha-row" data-habit="${esc(h.id)}" novalidate>
-        <span class="habit-icon sm" aria-hidden="true">${h.icon || HABIT_CATEGORIES[h.category]}</span>
+    const own = ctx.habits.map((h) => `<li class="ha-item"><div class="ha-summary">
+        <span class="habit-icon sm" aria-hidden="true">${habitIcon(h)}</span>
+        <span class="ha-summary-text"><b>${esc(h.name)}</b><small>${esc(h.category)} · ${fmt(h.target, h.target % 1 ? 1 : 0)} ${esc(h.unit)}/day</small></span>
+        <button class="btn btn-ghost btn-small" type="button" data-edit-habit aria-expanded="false" aria-controls="ha-own-${esc(h.id)}">Edit</button>
+      </div><form id="ha-own-${esc(h.id)}" class="ha-row" data-habit="${esc(h.id)}" hidden novalidate>
         <div class="ha-fields">
           <div class="field"><label for="hc-${esc(h.id)}-n">Name</label><input id="hc-${esc(h.id)}-n" name="name" maxlength="60" value="${esc(h.name)}" required></div>
           <div class="field"><label for="hc-${esc(h.id)}-c">Category</label><select id="hc-${esc(h.id)}-c" name="category">${categoryOptions(h.category)}</select></div>
           <div class="field"><label for="hc-${esc(h.id)}-t">Daily target</label><input id="hc-${esc(h.id)}-t" name="target" type="number" inputmode="decimal" step="any" min="0.1" value="${esc(h.target)}"></div>
           <div class="field"><label for="hc-${esc(h.id)}-u">Unit</label><input id="hc-${esc(h.id)}-u" name="unit" maxlength="20" value="${esc(h.unit)}" list="nh-units"></div>
         </div>
-        <div class="ha-actions"><button class="btn btn-small" type="submit">Save</button><button class="btn btn-ghost btn-small" type="button" data-remove>Remove</button></div>
+        <div class="ha-actions"><button class="btn btn-small" type="submit">Save</button><button class="btn btn-ghost btn-small" type="button" data-cancel-edit>Cancel</button><button class="btn btn-ghost btn-small" type="button" data-remove>Remove</button></div>
       </form></li>`);
     return `<section class="card habit-admin">
         <p class="kicker">Edit habits</p>
-        <p class="hint" style="margin-top:0">Rename, recategorise, change targets or hide any habit. ${first} sees the changes on their Habits and Home.</p>
+        <p class="hint" style="margin-top:0">Choose Edit on a habit to change its name, category, target or visibility.</p>
         <p class="section-label">Coach targets</p><ul class="ha-list">${builtIn.join('')}</ul>
-        <p class="section-label">${first}'s own habits</p>${own.length ? `<ul class="ha-list">${own.join('')}</ul>` : `<p class="hint">${first} hasn't added any yet. You can add one below.</p>`}
+        <p class="section-label">${first}'s own habits</p>${own.length ? `<ul class="ha-list">${own.join('')}</ul>` : `<p class="hint">${first} hasn't added any yet.</p>`}
         <datalist id="nh-units"><option>times</option><option>minutes</option><option>pages</option><option>serves</option><option>L</option></datalist>
       </section>
-      ${ctx.habitsReady ? `<form id="coach-add-habit" class="card" novalidate><p class="kicker">Add a habit for ${first}</p>
+      ${ctx.habitsReady ? `<section class="card habit-add"><button class="btn" type="button" data-open-add-habit aria-expanded="false" aria-controls="coach-add-habit">＋ Add habit</button>
+      <form id="coach-add-habit" hidden novalidate><p class="kicker">Add a habit for ${first}</p>
         <div class="grid-2">
           <div class="field"><label for="ch-name">Habit</label><input id="ch-name" name="name" maxlength="60" placeholder="e.g. 10 minute walk after dinner" required></div>
           <div class="field"><label for="ch-cat">Category</label><select id="ch-cat" name="category">${categoryOptions('Lifestyle')}</select></div>
           <div class="field"><label for="ch-target">Daily target</label><input id="ch-target" name="target" type="number" inputmode="decimal" step="any" min="0.1" value="1"></div>
           <div class="field"><label for="ch-unit">Unit</label><input id="ch-unit" name="unit" maxlength="20" value="times" list="nh-units"></div>
         </div>
-        <button class="btn" type="submit">Add habit</button></form>` : ''}`;
+        <div class="ha-add-actions"><button class="btn" type="submit">Save habit</button><button class="btn btn-ghost" type="button" data-cancel-add>Cancel</button></div></form></section>` : ''}`;
   }
 
   function habitsSqlError(err) {
@@ -2701,6 +2719,37 @@
       toast(msg);
       return loadCtx(id, true).then((fresh) => renderCoachHabits(fresh, nav, title, sub, day));
     };
+    root.querySelectorAll('[data-edit-habit]').forEach((button) => button.addEventListener('click', () => {
+      const form = document.getElementById(button.getAttribute('aria-controls'));
+      const opening = form.hidden;
+      root.querySelectorAll('.ha-row:not([hidden])').forEach((openForm) => {
+        openForm.hidden = true;
+        openForm.closest('.ha-item').querySelector('[data-edit-habit]').setAttribute('aria-expanded', 'false');
+      });
+      form.hidden = !opening;
+      button.setAttribute('aria-expanded', String(opening));
+      if (opening) form.querySelector('input[name="name"]').focus();
+    }));
+    root.querySelectorAll('[data-cancel-edit]').forEach((button) => button.addEventListener('click', () => {
+      const form = button.closest('.ha-row');
+      form.reset();
+      form.hidden = true;
+      form.closest('.ha-item').querySelector('[data-edit-habit]').setAttribute('aria-expanded', 'false');
+    }));
+    const openAdd = root.querySelector('[data-open-add-habit]');
+    if (openAdd) openAdd.addEventListener('click', () => {
+      const form = document.getElementById('coach-add-habit');
+      form.hidden = !form.hidden;
+      openAdd.setAttribute('aria-expanded', String(!form.hidden));
+      if (!form.hidden) form.querySelector('input[name="name"]').focus();
+    });
+    const cancelAdd = root.querySelector('[data-cancel-add]');
+    if (cancelAdd) cancelAdd.addEventListener('click', () => {
+      const form = document.getElementById('coach-add-habit');
+      form.reset();
+      form.hidden = true;
+      openAdd.setAttribute('aria-expanded', 'false');
+    });
     root.querySelectorAll('form[data-builtin]').forEach((form) =>
       form.addEventListener('submit', (e) => {
         e.preventDefault();

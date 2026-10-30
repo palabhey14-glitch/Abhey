@@ -698,6 +698,8 @@ body.app { background: linear-gradient(180deg, #eef4fe 0, var(--sky) 240px); }
 }
 .habit-icon svg { width: 22px; height: 22px; }
 .habit-icon.sm { display: inline-grid; width: 26px; height: 26px; border-radius: 8px; font-size: 14px; margin-right: 8px; vertical-align: middle; }
+.habit-icon .ci-icon { width: 22px; height: 22px; color: inherit; }
+.habit-icon.sm .ci-icon { width: 17px; height: 17px; }
 
 .state { display: grid; place-items: center; flex: none; width: 26px; height: 26px; border-radius: 50%; color: var(--white); }
 .state svg { width: 18px; height: 18px; }
@@ -1757,8 +1759,14 @@ body.app.has-active-workout { padding-bottom: calc(156px + env(safe-area-inset-b
 
 /* Coach Habits: edit every habit */
 .ha-list { list-style: none; margin: 0; padding: 0; }
-.ha-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px 0; border-top: 1px solid #edf2fb; }
-.ha-row .habit-icon { margin-top: 26px; }
+.ha-item { border-top: 1px solid #edf2fb; }
+.ha-summary { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 10px 0; }
+.ha-summary .habit-icon { margin: 0; }
+.ha-summary-text { flex: 1; min-width: 0; }
+.ha-summary-text b, .ha-summary-text small { display: block; }
+.ha-summary-text small { color: var(--ink-2); font-size: 12px; }
+.ha-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 10px 0 16px 38px; }
+.ha-row[hidden], #coach-add-habit[hidden] { display: none; }
 .ha-row.is-hidden .ha-fields > .field { opacity: 0.55; }
 .ha-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0 12px; align-items: start; }
 .ha-fields .field { margin: 0 0 8px; }
@@ -1767,10 +1775,13 @@ body.app.has-active-workout { padding-bottom: calc(156px + env(safe-area-inset-b
 .ha-note { margin: 10px 0 0; font-size: 14px; color: var(--ink-2); }
 .ha-show { grid-column: 1 / -1; display: inline-flex; align-items: center; gap: 8px; margin: 2px 0 0; font-size: 13px; font-weight: 600; cursor: pointer; }
 .ha-show input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-color: var(--brand-blue); }
-.ha-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 26px; }
+.ha-actions { display: flex; flex-direction: column; gap: 6px; }
+.habit-add > [data-open-add-habit] { width: 100%; }
+#coach-add-habit { margin-top: 18px; padding-top: 18px; border-top: 1px solid #edf2fb; }
+.ha-add-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 @media (max-width: 640px) {
-  .ha-row { grid-template-columns: auto minmax(0, 1fr); }
-  .ha-actions { grid-column: 1 / -1; flex-direction: row; margin-top: 0; }
+  .ha-row { grid-template-columns: minmax(0, 1fr); padding-left: 0; }
+  .ha-actions { flex-direction: row; flex-wrap: wrap; }
 }
 
 /* Coach: plan type badge in the header */

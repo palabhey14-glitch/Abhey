@@ -29,6 +29,9 @@
     water: '<path d="M12 2S5 10 5 15a7 7 0 0 0 14 0c0-5-7-13-7-13Z"/>',
     food: '<path d="M5 2v8m3-8v8m3-8v8M5 10h6m-3 0v12M17 2c-3 3-3 9 0 11h2V2h-2Zm2 11v9"/>',
     flame: '<path d="M12 22c5 0 8-4 8-9 0-3-2-5-4-7 0 3-1 4-3 5 0-4-2-7-5-9 0 4-1 6-3 9-3 5 0 11 7 11Z"/>',
+    protein: '<path d="M6 18c-2 0-3 1-3 2s2 2 3 1c1 1 3 0 3-2l6-6a5 5 0 1 0-4-4l-6 6c-2 0-2 2-1 3Z"/><path d="M14 6c1.5-1 3.5-1 5 0"/>',
+    fibre: '<path d="M20 4C10 4 4 8 4 16a4 4 0 0 0 4 4c8 0 12-6 12-16Z"/><path d="M5 19c3-5 6-8 12-11M9 15l-1-5m5 1 5 1"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   };
   const SECTIONS = ['overview', 'phases', 'calendar', 'physique', 'nutrition', 'goals', 'foodlog', 'activity', 'sleep', 'recovery', 'habits', 'health-markers', 'training', 'supps', 'checkins'];
   function icon(key, badge = false) {
