@@ -1435,6 +1435,7 @@
 
       ${t.coach_note ? `<div class="note-card"><span class="note-mark" aria-hidden="true">R<i>.</i></span><div><p class="kicker">From ${esc(COACH)} · biggest lever this week</p><p>${esc(t.coach_note)}</p></div></div>` : ''}
 
+      <a class="home-choice home-files-link" href="#files">${ICONS.files}<span><b>Files</b><small>Shared resources and your photo gallery</small></span><span>›</span></a>
       <section class="home-pinned">
         <div class="home-section-head"><h2 class="sec-title">Pinned Metrics</h2><button type="button" data-pin="metric_keys">Edit</button></div>
         ${pinnedMetrics.length ? `<div class="pinned-grid">${pinnedMetrics.map(([key, name, icon]) => `<a class="pinned-tile" href="${key === 'steps' || key === 'cardio' ? '#training' : '#habits'}">${CI.icon(icon)}<span><b>${esc(name)}</b><small>${esc(metricValue(key))}</small></span></a>`).join('')}</div>` : `<button type="button" class="home-choice" data-pin="metric_keys">${CI.icon('health-markers')}<span><b>Add Pinned Metrics</b><small>Choose the metrics you want on your home screen.</small></span><span>›</span></button>`}
@@ -4460,7 +4461,7 @@
         case 'hub':
           return await renderHub();
         case 'files':
-          return await FILES.client(parts[1]);
+          return await FILES.client(parts[1], parts[2], parts[3]);
         case 'training':
           return parts[1] === 'log' ? await renderWorkoutLog(parts[2], Number(parts[3]) || undefined) : await renderTraining(parts[1]);
         case 'supps':

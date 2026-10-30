@@ -59,4 +59,12 @@
 .files-menu{display:grid;gap:3px;padding:12px}.files-menu button{border:0;background:transparent;text-align:left;border-radius:8px;padding:12px;color:var(--ink);font:600 13px var(--font);cursor:pointer}.files-menu button:hover{background:#f2f5fa}.files-menu .danger{color:#c2464d}
 .files-client{display:grid;gap:10px;margin-top:8px}.files-back{margin:0 0 8px;font-size:13px}.files-client-card{display:flex;gap:12px;align-items:center;background:#fff;border:1px solid var(--hair);border-radius:14px;padding:14px 16px;text-decoration:none;color:var(--ink);box-shadow:0 5px 14px #1023410a}
 .files-client-card>span:nth-child(2){min-width:0;flex:1}.files-client-card button{border:0;background:#eaf1ff;color:var(--brand-blue);border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:18px}
+.files-client-heading{font-size:14px;margin:20px 2px 2px;color:var(--ink)}
+.files-photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.files-photo{overflow:hidden;background:#fff;border:1px solid var(--hair);border-radius:14px;color:var(--ink);text-decoration:none;box-shadow:0 5px 14px #1023410a}
+.files-photo img{display:block;width:100%;aspect-ratio:1;object-fit:cover;background:#edf2f7}
+.files-photo>svg{display:block;width:55px;height:55px;margin:45px auto;color:var(--brand-blue)}
+.files-photo>span{display:grid;gap:3px;padding:10px 12px}.files-photo b{font-size:12px}.files-photo small{color:var(--muted);font-size:11px}
+.files-photo button{border:0;background:none;color:#b7404a;font:700 11px var(--font);padding:0 12px 12px;cursor:pointer}
+.files-gallery-action{justify-self:start;border:0;border-radius:10px;background:var(--navy);color:#fff;text-decoration:none;padding:10px 14px;font:700 12px var(--font);cursor:pointer}
 @media(max-width:700px){.files-table-wrap{overflow-x:auto}.files-table{min-width:700px}.files-form{display:block}.files-modal-nav{border-right:0;border-bottom:1px solid var(--hair);flex-direction:row;padding:4px}.files-modal-nav button.on{border-right:0;border-bottom:3px solid var(--brand-blue)}.files-modal-main{min-height:0}.files-dialog{max-height:calc(100vh - 24px)}}

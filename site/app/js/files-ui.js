@@ -177,13 +177,83 @@
     h.root.querySelectorAll('[data-edit-item]').forEach((b) => b.onclick = () => fileEditor(folder, items.find((x) => x.id === b.dataset.editItem), people));
     h.root.querySelectorAll('[data-delete-item]').forEach((b) => b.onclick = () => removeFile(items.find((x) => x.id === b.dataset.deleteItem), folder.id));
   }
-  async function client(folderId) {
+  const galleryIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m4 17 5-5 3 3 3-4 5 6"/></svg>';
+  const photoFolder = (href, title, detail, symbol = icon('folder')) => `<a class="files-client-card" href="${href}"><span class="files-icon">${symbol}</span><span><b>${e(title)}</b><small>${e(detail)}</small></span><span aria-hidden="true">›</span></a>`;
+  async function photoUrls(rows) {
+    const paths = rows.map((row) => row.storage_path);
+    if (!paths.length) return {};
+    const result = fail(await h.sb.storage.from('progress-photos').createSignedUrls(paths, 3600));
+    return Object.fromEntries(result.filter((row) => row.signedUrl).map((row) => [row.path, row.signedUrl]));
+  }
+  async function gallery(section, week) {
+    const uid = h.state.me.id;
+    if (!section) {
+      h.shell('Gallery', 'Your personal photo library', `<div class="files-client"><a class="files-back" href="#files">‹ Files</a>${photoFolder('#files/gallery/checkins', 'Check-in Photos', 'Progress photos grouped by program week and date', galleryIcon)}${photoFolder('#files/gallery/other', 'Other Photos', 'Photos you add outside check-ins', galleryIcon)}</div>`, 'hub');
+      return;
+    }
+    if (section === 'checkins') {
+      const photos = fail(await h.sb.from('progress_photos').select('*').eq('user_id', uid).order('created_at', { ascending: false }));
+      if (week != null) {
+        const chosen = photos.filter((row) => row.week_number === Number(week));
+        if (!Number.isInteger(Number(week)) || Number(week) < 0 || Number(week) > 12) { location.hash = '#files/gallery/checkins'; return; }
+        const urls = await photoUrls(chosen);
+        const title = Number(week) === 0 ? 'Start of program' : `Week ${Number(week)} of program`;
+        h.shell(title, chosen.length ? `Check-in photos · ${date(chosen[chosen.length - 1].created_at)}` : 'Check-in photos', `<div class="files-client"><a class="files-back" href="#files/gallery/checkins">‹ Check-in Photos</a>${chosen.length ? `<div class="files-photo-grid">${chosen.map((row) => `<a class="files-photo" href="${e(urls[row.storage_path] || '#')}" target="_blank" rel="noopener noreferrer">${urls[row.storage_path] ? `<img src="${e(urls[row.storage_path])}" alt="${e(row.pose)} view">` : galleryIcon}<span><b>${e(row.pose[0].toUpperCase() + row.pose.slice(1))} view</b><small>${date(row.created_at)}</small></span></a>`).join('')}</div>` : '<div class="card files-empty">No check-in photos in this week.</div>'}<a class="files-gallery-action" href="#photos/${Number(week)}">View or update this check-in →</a></div>`, 'hub');
+        return;
+      }
+      const groups = new Map();
+      for (const row of photos) {
+        if (!groups.has(row.week_number)) groups.set(row.week_number, []);
+        groups.get(row.week_number).push(row);
+      }
+      const folders = [...groups].sort((a, b) => b[0] - a[0]).map(([n, rows]) => photoFolder(`#files/gallery/checkins/${n}`, n === 0 ? 'Start of program' : `Week ${n} of program`, `${date(rows[rows.length - 1].created_at)} · ${rows.length} photo${rows.length === 1 ? '' : 's'}`, galleryIcon)).join('');
+      h.shell('Check-in Photos', 'Organised by program week and upload date', `<div class="files-client"><a class="files-back" href="#files/gallery">‹ Gallery</a>${folders || '<div class="card files-empty">No check-in photos uploaded yet. Photos you add during a check-in will appear here.</div>'}</div>`, 'hub');
+      return;
+    }
+    if (section !== 'other') { location.hash = '#files/gallery'; return; }
+    const photos = fail(await h.sb.from('client_other_photos').select('*').eq('user_id', uid).order('created_at', { ascending: false }));
+    const urls = await photoUrls(photos);
+    h.shell('Other Photos', 'Photos outside your check-ins', `<div class="files-client"><a class="files-back" href="#files/gallery">‹ Gallery</a><button type="button" class="files-gallery-action" data-add-photo>＋ Add photo</button>${photos.length ? `<div class="files-photo-grid">${photos.map((row) => `<article class="files-photo">${urls[row.storage_path] ? `<a href="${e(urls[row.storage_path])}" target="_blank" rel="noopener noreferrer"><img src="${e(urls[row.storage_path])}" alt="${e(row.caption || 'Other photo')}"></a>` : galleryIcon}<span><b>${e(row.caption || 'Photo')}</b><small>${date(row.created_at)}</small></span><button type="button" data-delete-photo="${e(row.id)}" aria-label="Delete ${e(row.caption || 'photo')}">Delete</button></article>`).join('')}</div>` : '<div class="card files-empty">No other photos yet. Add a photo to keep it here.</div>'}</div>`, 'hub');
+    h.root.querySelector('[data-add-photo]').onclick = () => {
+      const el = dialog('Add photo', '<form class="files-form"><div class="files-modal-main"><label>Photo<input type="file" name="photo" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" required></label><label>Label (optional)<input type="text" name="caption" maxlength="120" placeholder="e.g. Starting progress"></label><p class="files-error" role="alert"></p></div><footer><button type="button" class="btn btn-ghost" data-close>Cancel</button><button type="submit" class="btn">Add photo</button></footer></form>');
+      const form = el.querySelector('form');
+      form.onsubmit = async (event) => {
+        event.preventDefault();
+        const button = form.querySelector('[type="submit"]'); button.disabled = true;
+        let path;
+        try {
+          const blob = form.elements.namedItem('photo').files[0];
+          if (!blob || !['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'].includes(blob.type)) throw Error('Choose a JPEG, PNG, WebP or HEIC photo.');
+          if (blob.size > 10485760) throw Error('Photos must be 10 MB or smaller.');
+          const ext = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/heic': 'heic', 'image/heif': 'heif' }[blob.type];
+          path = `${uid}/gallery/${crypto.randomUUID()}.${ext}`;
+          fail(await h.sb.storage.from('progress-photos').upload(path, blob, { contentType: blob.type, upsert: false }));
+          fail(await h.sb.from('client_other_photos').insert({ user_id: uid, storage_path: path, caption: form.elements.namedItem('caption').value.trim() || null }));
+          el.close(); h.toast('Photo added.'); await gallery('other');
+        } catch (err) {
+          if (path) await h.sb.storage.from('progress-photos').remove([path]);
+          form.querySelector('.files-error').textContent = h.friendlyError(err); button.disabled = false;
+        }
+      };
+    };
+    h.root.querySelectorAll('[data-delete-photo]').forEach((button) => button.onclick = async () => {
+      const photo = photos.find((row) => row.id === button.dataset.deletePhoto);
+      if (!photo || !confirm('Delete this photo?')) return;
+      try {
+        fail(await h.sb.from('client_other_photos').delete().eq('id', photo.id).eq('user_id', uid));
+        fail(await h.sb.storage.from('progress-photos').remove([photo.storage_path]));
+        h.toast('Photo deleted.'); await gallery('other');
+      } catch (err) { h.toast(h.friendlyError(err), true); }
+    });
+  }
+  async function client(folderId, section, week) {
+    if (folderId === 'gallery') return gallery(section, week);
     const [fResult, iResult] = await Promise.all([h.sb.from('shared_folders').select('*').order('name'), h.sb.from('shared_files').select('*').order('created_at', { ascending: false })]);
     const folders = fail(fResult), items = fail(iResult);
     const folder = folderId && folders.find((x) => x.id === folderId);
     if (folderId && !folder) { location.hash = '#files'; return; }
-    const cards = folder ? items.filter((x) => x.folder_id === folder.id).map((f) => `<article class="files-client-card"><span class="files-icon ${f.kind}">${icon(f.kind)}</span><span><b>${e(f.title)}</b><small>${e(f.description || (f.kind === 'link' ? 'Link' : size(f.size_bytes)))}</small></span><button type="button" data-open-item="${e(f.id)}" aria-label="Open ${e(f.title)}">↗</button></article>`).join('') : folders.map((f) => `<a class="files-client-card" href="#files/${e(f.id)}"><span class="files-icon">${icon('folder')}</span><span><b>${e(f.name)}</b><small>${e(f.description || `${items.filter((x) => x.folder_id === f.id).length} items`)}</small></span><span>›</span></a>`).join('');
-    h.shell(folder ? folder.name : 'Files', folder ? 'Shared with you by your coach' : 'Resources from your coach', `<div class="files-client">${folder ? '<a class="files-back" href="#files">‹ All files</a>' : ''}${cards || '<div class="card files-empty">No files have been shared with you yet.</div>'}</div>`, 'hub');
+    const cards = folder ? items.filter((x) => x.folder_id === folder.id).map((f) => `<article class="files-client-card"><span class="files-icon ${f.kind}">${icon(f.kind)}</span><span><b>${e(f.title)}</b><small>${e(f.description || (f.kind === 'link' ? 'Link' : size(f.size_bytes)))}</small></span><button type="button" data-open-item="${e(f.id)}" aria-label="Open ${e(f.title)}">↗</button></article>`).join('') : folders.map((f) => photoFolder(`#files/${e(f.id)}`, f.name, f.description || `${items.filter((x) => x.folder_id === f.id).length} items`)).join('');
+    h.shell(folder ? folder.name : 'Files', folder ? 'Shared with you by your coach' : 'Resources your coach has shared with you', `<div class="files-client">${folder ? '<a class="files-back" href="#files">‹ Files</a>' : `<h2 class="files-client-heading">Your gallery</h2>${photoFolder('#files/gallery', 'Gallery', 'Check-in Photos and Other Photos', galleryIcon)}<h2 class="files-client-heading">Shared by your coach</h2>`}${cards || '<div class="card files-empty">No files have been shared with you yet.</div>'}</div>`, 'hub');
     h.root.querySelectorAll('[data-open-item]').forEach((b) => b.onclick = () => openFile(items.find((x) => x.id === b.dataset.openItem)));
   }
   window.RewiredFilesUI = { init, coach, client };
