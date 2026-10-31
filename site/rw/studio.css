@@ -1,0 +1,62 @@
+/* Studio Light, the live landing design (picked 2026-10-31). The grey studio wall from the shoot becomes the page.
+   Thin black grotesk, white app cards floating around the photograph,
+   one Rewired blue for actions. Bright and calm. */
+
+.rw[data-rw="v3"] {
+  --bg: #ebe9e6; --bg2: #e1dedA; --ink: #121212; --ink2: #85807a; --line: rgba(18, 18, 18, .1);
+  --accent: #2444f9; --on-accent: #fff;
+  --card: #fff; --card-ink: #121212; --card-soft: #85807a; --card-line: #eeece9;
+  --dark: #121212; --dark2: #1d1d1d; --dark-ink: #f4f2ef; --dark-soft: #8f8a84; --dark-line: rgba(255, 255, 255, .09);
+  --display: 'Hanken Grotesk', 'Helvetica Neue', Arial, sans-serif; --body: 'Hanken Grotesk', 'Helvetica Neue', Arial, sans-serif; --mono: 'JetBrains Mono', ui-monospace, monospace;
+  --h-w: 300; --h-track: -.045em; --h-lh: .98;
+  --r: 24px; --btn-r: 999px;
+  --shadow: 0 22px 50px rgba(30, 28, 25, .1), 0 2px 6px rgba(30, 28, 25, .05);
+}
+.rw[data-rw="v3"] .ui-ic { background: #e8edff; color: #2444f9; }
+
+.rw[data-rw="v3"] .hero { position: relative; overflow: hidden; background: radial-gradient(50% 60% at 72% 42%, #f6f5f3 0%, #ebe9e6 70%); padding-bottom: 36px; }
+.rw[data-rw="v3"] .hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; min-height: min(760px, calc(100svh - 120px)); }
+.rw[data-rw="v3"] .hero-copy { display: grid; gap: 28px; align-content: center; justify-items: start; padding-block: 56px; position: relative; z-index: 2; }
+.rw[data-rw="v3"] .hero h1 { font-size: clamp(58px, 8vw, 120px); max-width: 8ch; }
+.rw[data-rw="v3"] .hero h1 em { font-style: normal; color: #a19b94; }
+.rw[data-rw="v3"] .hero .lead { color: #57524c; }
+.rw[data-rw="v3"] .hero .b-ghost { border-color: rgba(18, 18, 18, .2); }
+.rw[data-rw="v3"] .hero-stage { position: relative; min-height: 560px; }
+.rw[data-rw="v3"] .hero-stage::before { content: ""; position: absolute; left: 50%; bottom: 0; width: 82%; aspect-ratio: 1; translate: -50% 18%; border-radius: 50%; border: 1px solid rgba(18, 18, 18, .08); box-shadow: 0 0 0 60px rgba(255, 255, 255, .25), 0 0 0 61px rgba(18, 18, 18, .05); }
+.rw[data-rw="v3"] .person { position: absolute; bottom: 0; left: 50%; translate: -50% 0; height: 96%; width: auto; max-width: none; }
+.rw[data-rw="v3"] .hero .f1 { left: -6%; top: 46%; }
+.rw[data-rw="v3"] .hero .f2 { right: -6%; top: 30%; }
+.rw[data-rw="v3"] .hero .f3 { right: 0; bottom: 6%; }
+.rw[data-rw="v3"] .hero .f2 { --bob: -2s; }
+.rw[data-rw="v3"] .hero .f3 { --bob: -4s; }
+.rw[data-rw="v3"] .hero > .w:last-child { border-top: 1px solid var(--line); padding-top: 24px; }
+
+.rw[data-rw="v3"] .why-stage { background: #f6f5f3; }
+.rw[data-rw="v3"] .promise-card { background: #fff; }
+.rw[data-rw="v3"] .block .tile-ic { color: #8ea0ff; }
+.rw[data-rw="v3"] .big b { color: #fff; }
+.rw[data-rw="v3"] .big b::after { content: "."; color: #2444f9; }
+
+@media (max-width: 900px) {
+  .rw[data-rw="v3"] .hero-grid { grid-template-columns: 1fr; min-height: 0; gap: 0; }
+  .rw[data-rw="v3"] .hero-copy { padding: 48px 0 16px; }
+  .rw[data-rw="v3"] .hero-stage { min-height: 0; height: 500px; }
+  .rw[data-rw="v3"] .hero .f1 { left: 0; top: 46%; }
+  .rw[data-rw="v3"] .hero .f2 { right: 0; top: auto; bottom: 24%; }
+  .rw[data-rw="v3"] .hero .f3 { display: none; }
+}
+@media (max-width: 680px) {
+  .rw[data-rw="v3"] .hero-stage { height: 440px; margin-inline: -16px; }
+  .rw[data-rw="v3"] .hero .f1 { left: 12px; top: 44%; }
+  .rw[data-rw="v3"] .hero .f1 .ui-stat { width: 168px; }
+  .rw[data-rw="v3"] .hero .f2 { right: 12px; bottom: 4%; }
+  .rw[data-rw="v3"] .hero .ui-msg { width: 232px; }
+}
+
+/* ---------- inner pages */
+body.rw-inner[data-rw="v3"] {
+  --navy: #121212; --navy-2: #0c0c0c; --navy-3: #2a2a2a; --ink: #121212; --ink-2: #5e5953; --paper: #ebe9e6; --cloud: #f6f5f3; --line: #d9d5d0;
+  --sand: #2444f9; --sand-ink: #2444f9; --sand-wash: #e8edff; --blue: #2444f9; --sky: #e8edff;
+  --serif: 'Hanken Grotesk', 'Helvetica Neue', Arial, sans-serif; --sans: 'Hanken Grotesk', 'Helvetica Neue', Arial, sans-serif;
+  --inner-h-w: 300; --inner-em: #a19b94; --inner-r: 0px; --inner-light: 1;
+}

@@ -4,19 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Start Rewired Coaching · Abhey Pal</title>
-  <meta name="description" content="Start Rewired Coaching, ongoing coaching with Abhey Pal at AUD $80 per week: a customised meal or macro plan, a workout program in the Rewired app, and fortnightly check-ins by email.">
-  <meta name="theme-color" content="#0b2545">
+  <meta name="description" content="Start Rewired Coaching, ongoing weekly coaching with Abhey Pal: a customised meal or macro plan, a workout program in the Rewired app, and fortnightly check-ins by email.">
+  <meta name="theme-color" content="#ebe9e6">
   <link rel="icon" href="/app/icons/favicon-32.png" sizes="32x32">
   <link rel="apple-touch-icon" href="/app/icons/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Source+Sans+3:ital,wght@0,400..700;1,400&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300..700&family=JetBrains+Mono:wght@400;500&display=swap">
   <link rel="preload" href="/assets/fonts/montserrat-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/home.css?rev=hook-2">
+  <link rel="stylesheet" href="/rw/inner.css?rev=1">
+  <link rel="stylesheet" href="/rw/studio.css?rev=1">
   <link rel="stylesheet" href="/legal-pages.css?rev=legal-1">
   <link rel="stylesheet" href="/plans.css?rev=entry-1">
 </head>
-<body>
+<body class="rw-inner" data-rw="v3">
   <header class="nav">
     <div class="wrap">
       <a class="brand" href="/" aria-label="Rewired Coaching with Abhey Pal, home">
@@ -40,9 +42,9 @@
     <section class="hero hero-short" aria-labelledby="entry-page-title">
       <div class="wrap">
         <div class="hero-copy">
-          <p class="eyebrow">Ongoing Coaching · AUD $80 per week</p>
+          <p class="eyebrow">Ongoing Coaching · Billed weekly</p>
           <h1 id="entry-page-title">Start Rewired <em>Coaching.</em></h1>
-          <p class="lead">AUD $80 per week. Personalised nutrition guidance, a structured workout program and a check-in every fortnight, with your plans in the Custom Rewired Coaching App and coaching by email.</p>
+          <p class="lead">Personalised nutrition guidance, a structured workout program and a check-in every fortnight, with your plans in the Custom Rewired Coaching App and coaching by email.</p>
           <a class="text-link light" href="pricing.html#compare">Compare it with Premium Coaching</a>
         </div>
       </div>
@@ -54,7 +56,7 @@
           <div class="entry-card">
             <p class="plan-label">Your package</p>
             <p class="price-name">Rewired Coaching</p>
-            <p class="amount">AUD $80 <span>per week</span></p>
+            <p class="amount">Weekly <span>subscription</span></p>
             <p>A customised meal plan or macro plan, a meal plan ebook, a workout program in the app, check-ins and plan updates every two weeks, and coaching by email.</p>
           </div>
           <div class="terms-box">
@@ -74,7 +76,7 @@
         <div class="apply-main">
           <form class="apply-form" id="entry-form" name="entry-level" method="POST" action="/entry-level.html" data-netlify="true" netlify-honeypot="company">
             <input type="hidden" name="form-name" value="entry-level">
-            <input type="hidden" name="package" value="Rewired Coaching, AUD $80 per week">
+            <input type="hidden" name="package" value="Rewired Coaching, weekly">
             <p class="hp"><label>Leave this empty <input name="company" tabindex="-1" autocomplete="off"></label></p>
             <fieldset>
               <legend>About you</legend>
@@ -169,7 +171,7 @@
 
             <fieldset>
               <legend>Before you subscribe</legend>
-              <label class="check"><input type="checkbox" name="terms" value="agreed" required><span>I understand Rewired Coaching is AUD $80 per week, billed weekly, my first four weeks are a committed coaching period, and I can cancel at any time once my fourth weekly payment has been taken.</span></label>
+              <label class="check"><input type="checkbox" name="terms" value="agreed" required><span>I understand Rewired Coaching is billed weekly at the price shown at checkout, my first four weeks are a committed coaching period, and I can cancel at any time once my fourth weekly payment has been taken.</span></label>
               <label class="check"><input type="checkbox" name="adult" value="yes" required><span>I’m 18 or over. Rewired coaching is for adults only.</span></label>
               <label class="check"><input type="checkbox" name="consent" value="yes" required><span>I agree to Rewired Coaching using these details to build my plan and contact me, as explained in the <a href="/privacy.html">Privacy Policy</a>. I’ve read the <a href="/terms.html#weekly">Terms &amp; Conditions</a>.</span></label>
               <label class="choice"><input type="checkbox" name="marketing" value="yes"><span>Send me occasional coaching tips and offers by email. <small>Optional. Unsubscribe any time.</small></span></label>
@@ -179,9 +181,9 @@
           </form>
           <div class="apply-done" id="entry-done" tabindex="-1" hidden>
             <h2>Details received.</h2>
-            <p>Last step. Subscribe to <strong>Rewired Coaching</strong> at <strong>AUD $80 per week</strong>, billed weekly. Your first four weeks are a committed coaching period, and after your fourth weekly payment you can cancel at any time.</p>
+            <p>Last step. Subscribe to <strong>Rewired Coaching</strong> , billed weekly at the price shown at checkout. Your first four weeks are a committed coaching period, and after your fourth weekly payment you can cancel at any time.</p>
             <div class="actions">
-              <a class="btn btn-dark" data-join-entry href="mailto:coaching@abheyrewired.com">Subscribe for AUD $80 a week</a>
+              <a class="btn btn-dark" data-join-entry href="mailto:coaching@abheyrewired.com">Subscribe to Rewired Coaching</a>
             </div>
             <p class="fine" data-join-entry-note hidden>Online checkout is being set up. Email me and I’ll send your secure payment link.</p>
             <p class="fine">Payment is handled securely by Stripe. Your plans arrive in the Custom Rewired Coaching App, and our coaching conversation happens by email.</p>
