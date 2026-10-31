@@ -1,0 +1,138 @@
+/* Approved client preview, backed by the existing client data and routes. */
+body.app[data-client-screen='home'] { background: #f5f7fc; }
+body.app[data-client-screen='home'] .topbar { background: #2444f9; max-width: 720px; padding: calc(16px + env(safe-area-inset-top)) 20px 8px; }
+body.app[data-client-screen='home'] .topbar .title,
+body.app[data-client-screen='calendar'] .topbar .title,
+body.app[data-client-screen='meals'] .topbar .title { text-align: left; font-size: 18px; font-weight: 800; letter-spacing: -.02em; }
+body.app[data-client-screen='home'] .topbar .icon-btn { background: #fff; border: 0; color: #2444f9; box-shadow: none; }
+body.app[data-client-screen='home'] .topbar .avatar { background: #ffffff2b; border: 1px solid #ffffff88; color: #fff; }
+body.app[data-client-screen='home'] main.screen { max-width: 720px; padding: 0 0 26px; }
+.client-home { color: #0b2545; }
+.client-home-top { padding: 12px 20px 40px; background: linear-gradient(165deg,#2444f9 0%,#3352ee 67%,#6b82f7 100%); color: #fff; }
+.client-home-top p { margin: 0 0 7px; color: #e5ebff; font-size: 13px; font-weight: 700; }
+.client-home-top h1 { margin: 0; color: #fff; font-size: clamp(28px,8vw,34px); line-height: 1.12; letter-spacing: -.035em; }
+.client-home-top > span { display: block; margin-top: 10px; color: #e6ecff; font-size: 14px; }
+.client-home-body { position: relative; margin-top: -16px; padding: 0 18px 20px; }
+.client-home-session { padding: 18px; border-radius: 16px; background: #fff; box-shadow: 0 10px 28px #0b25451a; }
+.client-home-session-head { display: flex; align-items: center; gap: 12px; }
+.client-home-session-head > span { display: grid; place-items: center; width: 45px; height: 45px; border-radius: 13px; background: #eaf0ff; color: #2444f9; }
+.client-home-session-head svg { width: 23px; height: 23px; }
+.client-home-session-head small { display: block; color: #52627b; font-size: 12px; font-weight: 750; }
+.client-home-session-head h2 { margin: 2px 0 0; font-size: 19px; }
+.client-home-session > p { margin: 13px 0 17px; color: #52627b; font-size: 13px; }
+.client-home-actions { display: flex; gap: 9px; }
+.client-home-actions a { display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex: 1; min-height: 46px; padding: 9px; border: 1px solid #b8c7ea; border-radius: 11px; color: #0b2545; font-size: 13px; font-weight: 800; text-decoration: none; }
+.client-home-actions a:first-child { background: #2444f9; border-color: #2444f9; color: #fff; }
+.client-home-due { display: flex; align-items: center; gap: 12px; margin-top: 13px; padding: 14px; border: 1px solid #efcf8e; border-radius: 14px; background: #fff8e8; color: #0b2545; text-decoration: none; }
+.client-home-due > span:first-child { display: grid; place-items: center; flex: none; width: 38px; height: 38px; border-radius: 11px; background: #fbe9bd; color: #7b5100; }
+.client-home-due svg { width: 21px; height: 21px; }
+.client-home-due > span:nth-child(2) { flex: 1; min-width: 0; }
+.client-home-due b,.client-home-due small { display: block; }
+.client-home-due b { font-size: 14px; }
+.client-home-due small { margin-top: 3px; color: #6b521d; font-size: 12px; }
+.client-home-due i { color: #2444f9; font-size: 22px; font-style: normal; }
+.client-home-section-title { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 26px 1px 11px; }
+.client-home-section-title h2 { margin: 0; font-size: 18px; }
+.client-home-section-title a { color: #2444f9; font-size: 12px; font-weight: 800; text-decoration: none; }
+.client-home-glance { display: grid; gap: 8px; }
+.client-home-glance a { display: flex; align-items: center; gap: 10px; min-height: 50px; padding: 13px 14px; border-radius: 13px; background: #fff; color: #0b2545; box-shadow: 0 2px 10px #0b25450d; font-size: 13px; text-decoration: none; }
+.client-home-glance svg { width: 21px; height: 21px; color: #2444f9; }
+.client-home-glance b { margin-left: auto; text-align: right; font-size: 13px; }
+.client-home-quick { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+.client-home-quick a { display: grid; align-content: space-between; justify-items: start; min-height: 72px; padding: 12px; border-radius: 13px; background: #fff; color: #0b2545; font-size: 12px; font-weight: 750; text-decoration: none; }
+.client-home-quick svg { width: 21px; height: 21px; color: #2444f9; }
+.client-home-body > .ph-client-summary { margin-top: 20px; }
+.client-home-pinned { margin-top: 20px; padding: 13px; border-radius: 14px; background: #fff; }
+.client-home-pinned summary { color: #2444f9; font-size: 13px; font-weight: 750; cursor: pointer; }
+.client-home-pin-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.client-home-pin-actions button { min-height: 38px; padding: 7px 10px; border: 1px solid #dce4f5; border-radius: 9px; background: #f8faff; color: #0b2545; font: 700 12px var(--font); cursor: pointer; }
+.client-home-pinned .pinned-grid { margin-top: 12px; }
+.client-home-progress > div:last-child { padding: 17px; border-radius: 15px; background: #fff; box-shadow: 0 3px 15px #0b25450f; }
+.client-home-progress h3 { margin: 0; font-size: 18px; }
+.client-home-progress p { margin: 3px 0 0; color: #52627b; font-size: 12px; }
+.client-home-weight { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 18px 0 15px; }
+.client-home-weight strong { font-size: 31px; letter-spacing: -.035em; font-variant-numeric: tabular-nums; }
+.client-home-weight span { padding: 6px 9px; border-radius: 8px; background: #edf2ff; color: #1c3aca; font-size: 12px; font-weight: 800; text-align: right; }
+.client-home-progress-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-top: 13px; border-top: 1px solid #dce4f5; }
+.client-home-progress-detail small,.client-home-progress-detail b { display: block; }
+.client-home-progress-detail small { color: #52627b; font-size: 11px; }
+.client-home-progress-detail b { margin-top: 3px; font-size: 15px; }
+.client-home-progress > div:last-child > a { display: flex; justify-content: space-between; margin-top: 17px; padding-top: 13px; border-top: 1px solid #dce4f5; color: #2444f9; font-size: 12px; font-weight: 800; text-decoration: none; }
+
+/* The same date chooser appears on Nutrition, Training and Habits. */
+.client-date-stepper { display: grid; grid-template-columns: 48px minmax(0,1fr) 48px; align-items: center; gap: 8px; margin-bottom: 14px; padding: 8px; border: 1px solid #dbe6f7; border-radius: 16px; background: #f4f7ff; }
+.client-date-stepper > a { display: grid; place-items: center; min-height: 44px; border: 1px solid #dbe6f7; border-radius: 13px; background: #fff; color: #0b2545; font-size: 28px; line-height: 1; text-decoration: none; }
+.client-date-middle { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; }
+.client-date-middle b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: clamp(13px,4vw,18px); text-align: center; }
+.client-date-middle button { display: grid; place-items: center; flex: none; width: 42px; height: 42px; border: 1px solid #dbe6f7; border-radius: 13px; background: #fff; color: #0b2545; cursor: pointer; }
+.client-date-middle svg,.client-icon-button svg,.client-agenda-icon svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.client-date-panel { margin: -3px 0 15px; padding: 14px; border: 1px solid #dbe6f7; border-radius: 16px; background: #fff; box-shadow: 0 6px 20px #0b254517; }
+.client-date-panel[hidden] { display: none; }
+.client-date-panel label { display: block; margin-bottom: 8px; font-weight: 700; }
+.client-date-panel form { display: flex; gap: 8px; }
+.client-date-panel input { flex: 1; min-width: 0; min-height: 44px; padding: 8px; border: 1px solid #9fb0d7; border-radius: 10px; color: #0b2545; font: inherit; }
+.client-date-panel button { min-height: 44px; padding: 8px 13px; border: 0; border-radius: 10px; background: #2444f9; color: #fff; font: 700 13px var(--font); cursor: pointer; }
+.client-date-panel small { display: block; margin-top: 8px; color: #52627b; font-size: 12px; }
+.client-future-note { margin: 0 0 14px; padding: 12px 14px; border-radius: 12px; background: #e8f1fd; color: #0b2545; font-size: 13px; }
+.habit-row:disabled { cursor: default; opacity: 1; }
+
+/* Nutrition keeps the existing food log and coach plan controls below this summary. */
+.client-page-intro { margin: -16px -16px 18px; padding: 20px 18px 18px; border-bottom: 1px solid #dce4f5; background: #fff; }
+.client-page-intro h1 { margin: 0 0 5px; font-size: 28px; letter-spacing: -.035em; }
+.client-page-intro p { margin: 0; color: #52627b; font-size: 13px; line-height: 1.45; }
+.client-nutrition-summary { padding: 19px; border-radius: 16px; background: #0b2545; color: #fff; }
+.client-nutrition-top,.client-nutrition-caption { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.client-nutrition-top span { color: #dce6f7; font-size: 12px; font-weight: 700; }
+.client-nutrition-top b { font-size: 14px; text-align: right; }
+.client-nutrition-kcal { margin: 9px 0 7px; font-size: 35px; font-weight: 800; letter-spacing: -.035em; font-variant-numeric: tabular-nums; }
+.client-nutrition-kcal small { color: #dce6f7; font-size: 14px; font-weight: 600; letter-spacing: 0; }
+.client-nutrition-bar { height: 7px; margin: 15px 0 8px; overflow: hidden; border-radius: 99px; background: #435878; }
+.client-nutrition-bar i { display: block; height: 100%; border-radius: inherit; background: #f4c77d; }
+.client-nutrition-caption { color: #dce6f7; font-size: 11px; }
+.client-nutrition-note { margin: 12px 1px 20px; color: #52627b; font-size: 12px; }
+.client-macro-title { margin: 20px 0 10px; font-size: 17px; }
+body.app[data-client-screen='meals'] .macro { border-radius: 13px; box-shadow: none; }
+body.app[data-client-screen='meals'] .macro-grid { gap: 9px; }
+
+/* Calendar: a date-led client agenda. Coach calendar styling remains separate. */
+body.app[data-client-screen='calendar'] { background: #f5f7fc; }
+.client-calendar-controls { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 20px; }
+.client-calendar-controls strong { min-width: 0; font-size: 14px; }
+.client-calendar-controls > div { display: flex; gap: 6px; }
+.client-icon-button { display: grid; place-items: center; flex: none; width: 42px; height: 42px; border: 1px solid #dce4f5; border-radius: 11px; background: #fff; color: #0b2545; text-decoration: none; cursor: pointer; }
+.client-agenda-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.client-agenda-heading h2 { margin: 0; font-size: 19px; }
+.client-agenda-heading small { color: #2444f9; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.client-agenda-card { padding: 4px 15px; border-radius: 15px; background: #fff; box-shadow: 0 3px 15px #0b25450f; }
+.client-agenda-item { display: flex; align-items: flex-start; gap: 12px; width: 100%; min-height: 69px; padding: 14px 0; border: 0; background: none; color: #0b2545; font: inherit; text-align: left; text-decoration: none; cursor: pointer; }
+.client-agenda-item + .client-agenda-item { border-top: 1px solid #dce4f5; }
+.client-agenda-icon { display: grid; place-items: center; flex: none; width: 37px; height: 37px; border-radius: 11px; background: #eef2ff; color: #2444f9; }
+.client-agenda-item > span:nth-child(2) { flex: 1; min-width: 0; }
+.client-agenda-item b,.client-agenda-item small { display: block; }
+.client-agenda-item b { font-size: 14px; }
+.client-agenda-item small { margin-top: 4px; color: #52627b; font-size: 12px; line-height: 1.35; }
+.client-agenda-arrow { margin-left: auto; color: #2444f9; font-size: 19px; line-height: 1; }
+.client-calendar-next { margin-top: 23px; }
+.client-calendar-next h2 { margin: 0 0 11px; font-size: 18px; }
+.client-calendar-next > a { display: flex; align-items: center; gap: 12px; padding: 15px; border: 1px solid #efcf8e; border-radius: 14px; background: #fff8e8; color: #0b2545; text-decoration: none; }
+.client-calendar-next > a > span:first-child { min-width: 44px; color: #77500a; font-size: 11px; font-weight: 850; line-height: 1.2; text-align: center; }
+.client-calendar-next > a > span:first-child b { display: block; font-size: 22px; }
+.client-calendar-next > a > span:nth-child(2) { flex: 1; }
+.client-calendar-next > a > span:nth-child(2) b,.client-calendar-next > a > span:nth-child(2) small { display: block; }
+.client-calendar-next > a > span:nth-child(2) b { font-size: 14px; }
+.client-calendar-next > a > span:nth-child(2) small { margin-top: 3px; color: #685333; font-size: 12px; }
+.client-calendar-next i { color: #2444f9; font-size: 22px; font-style: normal; }
+.client-week { margin-top: 22px; border-top: 1px solid #dce4f5; }
+.client-week summary { display: flex; justify-content: space-between; padding: 14px 0; color: #2444f9; font-size: 14px; font-weight: 800; cursor: pointer; }
+.client-week-day { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 7px; padding: 11px 12px; border-radius: 11px; background: #fff; color: #0b2545; font-size: 12px; text-decoration: none; }
+.client-week-day span { color: #52627b; text-align: right; }
+.client-week-day[aria-current='date'] { background: #e9efff; outline: 1px solid #9eb1ff; }
+
+body.app[data-client-screen] :is(a,button,input,summary):focus-visible { outline: 3px solid #ad7100; outline-offset: 3px; }
+@media (max-width: 370px) {
+  .client-home-actions { flex-direction: column; }
+  .client-date-middle { gap: 3px; }
+  .client-date-middle b { font-size: 12px; }
+  .client-calendar-controls strong { font-size: 12px; }
+  .client-icon-button { width: 38px; height: 38px; }
+}

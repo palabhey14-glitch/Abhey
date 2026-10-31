@@ -78,8 +78,8 @@
     const a = ctx.nutritionReady ? N.assignmentFor(ctx.assignments, day) : null;
     const t = a ? N.targetsFor(a, day, dayKindFor(ctx, day)) : null;
     if (t && t.calories) return t;
-    const week = S.weekOf(ctx.profile.start_date, day) || Math.max(S.currentWeek(ctx.profile.start_date), 1);
-    const m = S.macrosForWeek(ctx.macros, week);
+    const week = S.weekOf(ctx.profile.start_date, day);
+    const m = week ? S.macrosForWeek(ctx.macros, week) : null;
     return m ? { calories: m.calories, protein_g: m.protein_g, carbs_g: m.carbs_g, fats_g: m.fats_g, fibre_g: m.fibre_g, from: 'weekly' } : null;
   }
 
@@ -116,6 +116,10 @@
     const r = value !== null && value !== undefined && target ? Math.min(1, value / target) : 0;
     return `<div class="macro"><span class="mk">${label}</span><b>${value === null || value === undefined ? '–' : fmt(value)}<small> / ${target ? fmt(target) : '–'} ${unit}</small></b>
       <div class="pbar ${st.level || 'empty'}" aria-hidden="true"><span style="width:${Math.round(r * 100)}%"></span></div><span class="ms ${st.level || ''}">${esc(st.label || 'Not logged')}</span></div>`;
+  }
+
+  function scheduledMacroTile(label, target) {
+    return `<div class="macro"><span class="mk">${label}</span><b>${target == null ? '–' : fmt(target)}<small> g target</small></b><span class="ms">Assigned in advance</span></div>`;
   }
 
   // Required notices for the data we show (AFCD licence clause 4A, ODbL).
@@ -661,18 +665,22 @@
     const week = S.weekOf(p.start_date, day) || Math.max(S.currentWeek(p.start_date), 1);
     const label = day === now ? 'Today' : day === tomorrow ? 'Tomorrow' : day === S.addDays(now, -1) ? 'Yesterday' : h.niceDate(day);
     const canLog = ctx.nutritionReady && day <= now;
-    const header = `<div class="daybar">
-        <a class="btn btn-ghost" href="#meals/${S.addDays(day, -1)}" aria-label="Previous day">‹</a>
-        <h2>${esc(label)}<div class="hint">${h.niceDate(day, { weekday: 'long', day: 'numeric', month: 'long' })}</div></h2>
-        <a class="btn btn-ghost" href="#meals/${S.addDays(day, 1)}" aria-label="Next day">›</a>
-      </div><div class="nutrition-date-row"><label for="nutrition-date">◫ Choose a date</label><input id="nutrition-date" type="date" value="${esc(day)}" aria-label="Choose a nutrition date"></div>`;
-    const bindDate = () => h.root.querySelector('#nutrition-date')?.addEventListener('change', (e) => {
-      if (e.target.value) location.hash = `#meals/${e.target.value}`;
-    });
+    const calendarIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18m-12 4h2m3 0h2"/></svg>';
+    const header = `<header class="client-page-intro"><h1>Nutrition</h1><p>Your food log and coach-set daily targets${week ? ` · Week ${week} of 12` : ''}</p></header><div class="client-date-stepper">
+        <a href="#meals/${S.addDays(day, -1)}" aria-label="Previous day">‹</a>
+        <div class="client-date-middle"><b>${esc(label)} · ${h.niceDate(day, { weekday: 'short', day: 'numeric', month: 'short', year: day === now ? undefined : 'numeric' })}</b><button type="button" data-client-date-toggle aria-label="Choose a nutrition date" aria-expanded="false" aria-controls="nutrition-date-panel">${calendarIcon}</button></div>
+        <a href="#meals/${S.addDays(day, 1)}" aria-label="Next day">›</a></div>
+      <div class="client-date-panel" id="nutrition-date-panel" hidden><label for="nutrition-date">Jump to any nutrition date</label><form data-client-date-form><input id="nutrition-date" type="date" value="${esc(day)}" required><button type="submit">Show date</button></form><small>Past dates show logged food. Future dates show scheduled coach assignments.</small></div>`;
+    const bindDate = () => {
+      const toggle = h.root.querySelector('[data-client-date-toggle]');
+      const panel = h.root.querySelector('#nutrition-date-panel');
+      toggle?.addEventListener('click', () => { panel.hidden = !panel.hidden; toggle.setAttribute('aria-expanded', String(!panel.hidden)); if (!panel.hidden) panel.querySelector('input').focus(); });
+      panel?.querySelector('form').addEventListener('submit', (event) => { event.preventDefault(); const input = panel.querySelector('input'); if (input.reportValidity() && /^\d{4}-\d{2}-\d{2}$/.test(input.value)) location.hash = `#meals/${input.value}`; });
+    };
 
     if (!ctx.nutritionReady) {
       const log = ctx.logs.find((l) => l.day === day) || {};
-      h.shell('Nutrition', `Week ${week} of 12`, `${header}${target ? `<div class="macro-grid">${macroTile('Calories', log.calories, target.calories, 'calories', 'kcal')}${macroTile('Protein', log.protein_g, target.protein_g, 'protein', 'g')}</div>` : ''}
+      h.shell('Rewired', '', `${header}${target ? `<div class="macro-grid">${macroTile('Calories', log.calories, target.calories, 'calories', 'kcal')}${macroTile('Protein', log.protein_g, target.protein_g, 'protein', 'g')}</div>` : ''}
         <div class="plan-empty"><span class="qt-ic" aria-hidden="true">${h.ICONS.meals}</span><div><b>Meal logging is on its way</b><p>${esc(h.COACH)} is setting it up. Until then, log your daily totals in the check-in.</p></div></div>
         <a class="btn-dark wide" href="#log/${day}">Open the daily check-in</a><a class="nutrition-supps-link" href="#supps"><span class="nutrition-supps-icon" aria-hidden="true">${h.ICONS.supps}</span><span><b>Supps</b><small>Assigned supplements and your intake</small></span><span class="nutrition-supps-chevron" aria-hidden="true">›</span></a>`, 'meals');
       bindDate();
@@ -710,20 +718,22 @@
     }
 
     h.shell(
-      'Nutrition',
-      `Week ${week} of 12`,
+      'Rewired',
+      '',
       `${header}
-      <section class="score left">
-        <p class="label">${day === now ? 'Eaten today' : day > now ? 'Planned' : 'Eaten'}</p>
-        <div class="big-num">${fmt(day > now ? r.plannedTotal.kcal : t.kcal)}<span> kcal</span></div>
-        <p class="label">${target ? `of ${fmt(target.calories)} kcal target${target.from === 'plan' ? ' (your plan’s total)' : ''}${target.dayLabel ? ` · ${esc(target.dayLabel)}` : ''}` : 'No calorie target yet'}${kst.label && t.items && day <= now ? ` · <b class="ms ${kst.level}">${esc(kst.label)}</b>` : ''}</p>
+      <section class="client-nutrition-summary" aria-label="Daily calories">
+        <div class="client-nutrition-top"><span>${day === now ? 'Eaten today' : day > now ? 'Scheduled nutrition' : 'Eaten on this day'}</span><b>${target?.calories ? day > now ? `${fmt(target.calories)} kcal target` : t.kcal > target.calories ? `${fmt(t.kcal - target.calories)} over` : `${fmt(target.calories - t.kcal)} left` : 'No calorie target'}</b></div>
+        <div class="client-nutrition-kcal">${fmt(day > now ? target?.calories || r.plannedTotal.kcal : t.kcal)} <small>${target?.calories ? day > now ? 'kcal target' : `of ${fmt(target.calories)} kcal` : 'kcal logged'}</small></div>
+        ${target?.calories && day <= now ? `<div class="client-nutrition-bar" aria-hidden="true"><i style="width:${Math.min(100, Math.max(0, t.kcal / target.calories * 100))}%"></i></div>` : ''}
+        <div class="client-nutrition-caption"><span>${day > now ? 'Assigned in advance' : 'Logged food'}</span><span>${target ? 'Daily target from your coach' : 'No assignment for this date'}</span></div>
       </section>
+      <p class="client-nutrition-note">${day > now ? 'Previewing this date in advance. Meals can be logged when the day arrives.' : target ? 'Your coach-set daily targets and food log for this date.' : 'No coach-set nutrition assignment is scheduled for this date.'}</p>
       ${unknownNote(t)}
-      ${target ? `<div class="macro-grid">
-        ${macroTile('Protein', t.items ? t.p : null, target.protein_g, 'protein', 'g')}
-        ${macroTile('Carbs', t.items ? t.c : null, target.carbs_g, 'calories', 'g')}
-        ${macroTile('Fats', t.items ? t.f : null, target.fats_g, 'calories', 'g')}
-        ${macroTile('Fibre', t.items ? t.fibre : null, target.fibre_g || ctx.targets.fibre_target_g, 'fibre', 'g')}
+      ${target ? `<h2 class="client-macro-title">Daily nutrients</h2><div class="macro-grid">
+        ${day > now ? scheduledMacroTile('Protein', target.protein_g) : macroTile('Protein', t.items ? t.p : null, target.protein_g, 'protein', 'g')}
+        ${day > now ? scheduledMacroTile('Carbs', target.carbs_g) : macroTile('Carbs', t.items ? t.c : null, target.carbs_g, 'calories', 'g')}
+        ${day > now ? scheduledMacroTile('Fats', target.fats_g) : macroTile('Fats', t.items ? t.f : null, target.fats_g, 'calories', 'g')}
+        ${day > now ? scheduledMacroTile('Fibre', target.fibre_g || ctx.targets.fibre_target_g) : macroTile('Fibre', t.items ? t.fibre : null, target.fibre_g || ctx.targets.fibre_target_g, 'fibre', 'g')}
       </div>` : ''}
       ${a && a.coach_note ? `<div class="note-card"><span class="note-mark" aria-hidden="true">R<i>.</i></span><div><p class="kicker">From ${esc(h.COACH)}</p><p>${esc(a.coach_note)}</p></div></div>` : ''}
       ${day > now ? '<p class="hint">You can log these meals on the day.</p>' : ''}

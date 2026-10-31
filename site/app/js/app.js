@@ -322,7 +322,7 @@
   ];
   // Screens without their own tab (reached from Home) keep Home lit.
   const TAB_OF = {
-    checkin: 'home', photos: 'home', supps: 'meals', profile: 'home', log: 'home', today: 'home', progress: 'home', hub: 'home',
+    checkin: 'home', photos: 'home', supps: 'meals', profile: 'home', log: 'home', today: 'home', progress: 'home', hub: 'home', calendar: 'home',
     recipes: 'meals', recipe: 'meals', 'recipe-import': 'meals', forms: 'home', form: 'home',
   };
 
@@ -368,6 +368,7 @@
     if (isCoach) return coachShell(title, sub, body);
     const active = TAB_OF[tab] || tab;
     document.body.dataset.tab = tab === 'home' ? 'home' : 'page';
+    document.body.dataset.clientScreen = tab || '';
     const initial = ((state.me && state.me.full_name) || '?').trim()[0].toUpperCase();
     const center = opts && opts.center ? opts.center : `<div class="title">${esc(title)}${sub ? `<div class="sub">${esc(sub)}</div>` : ''}</div>`;
     root.innerHTML = `
@@ -1104,9 +1105,39 @@
       <p class="legend"><span class="dot-s good"></span> Target hit <span class="dot-s warn"></span> Within 25% <span class="dot-s bad"></span> More than 25% off</p>`;
   }
 
+  function clientDateControls(section, day, suffix = '') {
+    const label = day === S.today() ? `Today · ${niceDate(day, { day: 'numeric', month: 'short' })}` : niceDate(day, { day: 'numeric', month: 'short', year: 'numeric' });
+    const calendarIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18m-12 4h2m3 0h2"/></svg>';
+    const route = (date) => `#${section}/${date}${suffix}`;
+    return `<div class="client-date-stepper">
+      <a href="${route(S.addDays(day, -1))}" aria-label="Previous day">‹</a>
+      <div class="client-date-middle"><b>${label}</b><button type="button" data-client-date-toggle aria-label="Choose a ${section} date" aria-expanded="false" aria-controls="${section}-date-panel">${calendarIcon}</button></div>
+      <a href="${route(S.addDays(day, 1))}" aria-label="Next day">›</a></div>
+      <div class="client-date-panel" id="${section}-date-panel" hidden><label for="${section}-date-input">Jump to any ${section} date</label>
+      <form data-client-date-form><input id="${section}-date-input" type="date" value="${day}" required><button type="submit">Show date</button></form>
+      <small>Choose a past date or preview a future assignment.</small></div>`;
+  }
+
+  function bindClientDateControls(section, suffix = '') {
+    const toggle = root.querySelector('[data-client-date-toggle]');
+    const panel = root.querySelector(`#${section}-date-panel`);
+    toggle?.addEventListener('click', () => {
+      panel.hidden = !panel.hidden;
+      toggle.setAttribute('aria-expanded', String(!panel.hidden));
+      if (!panel.hidden) panel.querySelector('input').focus();
+    });
+    panel?.querySelector('form').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const input = panel.querySelector('input');
+      if (!input.reportValidity() || !/^\d{4}-\d{2}-\d{2}$/.test(input.value)) return;
+      location.hash = `#${section}/${input.value}${suffix}`;
+    });
+  }
+
   async function renderHabits(day, view) {
     const now = S.today();
-    if (!day || day > now) day = now;
+    if (!day || !/^\d{4}-\d{2}-\d{2}$/.test(day)) day = now;
+    const future = day > now;
     view = view === 'all' ? 'all' : 'day';
     const ctx = await loadCtx(state.me.id);
     const rows = habitRows(ctx, day);
@@ -1114,15 +1145,13 @@
     const toggle = `<div class="segmented" role="tablist">
       <a role="tab" href="#habits/${day}" aria-selected="${view === 'day'}">Day view</a>
       <a role="tab" href="#habits/${day}/all" aria-selected="${view === 'all'}">All</a></div>`;
-    const stepper = `<div class="date-stepper">
-      <a href="#habits/${S.addDays(day, -1)}${view === 'all' ? '/all' : ''}" aria-label="Previous day">‹</a>
-      <b>${niceDate(day, { day: 'numeric', month: 'long', year: 'numeric' })}</b>
-      ${day < now ? `<a href="#habits/${S.addDays(day, 1)}${view === 'all' ? '/all' : ''}" aria-label="Next day">›</a>` : '<span></span>'}</div>`;
+    const stepper = clientDateControls('habits', day, view === 'all' ? '/all' : '');
+    const futureNote = future ? '<p class="client-future-note">Upcoming habit targets for this date. Logging opens on the day.</p>' : '';
     const missing = ctx.habitsReady ? '' : `<div class="card muted-box">Water, sleep and your own habits switch on once ${esc(COACH)} finishes the habit tracker update.</div>`;
 
     let body;
     if (view === 'day') {
-      body = `<p class="section-label">Today's habits · ${done} of ${rows.length} on target</p>
+      body = `<p class="section-label">${future ? 'Upcoming habits' : day === now ? "Today's habits" : 'Habits for this day'} · ${future ? `${rows.length} targets` : `${done} of ${rows.length} on target`}</p>
       <ul class="habit-list">${rows
         .map(
           (r) => `<li class="habit" data-key="${esc(r.key)}">
@@ -1142,7 +1171,7 @@
           </li>`,
         )
         .join('')}</ul>
-      <p class="hint">Tap a habit to log it. Green means you hit the target, amber means you're within 25%, red means more than 25% off.</p>`;
+      ${future ? '' : '<p class="hint">Tap a habit to log it. Green means you hit the target, amber means you are within 25%, red means more than 25% off.</p>'}`;
     } else {
       body = `<section class="card">${habitWeekHTML(ctx, day)}</section>
       ${ctx.habits.length ? `<section class="card"><p class="kicker">Your own habits</p><ul class="own-habits">${ctx.habits
@@ -1158,7 +1187,9 @@
         <p class="hint">Yes/no habit? Leave it as 1 time a day.</p></div>
         <button class="btn" type="submit" style="width:100%">Add habit</button></form>` : ''}`;
     }
-    shell('Habit tracker', `${done} of ${rows.length} on target`, `${toggle}${stepper}${missing}${body}<div data-client-health></div>`, 'habits');
+    shell('Habit tracker', future ? 'Preview upcoming targets' : `${done} of ${rows.length} on target`, `${toggle}${stepper}${futureNote}${missing}${body}<div data-client-health></div>`, 'habits');
+    bindClientDateControls('habits', view === 'all' ? '/all' : '');
+    if (future) root.querySelectorAll('.habit-row').forEach((button) => { button.disabled = true; });
 
     root.querySelectorAll('.habit').forEach((li) => {
       const row = rows.find((r) => r.key === li.dataset.key);
@@ -1213,7 +1244,7 @@
           renderHabits(day, 'all');
         });
       });
-    await WUI.mountHabits(ctx, day);
+    if (!future) await WUI.mountHabits(ctx, day);
   }
 
   async function saveHabit(row, value, day, button) {
@@ -1362,30 +1393,24 @@
 
   async function renderHome(day) {
     const now = S.today();
-    if (!day || day > now) day = now;
+    if (!day || day > now || !/^\d{4}-\d{2}-\d{2}$/.test(day)) day = now;
     const ctx = await loadCtx(state.me.id);
-    const p = ctx.profile;
-    const t = ctx.targets;
-    const week = S.weekOf(p.start_date, day);
-    const m = macrosForDay(ctx, day);
-    const log = ctx.logs.find((l) => l.day === day) || {};
+    const profile = ctx.profile;
+    const targets = ctx.targets;
+    const week = S.weekOf(profile.start_date, day);
+    const log = ctx.logs.find((entry) => entry.day === day) || {};
     const session = todaysSession(ctx, day);
     const rows = habitRows(ctx, day);
-    const hit = rows.filter((r) => r.status.level === 'good').length;
-    const st = (key) => (rows.find((r) => r.key === key) || { status: {} }).status;
-    const label = day === now ? 'Today' : day === S.addDays(now, -1) ? 'Yesterday' : niceDate(day, { weekday: 'short' });
-    const first = p.full_name ? esc(p.full_name.split(' ')[0]) : 'there';
-    const d = S.dashboard(ctx);
-    const homeDue = checkinDue(ctx);
-    const due = day === now ? homeDue : null;
+    const hit = rows.filter((row) => row.status.level === 'good').length;
+    const first = profile.full_name ? esc(profile.full_name.split(' ')[0]) : 'there';
+    const summary = S.dashboard(ctx);
+    const due = day === now ? checkinDue(ctx) : null;
     const exercises = session && Array.isArray(session.exercises) ? session.exercises.length : 0;
-    // Forms the coach has sent and the client hasn't finished.
     const formsCard = state.preview ? '' : await FUI.homeCardHTML();
     const activePhase = ctx.phases.find((phase) => phase.status === 'active');
     const greet = !session ? `Good to see you,<br>${first}.` : session.is_rest_day ? `Recovery day,<br>${first}.` : `Ready to train,<br>${first}?`;
-
     const pinnedMetrics = HOME_METRICS.filter(([key]) => (ctx.homePrefs.metric_keys || []).includes(key));
-    const pinnedHabits = rows.filter((r) => (ctx.homePrefs.habit_keys || []).includes(r.key));
+    const pinnedHabits = rows.filter((row) => (ctx.homePrefs.habit_keys || []).includes(row.key));
     const metricValue = (key) => {
       const values = { bodyweight: log.weight_kg == null ? null : `${fmt(log.weight_kg, 1)} kg`,
         cardio: log.cardio_min == null ? null : `${fmt(log.cardio_min)} min`,
@@ -1394,80 +1419,25 @@
         steps: log.steps == null ? null : fmt(log.steps) };
       return values[key] || 'Tap to log';
     };
-    const center = `<div class="day-pill-nav">
-        <a href="#home/${S.addDays(day, -1)}" aria-label="Previous day">‹</a>
-        <b>${esc(label)} · ${niceDate(day, { day: 'numeric', month: 'short' })}</b>
-        ${day < now ? `<a href="#home/${S.addDays(day, 1)}" aria-label="Next day">›</a>` : '<span></span>'}
-      </div>`;
-
-    shell(
-      `Hi ${first}`,
-      '',
-      `
-      ${homeDue ? `<a class="checkin-alert${homeDue.dueToday ? '' : ' soon'}" href="#checkin/${homeDue.week}" id="checkin-alert">
-        <span class="ca-dot" aria-hidden="true"></span>
-        <span><b>${homeDue.dueToday ? 'Your check-in is due today' : `Check-in open · due ${esc(S.DAY_NAMES[checkinDay(ctx)])}`}</b><small>Week ${homeDue.week}: photos, measurements and how the week went.</small></span>
-        <span class="chev" aria-hidden="true">›</span></a>` : ''}
-      <section class="hero">
-        <p class="hero-meta">${ICONS.sun}<span>${niceDate(day, { weekday: 'long' })}${week ? ` · Week ${week} of 12` : ''}</span></p>
-        <h1>${greet}</h1>
-        <div class="hero-card">
-          <span class="hero-mark" aria-hidden="true">${ICONS.training}</span>
-          <small>${day === now ? "Today's session" : 'Session'}</small>
-          <b>${esc(session ? session.session_name : 'No session yet')}</b>
-          <small>${session ? (session.is_rest_day ? 'Walk, stretch and recover' : `Day ${session.cycle_day} of your cycle${exercises ? ` · ${exercises} exercises` : ''}`) : `${esc(COACH)} adds your program after kickoff`}</small>
-          ${session && !session.is_rest_day ? '<a class="btn-dark" href="#training">Workout details</a>' : ''}
-        </div>
-        <div class="hero-actions">
-          <a class="log-btn${log.id ? ' done' : ''}" href="#log/${day}"><span aria-hidden="true">${log.id ? STATE_ICONS.good : ICONS.log}</span>${log.id ? 'Logged · update' : `Log ${day === now ? 'today' : 'this day'}`}</a>
-          ${checkinButtonHTML(ctx, homeDue)}
-        </div>
-      </section>
-
-      ${formsCard}
-      ${activePhase ? `<section class="card ph-client-summary"><span class="ph-client-symbol" aria-hidden="true">${CI.icon('phases')}</span><div><p class="kicker">Current coaching phase</p><h2>${esc(activePhase.name)}</h2>${activePhase.description ? `<p>${esc(activePhase.description)}</p>` : ''}<small>Projected through ${niceDate(activePhase.end_date, { day: 'numeric', month: 'long', year: 'numeric' })}</small></div></section>` : ''}
-      <section class="score">
-        <p class="label">${day === now ? "Today's score" : 'Day score'}</p>
-        <a class="big-num home-score-num" href="#habits/${day}">${hit}<span>/${rows.length}</span></a>
-        <p class="label">habits on target${due ? ' · <button type="button" class="due-chip" data-goto="checkin-due">Check-in due</button>' : ''}</p>
-      </section>
-
-      <a class="home-choice home-calendar-link" href="#calendar">${ICONS.today}<span><b>Calendar</b><small>Your schedule, targets and logged activity</small></span><span aria-hidden="true">›</span></a>
-      <a class="home-choice home-coach-notes-link" href="#coach-notes">${ICONS.messages}<span><b>Coach Notes</b><small>${t.coach_note ? 'Read the latest note from your coach' : 'No note from your coach yet'}</small></span><span aria-hidden="true">›</span></a>
-
-      <a class="home-choice home-files-link" href="#files">${ICONS.files}<span><b>Files</b><small>Shared resources and your photo gallery</small></span><span>›</span></a>
-      <section class="home-pinned">
-        <div class="home-section-head"><h2 class="sec-title">Pinned Metrics</h2><button type="button" data-pin="metric_keys">Edit</button></div>
-        ${pinnedMetrics.length ? `<div class="pinned-grid">${pinnedMetrics.map(([key, name, icon]) => `<a class="pinned-tile" href="${key === 'steps' || key === 'cardio' ? '#training' : '#habits'}">${CI.icon(icon)}<span><b>${esc(name)}</b><small>${esc(metricValue(key))}</small></span></a>`).join('')}</div>` : `<button type="button" class="home-choice" data-pin="metric_keys">${CI.icon('health-markers')}<span><b>Add Pinned Metrics</b><small>Choose the metrics you want on your home screen.</small></span><span>›</span></button>`}
-        <button type="button" class="home-choice" data-data-metrics>${CI.icon('chart')}<span><b>Data Metrics</b><small>View all available metrics</small></span><span>›</span></button>
-      </section>
-      <section class="home-pinned">
-        <div class="home-section-head"><h2 class="sec-title">Pinned Habits</h2><button type="button" data-pin="habit_keys">Edit</button></div>
-        ${pinnedHabits.length ? `<div class="pinned-grid">${pinnedHabits.map((r) => `<a class="pinned-tile" href="#habits/${day}"><span class="habit-icon" aria-hidden="true">${habitIcon(r)}</span><span><b>${esc(r.name)}</b><small>${esc(r.status.label || 'Not logged')}</small></span></a>`).join('')}</div>` : `<button type="button" class="home-choice" data-pin="habit_keys">${CI.icon('habits')}<span><b>Add Pinned Habits</b><small>Choose the habits you want on your home screen.</small></span><span>›</span></button>`}
-      </section>
-
-      ${d ? `<section class="trend-card">
-        <div class="trend-head">
-          <div><b>${d.totalChange !== null ? `${signed(d.totalChange, 1)} kg` : '–'}</b><small>Since your start</small></div>
-          <span class="trend-badge" aria-hidden="true">${ICONS.progress}</span>
-          <div class="r"><b>${pct(d.avgAdherence)}</b><small>Adherence</small></div>
-        </div>
-        <p class="trend-title">Bodyweight trend<small>Weekly average</small></p>
-        ${trendChart(d)}
-        <a class="trend-link" href="#progress">See all progress <span aria-hidden="true">›</span></a>
-      </section>` : ''}
-
-      ${due ? `<section class="due-card" id="checkin-due">
-        <span class="due-ic" aria-hidden="true">${ICONS.checkin}</span>
-        <div><p class="kicker">${due.dueToday ? 'Due today' : `Open now · due ${esc(S.DAY_NAMES[checkinDay(ctx)])}`}</p><h2>Week ${due.week} check-in</h2>
-        <p>Photos, measurements and how the week went. About 5 minutes, then ${esc(COACH)} reviews it.</p></div>
-        <a class="btn-dark" href="#checkin/${due.week}">Start check-in</a>
-      </section>` : ''}`,
-      'home',
-      { center },
-    );
-    const chip = root.querySelector('[data-goto]');
-    if (chip) chip.addEventListener('click', () => document.getElementById(chip.dataset.goto).scrollIntoView({ behavior: 'smooth', block: 'center' }));
+    const sessionName = session ? session.is_rest_day ? 'Recovery day' : session.session_name : 'No session assigned';
+    const sessionDetail = session ? session.is_rest_day ? 'Walk, stretch and recover' : `Day ${session.cycle_day} of your cycle · ${exercises} exercise${exercises === 1 ? '' : 's'}` : `${esc(COACH)} will add your program after kickoff`;
+    const dateLabel = niceDate(day, { weekday: 'long', day: 'numeric', month: 'long' });
+    const summaryWeight = summary?.latestAvgWeight == null ? '–' : `${fmt(summary.latestAvgWeight, 1)} kg`;
+    const summaryChange = summary?.totalChange == null ? 'No comparison yet' : `${signed(summary.totalChange, 1)} kg since start`;
+    shell('Home', '', `<div class="client-home">
+      <header class="client-home-top"><p>${dateLabel}${week ? ` · Week ${week} of 12` : ''}</p><h1>${greet}</h1><span>Your plan for ${day === now ? 'today' : 'this day'}, all in one place.</span></header>
+      <div class="client-home-body">
+        <section class="client-home-session"><div class="client-home-session-head"><span>${ICONS.training}</span><div><small>${day === now ? "Today's session" : 'Session'}</small><h2>${esc(sessionName)}</h2></div></div><p>${sessionDetail}</p><div class="client-home-actions"><a href="#training/${day}">View workout <span aria-hidden="true">→</span></a><a href="#log/${day}">${log.id ? 'Update log' : day === now ? 'Log today' : 'Log this day'}</a></div></section>
+        ${due ? `<a class="client-home-due" href="#checkin/${due.week}"><span>${ICONS.checkin}</span><span><b>${due.dueToday ? 'Check-in due today' : `Check-in due ${esc(S.DAY_NAMES[checkinDay(ctx)])}`}</b><small>Week ${due.week} · photos, measurements and your week</small></span><i aria-hidden="true">›</i></a>` : ''}
+        ${formsCard}
+        <div class="client-home-section-title"><h2>Today at a glance</h2><a href="#calendar">Open Calendar</a></div>
+        <div class="client-home-glance"><a href="#habits/${day}">${ICONS.habits}<span>Habits on target</span><b>${hit} of ${rows.length}</b></a><a href="#training/${day}">${ICONS.progress}<span>Daily steps</span><b>${targets.steps_target ? `${fmt(targets.steps_target)} target` : log.steps == null ? 'No target' : `${fmt(log.steps)} logged`}</b></a></div>
+        <div class="client-home-section-title"><h2>More for you</h2></div>
+        <div class="client-home-quick"><a href="#calendar">${ICONS.today}<span>Calendar</span></a><a href="#coach-notes">${ICONS.messages}<span>Coach Notes</span></a><a href="#files">${ICONS.files}<span>Files</span></a></div>
+        ${activePhase ? `<section class="card ph-client-summary"><span class="ph-client-symbol" aria-hidden="true">${CI.icon('phases')}</span><div><p class="kicker">Current coaching phase</p><h2>${esc(activePhase.name)}</h2>${activePhase.description ? `<p>${esc(activePhase.description)}</p>` : ''}<small>Projected through ${niceDate(activePhase.end_date, { day: 'numeric', month: 'long', year: 'numeric' })}</small></div></section>` : ''}
+        <details class="client-home-pinned"><summary>Customize your home</summary><div class="client-home-pin-actions"><button type="button" data-pin="metric_keys">Edit pinned metrics</button><button type="button" data-pin="habit_keys">Edit pinned habits</button><button type="button" data-data-metrics>View data metrics</button></div>${pinnedMetrics.length ? `<div class="pinned-grid">${pinnedMetrics.map(([key, name, icon]) => `<a class="pinned-tile" href="${key === 'steps' || key === 'cardio' ? '#training' : '#habits'}">${CI.icon(icon)}<span><b>${esc(name)}</b><small>${esc(metricValue(key))}</small></span></a>`).join('')}</div>` : ''}${pinnedHabits.length ? `<div class="pinned-grid">${pinnedHabits.map((row) => `<a class="pinned-tile" href="#habits/${day}"><span class="habit-icon" aria-hidden="true">${habitIcon(row)}</span><span><b>${esc(row.name)}</b><small>${esc(row.status.label || 'Not logged')}</small></span></a>`).join('')}</div>` : ''}</details>
+        <section class="client-home-progress" aria-label="Bodyweight and progress summary"><div class="client-home-section-title"><h2>Your progress</h2></div><div><h3>Bodyweight</h3><p>Latest weekly average</p><div class="client-home-weight"><strong>${summaryWeight}</strong><span>${summaryChange}</span></div><div class="client-home-progress-detail"><div><small>Start weight</small><b>${summary?.startWeight == null ? '–' : `${fmt(summary.startWeight, 1)} kg`}</b></div><div><small>Average adherence</small><b>${summary?.avgAdherence == null ? '–' : pct(summary.avgAdherence)}</b></div></div><a href="#progress">See all progress <span aria-hidden="true">→</span></a></div></section>
+      </div></div>`, 'home', { center: '<div class="title">Rewired</div>' });
     root.querySelectorAll('[data-pin]').forEach((button) => button.addEventListener('click', () => {
       const field = button.dataset.pin;
       const options = field === 'metric_keys' ? HOME_METRICS.map(([key, name, icon]) => ({ key, name, icon: CI.icon(icon) })) : rows.map((r) => ({ key: r.key, name: r.name, icon: habitIcon(r) }));
@@ -1726,29 +1696,34 @@
       shell('Training plans', 'Your assigned program', `<a class="back-link" href="#training">← Training</a>${trainingHTML(ctx)}`, 'training');
       return;
     }
-    const today = S.today();
+    const actualToday = S.today();
+    const today = /^\d{4}-\d{2}-\d{2}$/.test(view || '') ? view : actualToday;
+    const future = today > actualToday;
     const log = ctx.logs.find((r) => r.day === today) || {};
     const t = ctx.targets || {};
     const prog = programFor(ctx, today);
     const session = prog.sessions.find((r) => r.cycle_day === prog.scheduled);
     const count = session?.exercises?.length || 0;
-    const active = state.workoutSession;
-    const workoutHref = active ? `#training/log/${active.day}/${active.cycle_day}` : '#training/log';
+    const active = state.workoutSession?.day === today ? state.workoutSession : null;
+    const workoutHref = future ? '#training/plans' : active ? `#training/log/${active.day}/${active.cycle_day}` : `#training/log/${today}`;
     shell('Training', 'Your activity and workout plan', `
-      <a class="client-training-hero" href="${workoutHref}"><span class="kicker">${active ? 'Workout in progress' : 'Log Training'}</span><b>${active ? esc(active.session_name || 'Training session') : session && !session.is_rest_day ? esc(session.session_name) : 'Start a workout'}</b><span>${active ? `Resume workout · ${workoutElapsed()} ›` : 'Open workout log ›'}</span></a>
+      ${clientDateControls('training', today)}
+      ${future ? '<p class="client-future-note">Previewing the workout scheduled for this date. Activity and workout logging open on the day.</p>' : ''}
+      <a class="client-training-hero" href="${workoutHref}"><span class="kicker">${future ? 'Scheduled workout' : active ? 'Workout in progress' : 'Log Training'}</span><b>${active ? esc(active.session_name || 'Training session') : session && !session.is_rest_day ? esc(session.session_name) : future ? 'Recovery or unassigned day' : 'Start a workout'}</b><span>${future ? 'View training plans ›' : active ? `Resume workout · ${workoutElapsed()} ›` : 'Open workout log ›'}</span></a>
       ${active ? '<button type="button" class="training-cancel" data-cancel-workout>Cancel workout</button>' : ''}
-      <section class="card training-activity"><div class="home-section-head"><h2>Activity</h2><button type="button" class="activity-plus" data-log-activity aria-label="Log activity">+</button></div>
+      <section class="card training-activity"><div class="home-section-head"><h2>Activity</h2>${future ? '' : '<button type="button" class="activity-plus" data-log-activity aria-label="Log activity">+</button>'}</div>
         <p>${niceDate(today, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
         <div class="activity-line">${CI.icon('steps')}<span><b>Steps</b><small>${t.steps_target ? `Goal ${fmt(t.steps_target)}` : 'Daily movement'}</small></span><strong>${fmt(log.steps || 0)} steps</strong></div>
         <div class="activity-line">${CI.icon('activity')}<span><b>Cardio</b><small>Minutes logged</small></span><strong>${fmt(log.cardio_min || 0)} min</strong></div>
       </section>
-      <section class="card workout-plan-card"><div class="plan-card-head">${CI.icon('training')}<div><h2>Workout Plan</h2><small>${esc(prog.sessions[0]?.program_name || 'No assigned plan')}</small></div></div>
-        ${session ? `<a href="${workoutHref}"><span><b>${esc(session.session_name)}</b><small>${session.is_rest_day ? 'Recovery day' : `${count} exercise${count === 1 ? '' : 's'}`}</small></span><span>›</span></a>` : '<p>Your coach has not assigned a workout for today.</p>'}</section>
+      <section class="card workout-plan-card"><div class="plan-card-head">${CI.icon('training')}<div><h2>Workout Plan</h2><small>${esc(prog.scheduled ? prog.sessions[0]?.program_name || 'No assigned plan' : 'No assigned plan for this date')}</small></div></div>
+        ${session ? `<a href="${workoutHref}"><span><b>${esc(session.session_name)}</b><small>${session.is_rest_day ? 'Recovery day' : `${count} exercise${count === 1 ? '' : 's'}`}</small></span><span>›</span></a>` : '<p>Your coach has not assigned a workout for this date.</p>'}</section>
       <div class="training-shortcuts"><a class="card" href="#training/plans">${CI.icon('training')} Training Plans ›</a><a class="card" href="#training/library">${CI.icon('foodlog')} Exercise Library ›</a></div>
       <section class="card training-plan-extra">${CI.icon('activity')}<span><b>Cardio Plan</b><small>${t.cardio_target_min ? `${fmt(t.cardio_target_min)} min target` : 'No cardio plan assigned yet'}</small></span></section>
       <section class="card training-plan-extra">${CI.icon('steps')}<span><b>Steps Plan</b><small>${t.steps_target ? `${fmt(t.steps_target)} steps target` : 'No steps plan assigned yet'}</small></span></section>
       <section><h2 class="sec-title">Workout History</h2>${workoutHistoryHTML(ctx) || '<p class="hint">No workouts logged yet.</p>'}</section>
     `, 'training');
+    bindClientDateControls('training');
     root.querySelector('[data-cancel-workout]')?.addEventListener('click', cancelWorkoutSession);
     root.querySelector('[data-log-activity]')?.addEventListener('click', () => {
       const sheet = clientSheet('Log activity', `<form id="activity-log-form" class="client-supp-form">
@@ -1761,7 +1736,7 @@
           const values = readForm(e.target);
           if (values.steps == null && values.cardio_min == null) throw new Error('Add steps or cardio minutes.');
           must(await sb.from('daily_logs').upsert({ user_id: state.me.id, day: today, ...values }, { onConflict: 'user_id,day' }));
-          sheet.close(); invalidate(state.me.id); await renderTraining(); toast('Activity saved.');
+          sheet.close(); invalidate(state.me.id); await renderTraining(today); toast('Activity saved.');
         });
       });
     });
@@ -4442,7 +4417,7 @@
   });
   FUI.init({ sb, state, COACH, esc, fmt, friendlyError, must, shell, invalidate });
   EUI.init({ sb, state, root, X, esc, shell, toast, friendlyError, must, withBusy, loadExerciseLibrary });
-  CUI.init({ sb, state, root, S, esc, fmt, shell, toast, friendlyError, must, withBusy });
+  CUI.init({ sb, state, root, S, N: window.RewiredNutrition, esc, fmt, shell, toast, friendlyError, must, withBusy });
   PUI.init({ sb, state, root, S, CI, esc, shell, toast, friendlyError, must, invalidate });
   PRUI.init({ sb, state, root, S, CI, P: PR, esc, shell, toast, friendlyError, must, convert: convertProspect, request: window.REWIRED_PREVIEW_FETCH || fetch, previewMode: !!window.REWIRED_PREVIEW_FETCH });
   WUI.init({ sb, state, root, S, W, esc, fmt, shell, toast, friendlyError, must, withBusy, invalidate, rerender: route, refreshHabits: renderHabits });

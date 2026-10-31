@@ -75,6 +75,66 @@
     return { el, close };
   }
 
+  function clientCalendar(ctx, selected, events, eventsReady) {
+    const today = h.S.today();
+    const first = weekStart(selected);
+    const last = h.S.addDays(first, 6);
+    const days = Array.from({ length: 7 }, (_, index) => h.S.addDays(first, index));
+    const session = trainingFor(ctx, selected);
+    const week = h.S.weekOf(ctx.profile.start_date, selected);
+    const macros = week ? h.S.macrosForWeek(ctx.macros, week) : null;
+    const assignment = h.N?.assignmentFor(ctx.assignments, selected) || null;
+    const target = assignment ? h.N?.targetsFor(assignment, selected, session ? h.N.dayKind(session) : null) || macros : macros;
+    const steps = ctx.targets?.steps_target;
+    const sleep = ctx.targets?.sleep_target_h;
+    const dayLabel = selected === today ? `Today · ${format(selected, { weekday: 'short', day: 'numeric', month: 'short' })}` : format(selected, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    const row = (href, icon, title, note) => `<a class="client-agenda-item" href="${href}"><span class="client-agenda-icon">${icon}</span><span><b>${h.esc(title)}</b><small>${h.esc(note)}</small></span><span class="client-agenda-arrow" aria-hidden="true">›</span></a>`;
+    const workoutIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6m3-9v12m10-12v12m3-9v6M7 12h10"/></svg>';
+    const nutritionIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v5a8 8 0 0 1-16 0zM8 17h8m-4-8v5"/></svg>';
+    const targetsIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5m0 14h16M8 15v-3m5 3V7m5 8v-5"/></svg>';
+    const calendarIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18m-12 4h2m3 0h2"/></svg>';
+    const chevron = (left) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${left ? 'm15 5-7 7 7 7' : 'm9 5 7 7-7 7'}"/></svg>`;
+    const items = [];
+    if (session) items.push(row(`#training/${selected}`, workoutIcon, session.is_rest_day ? 'Recovery day' : session.session_name || 'Training', session.is_rest_day ? 'Rest and recover' : `Day ${session.cycle_day} · ${(session.exercises || []).length} exercises`));
+    items.push(row(`#meals/${selected}`, nutritionIcon, 'Nutrition', target ? `${target.calories ? `${h.fmt(target.calories)} kcal` : assignment?.name || 'Meal plan'}${target.protein_g ? ` · ${h.fmt(target.protein_g)} g protein target` : ''}` : 'No coach-set assignment for this date'));
+    items.push(row(`#habits/${selected}`, targetsIcon, 'Daily targets', [steps ? `${h.fmt(steps)} steps` : '', sleep ? `${h.fmt(sleep, 1)} h sleep` : ''].filter(Boolean).join(' · ') || 'View habit targets'));
+    for (const event of events.filter((value) => value.day === selected)) {
+      items.push(`<button type="button" class="client-agenda-item" data-client-event="${h.esc(event.id)}"><span class="client-agenda-icon">${calendarIcon}</span><span><b>${h.esc(event.title)}</b><small>${h.esc(event.notes || labelOf(event.category))}</small></span><span class="client-agenda-arrow" aria-hidden="true">›</span></button>`);
+    }
+    const checkinDay = Number(ctx.targets?.checkin_day);
+    const checkin = ctx.profile.start_date && ctx.targets?.checkin_day != null && Number.isInteger(checkinDay) && checkinDay >= 0 && checkinDay <= 6
+      ? h.S.nextCheckin(ctx.profile.start_date, checkinDay, selected) : null;
+    const checkinPending = checkin && !(ctx.checkins || []).some((value) => value.week_number === checkin.week);
+    if (checkinPending && checkin.due === selected) items.push(row(`#checkin/${checkin.week}`, calendarIcon, 'Weekly check-in', `Week ${checkin.week} · photos, measurements and your week`));
+    const weekDetails = days.map((day) => {
+      const workout = trainingFor(ctx, day);
+      const details = [workout ? workout.is_rest_day ? 'Recovery day' : workout.session_name || 'Workout' : '', 'Daily targets'].filter(Boolean).join(' · ');
+      return `<a href="#calendar/week/${day}" class="client-week-day"${day === selected ? ' aria-current="date"' : ''}><b>${format(day, { weekday: 'short', day: 'numeric', month: 'short' })}</b><span>${h.esc(details)}</span></a>`;
+    }).join('');
+    h.shell('Rewired', '', `<div class="client-calendar">
+      <header class="client-page-intro"><h1>Calendar</h1><p>Your coaching schedule and daily targets.</p></header>
+      <div class="client-calendar-controls"><strong>${format(first, { day: 'numeric', month: 'short' })} – ${format(last, { day: 'numeric', month: 'short', year: 'numeric' })}</strong><div>
+        <a href="#calendar/week/${h.S.addDays(selected, -7)}" class="client-icon-button" aria-label="Previous week">${chevron(true)}</a>
+        <button type="button" class="client-icon-button" data-client-calendar-toggle aria-label="Choose a date" aria-expanded="false" aria-controls="client-calendar-panel">${calendarIcon}</button>
+        <a href="#calendar/week/${h.S.addDays(selected, 7)}" class="client-icon-button" aria-label="Next week">${chevron(false)}</a></div></div>
+      <div class="client-date-panel" id="client-calendar-panel" hidden><label for="client-calendar-input">Jump to any date</label><form data-client-calendar-form><input id="client-calendar-input" type="date" value="${selected}" required><button type="submit">Show date</button></form><small>Choose a past or future date. Scheduled items appear where available.</small></div>
+      <div class="client-agenda-heading"><h2>${dayLabel}</h2><small>${items.length} item${items.length === 1 ? '' : 's'}</small></div>
+      <div class="client-agenda-card">${items.join('')}</div>
+      ${checkinPending ? `<section class="client-calendar-next"><h2>Coming up</h2><a href="#checkin/${checkin.week}"><span>${format(checkin.due, { weekday: 'short' }).toUpperCase()}<b>${format(checkin.due, { day: 'numeric' })}</b>${format(checkin.due, { month: 'short' }).toUpperCase()}</span><span><b>Week ${checkin.week} check-in</b><small>Photos, measurements and your week</small></span><i aria-hidden="true">›</i></a></section>` : ''}
+      <details class="client-week"><summary>Show full week <span aria-hidden="true">⌄</span></summary><div>${weekDetails}</div></details>
+      ${eventsReady ? '' : '<p class="client-future-note">Coach-created calendar events are temporarily unavailable. Your plans and targets still appear.</p>'}
+    </div>`, 'calendar');
+    const page = h.root.querySelector('.client-calendar');
+    const toggle = page.querySelector('[data-client-calendar-toggle]');
+    const panel = page.querySelector('#client-calendar-panel');
+    toggle.addEventListener('click', () => { panel.hidden = !panel.hidden; toggle.setAttribute('aria-expanded', String(!panel.hidden)); if (!panel.hidden) panel.querySelector('input').focus(); });
+    panel.querySelector('form').addEventListener('submit', (event) => { event.preventDefault(); const input = panel.querySelector('input'); if (input.reportValidity() && /^\d{4}-\d{2}-\d{2}$/.test(input.value)) location.hash = `#calendar/week/${input.value}`; });
+    page.querySelectorAll('[data-client-event]').forEach((button) => button.addEventListener('click', () => {
+      const event = events.find((value) => value.id === button.dataset.clientEvent);
+      if (event) modal(event.title, `<div class="cal-help-body"><p>${format(event.day, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} · ${h.esc(labelOf(event.category))}</p><p>${h.esc(event.notes || 'No additional details.')}</p></div><footer><button type="button" data-cal-cancel>Done</button></footer>`);
+    }));
+  }
+
   async function calendar(ctx, title, sub, requestedView, requestedDate) {
     const clientView = h.state.me?.role === 'client';
     const mode = requestedView === 'month' ? 'month' : 'week';
@@ -87,6 +147,7 @@
     const response = await h.sb.from('client_calendar_events').select('id,client_id,day,category,title,notes').eq('client_id', ctx.profile.id).gte('day', first).lte('day', last).order('day');
     const eventsReady = !response.error;
     let events = eventsReady ? response.data : [];
+    if (clientView) return clientCalendar(ctx, selected, events, eventsReady);
     const path = (nextMode, date) => clientView ? `#calendar/${nextMode}/${date}` : `#client/${ctx.profile.id}/calendar/${nextMode}/${date}`;
     const go = (nextMode, date) => { location.hash = path(nextMode, date); };
     const label = mode === 'week'
