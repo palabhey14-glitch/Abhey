@@ -104,7 +104,7 @@ const [terms, sig] = ct.sections[0].questions;
 assert.equal(terms.required, true, 'terms are always required');
 assert.equal(F.answerError(terms, {}), 'Tick the box to continue.');
 assert.equal(F.answerError(terms, { [terms.id]: { agreed: true } }), '');
-assert.equal(F.answerText(terms, { [terms.id]: { agreed: true } }).text, 'Agreed · Version 1');
+assert.equal(F.answerText(terms, { [terms.id]: { agreed: true } }).text, 'Agreed · Version 2');
 assert.equal(F.answerError(sig, { [sig.id]: { name: 'Dean Subotic' } }), 'Tick the box to agree.');
 assert.match(F.answerError(sig, { [sig.id]: { agreed: true } }), /signature|name/);
 assert.equal(F.answerError(sig, { [sig.id]: { agreed: true, name: 'Dean Subotic' } }), '');

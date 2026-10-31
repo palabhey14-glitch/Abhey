@@ -28,3 +28,11 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
+
+# The older combined Privacy & Terms page was replaced by /terms.html and
+# /privacy.html. Send old links to the current Terms.
+[[redirects]]
+  from = "/legal.html"
+  to = "/terms.html"
+  status = 301
+  force = true
