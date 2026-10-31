@@ -23,7 +23,7 @@ const INNER = ['pricing', 'faq', 'resources', 'apply', 'entry-level', 'terms', '
 const V = {
   v1: { label: 'Espresso', fonts: 'family=Geist:wght@300..700&family=Geist+Mono:wght@400;500', clip: 'espresso', photo: 'rw-smile-warm' },
   v2: { label: 'Navy Ledger', fonts: 'family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400&family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500', clip: 'navy', photo: 'rw-colour' },
-  v3: { label: 'Studio Light', fonts: 'family=Hanken+Grotesk:wght@300..700&family=JetBrains+Mono:wght@400;500', clip: 'light', photo: 'rw-smile-colour' },
+  v3: { label: 'Studio Light', fonts: 'family=Hanken+Grotesk:wght@300..700&family=JetBrains+Mono:wght@400;500', clip: 'light', photo: 'rw-smile-hd-2228', hd: [1040, 1559, 2228] },
   v4: { label: 'Monochrome', fonts: 'family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400', clip: 'light', photo: 'rw-smile-mono' },
   v5: { label: 'Kinetic', fonts: 'family=Albert+Sans:wght@300..800&family=JetBrains+Mono:wght@400;500', clip: 'navy', photo: 'rw-colour' },
 };
@@ -74,7 +74,10 @@ const footer = () => `<footer class="foot"><div class="w foot-in">
 /* ------------------------------------------------------------------ heroes */
 const H1 = '<h1 id="hero-title">Your next chapter, <em>rewired.</em></h1>';
 const LEAD = '<p class="lead">I coach busy men who are tired of starting over. Training and nutrition built around your job, your travel and the food you grew up on. I’ve been doing this for 15 years.</p>';
-const img = (v, cls = 'person') => `<img class="${cls}" src="/assets/abhey/${V[v].photo}.webp" alt="Abhey Pal, your coach" fetchpriority="high">`;
+const img = (v, cls = 'person') => {
+  const hd = V[v].hd ? ` srcset="${V[v].hd.map((w) => `/assets/abhey/rw-smile-hd-${w}.webp ${w}w`).join(', ')}" sizes="(max-width: 680px) 400px, 660px"` : '';
+  return `<img class="${cls}" src="/assets/abhey/${V[v].photo}.webp"${hd} alt="Abhey Pal, your coach" fetchpriority="high">`;
+};
 
 const HERO = {
   // Espresso. An inset rounded hero, warm photograph, app logs as faint texture.
@@ -280,7 +283,8 @@ function portablePaths(html) {
     .replace(/(href|src)="\/app\/([^"]*)"/g, '$1="https://rewiredbyabhey.com/app/$2"')
     .replace(/href="\/terms#/g, 'href="terms.html#')
     .replace(/href="\/(pricing|terms|privacy)\.html/g, 'href="$1.html')
-    .replace(/(href|src|poster)="\/(?!\/)/g, '$1="../');
+    .replace(/(href|src|poster)="\/(?!\/)/g, '$1="../')
+    .replace(/srcset="[^"]*"/g, (m) => m.replace(/\/assets\//g, '../assets/'));
 }
 
 for (const v of Object.keys(V)) {
@@ -293,7 +297,7 @@ for (const v of Object.keys(V)) {
 if (portable) {
   for (const f of ['home.css', 'plans.css', 'legal-pages.css', 'home.js', 'booking.js']) cpSync(join(SITE, f), join(out, f));
   cpSync(join(SITE, 'v2'), join(out, 'v2'), { recursive: true });
-  for (const f of ['assets/app-icon.png', 'assets/fonts/montserrat-latin.woff2', ...Object.values(V).map((x) => `assets/abhey/${x.photo}.webp`)]) {
+  for (const f of ['assets/app-icon.png', 'assets/fonts/montserrat-latin.woff2', ...Object.values(V).map((x) => `assets/abhey/${x.photo}.webp`), ...(V.v3.hd || []).map((w) => `assets/abhey/rw-smile-hd-${w}.webp`)]) {
     mkdirSync(dirname(join(out, f)), { recursive: true }); cpSync(join(SITE, f), join(out, f));
   }
   mkdirSync(join(out, 'app-icons'), { recursive: true });
