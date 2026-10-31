@@ -1,0 +1,108 @@
+/* Terms and Privacy pages. Loaded after home.css so these pages share the
+   site's header, hero, fonts and footer. Everything here is scoped to
+   .legal-page so the rest of the site is unchanged. */
+
+.legal-page { overflow-wrap: break-word; }
+.legal-page a { overflow-wrap: anywhere; }
+
+/* Keep the main menu on phones: it drops to a second row instead of hiding. */
+@media (max-width: 900px) {
+  .legal-page .nav .wrap { flex-wrap: wrap; row-gap: 0; }
+  .legal-page .nav-links { display: flex; order: 3; width: 100%; flex-wrap: wrap; gap: 4px 20px; padding: 2px 0 10px; font-size: 15px; }
+  .legal-page .nav-links a { padding: 6px 0; }
+}
+
+/* Visible keyboard focus on everything you can tab to. */
+.legal-page a:focus-visible,
+.legal-page button:focus-visible,
+.legal-page summary:focus-visible,
+.legal-page input:focus-visible,
+.legal-page select:focus-visible,
+.legal-page textarea:focus-visible { outline: 3px solid var(--sand); outline-offset: 3px; border-radius: 4px; }
+.legal-page .hero a:focus-visible { outline-color: var(--white); }
+.skip { position: absolute; left: 12px; top: -60px; z-index: 50; padding: 10px 14px; border-radius: 8px; background: var(--navy); color: var(--white); font: 600 15px var(--sans); text-decoration: none; }
+.skip:focus { top: 12px; }
+
+.legal-page .hero-short .wrap { padding-block: 56px 60px; }
+.legal-page .hero h1 { font-size: clamp(42px, 6vw, 72px); }
+.legal-meta { display: flex; flex-wrap: wrap; gap: 8px 10px; margin: 0; padding: 0; list-style: none; }
+.legal-meta li { border: 1px solid rgba(169, 188, 255, .35); border-radius: 999px; padding: 5px 12px; color: #d3dcea; font-size: 14px; }
+
+/* Preview-only banner and decision markers. Removed before going live. */
+.preview-bar { background: var(--sand-wash); color: var(--sand-ink); border-bottom: 1px solid #efd9b0; font: 600 15px/1.4 var(--sans); }
+.preview-bar .wrap { padding-block: 10px; }
+.decide { display: inline; padding: 1px 6px; border-radius: 4px; background: var(--sand-wash); color: var(--sand-ink); border: 1px dashed #d9a24a; font: 600 .9em/1.6 var(--sans); box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.decide::before { content: "Decision needed. "; font-weight: 700; }
+.verify { display: inline; padding: 1px 6px; border-radius: 4px; background: var(--sky); color: var(--navy); border: 1px dashed var(--blue-soft); font: 600 .9em/1.6 var(--sans); box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.verify::before { content: "To confirm. "; font-weight: 700; }
+
+/* Layout: contents column beside the text on wide screens. */
+.legal-body { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 56px; align-items: start; padding-block: 48px 88px; }
+.legal-toc { position: sticky; top: 88px; border: 1px solid var(--line); border-radius: 14px; background: var(--white); padding: 6px 18px 12px; }
+.legal-toc summary { cursor: pointer; padding: 12px 0 8px; font: 600 15px var(--sans); color: var(--navy); list-style: none; }
+.legal-toc summary::-webkit-details-marker { display: none; }
+.legal-toc summary::after { content: "+"; float: right; color: var(--ink-2); }
+.legal-toc[open] summary::after { content: "–"; }
+.legal-toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.legal-toc a { display: block; padding: 6px 0; color: var(--ink-2); text-decoration: none; font-size: 15px; line-height: 1.35; }
+.legal-toc a:hover { color: var(--blue); text-decoration: underline; }
+
+.legal-text { min-width: 0; max-width: 46em; font-size: 17px; line-height: 1.65; color: var(--ink); }
+.legal-text section { scroll-margin-top: 96px; padding-bottom: 28px; margin-bottom: 32px; border-bottom: 1px solid var(--line); }
+.legal-text section:last-of-type { border-bottom: 0; }
+.legal-text h2 { font: 500 30px/1.15 var(--serif); letter-spacing: -.01em; color: var(--navy); margin: 0 0 14px; }
+.legal-text h3 { font: 600 19px/1.3 var(--sans); color: var(--navy); margin: 24px 0 8px; }
+.legal-text p, .legal-text li { color: #33445c; }
+.legal-text p { margin: 0 0 14px; }
+.legal-text ul, .legal-text ol { padding-left: 22px; margin: 0 0 14px; }
+.legal-text li { margin: 6px 0; }
+.legal-text a { color: var(--blue); text-underline-offset: 3px; }
+.legal-text strong { color: var(--navy); }
+
+/* Key points box at the top of each page. */
+.key-points { background: var(--white); border: 1px solid var(--line); border-top: 4px solid var(--sand); border-radius: 14px; padding: 22px 24px 8px; margin-bottom: 40px; }
+.key-points h2 { font-size: 26px; }
+.key-points ul { padding-left: 20px; }
+.key-points li { margin: 8px 0; }
+.key-points .plan { display: block; font: 700 13px/1.4 var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--sand-ink); margin-top: 6px; }
+.callout { background: var(--sky); border-left: 4px solid var(--blue); border-radius: 0 12px 12px 0; padding: 14px 18px; margin: 18px 0; }
+.callout p:last-child { margin-bottom: 0; }
+
+/* Data tables turn into stacked cards on phones. */
+.data-table { width: 100%; border-collapse: collapse; margin: 8px 0 18px; font-size: 16px; }
+.data-table th, .data-table td { text-align: left; vertical-align: top; padding: 12px 12px 12px 0; border-bottom: 1px solid var(--line); }
+.data-table th { font: 600 14px var(--sans); color: var(--ink-2); letter-spacing: .02em; }
+.data-table td:first-child { font-weight: 600; color: var(--navy); width: 26%; }
+.tag-ok { display: inline-block; padding: 1px 8px; border-radius: 999px; background: #e6f4ec; color: #17633f; font: 600 13px var(--sans); }
+@media (max-width: 760px) {
+  .data-table thead { position: absolute; left: -9999px; }
+  .data-table, .data-table tbody, .data-table tr, .data-table td { display: block; width: 100%; }
+  .data-table tr { border: 1px solid var(--line); border-radius: 12px; background: var(--white); padding: 12px 14px; margin-bottom: 12px; }
+  .data-table td { border: 0; padding: 4px 0; }
+  .data-table td:first-child { width: 100%; font-size: 17px; }
+  .data-table td[data-label]::before { content: attr(data-label); display: block; font: 600 13px var(--sans); color: var(--ink-2); letter-spacing: .02em; }
+}
+
+@media (max-width: 900px) {
+  .legal-body { grid-template-columns: 1fr; gap: 24px; padding-block: 28px 64px; }
+  .legal-toc { position: static; }
+  .legal-text { font-size: 17px; }
+  .legal-text h2 { font-size: 26px; }
+}
+
+/* Consent block on the application forms. */
+.consent-box { display: grid; gap: 12px; padding: 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--cloud); }
+.consent-box h4 { margin: 0; font: 600 17px/1.3 var(--sans); color: var(--navy); }
+.consent-box p { margin: 0; font-size: 15px; color: var(--ink-2); }
+.choice { display: grid; grid-template-columns: 24px 1fr; gap: 10px; align-items: start; font: 400 16px/1.45 var(--sans) !important; color: var(--ink) !important; }
+.choice input { width: 22px !important; min-height: 22px !important; height: 22px; margin: 1px 0 0; padding: 0 !important; }
+.choice small { display: block; color: var(--ink-2); font-size: 14px; }
+.health-fields { display: grid; gap: 18px; }
+.health-fields[hidden] { display: none; }
+@media (max-width: 600px) {
+  .legal-page .hero-short .wrap { padding-block: 36px 40px; gap: 18px; }
+  .legal-page .hero-copy { gap: 16px; }
+  .legal-page .hero .lead { font-size: 17px; }
+  .legal-meta li { font-size: 13px; }
+  .key-points { padding: 18px 18px 6px; }
+}

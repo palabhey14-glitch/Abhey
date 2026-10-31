@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Source+Sans+3:ital,wght@0,400..700;1,400&display=swap">
   <link rel="preload" href="/assets/fonts/montserrat-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/home.css?rev=hook-2">
+  <link rel="stylesheet" href="/legal-pages.css?rev=legal-1">
 </head>
 <body>
   <header class="nav">
@@ -73,8 +74,8 @@
                 <div class="field"><label for="p-phone">Phone (WhatsApp)</label><input id="p-phone" name="phone" type="tel" autocomplete="tel" required></div>
               </div>
               <div class="pair">
-                <div class="field"><label for="p-height">Height <span class="opt">(cm)</span></label><input id="p-height" name="height_cm" type="number" inputmode="numeric" min="120" max="230" required></div>
-                <div class="field"><label for="p-weight">Current weight <span class="opt">(kg)</span></label><input id="p-weight" name="weight_kg" type="number" inputmode="decimal" step="0.1" min="35" max="250" required></div>
+                <div class="field"><label for="p-height">Height <span class="opt">(cm, optional)</span></label><input id="p-height" name="height_cm" type="number" inputmode="numeric" min="120" max="230"></div>
+                <div class="field"><label for="p-weight">Current weight <span class="opt">(kg, optional)</span></label><input id="p-weight" name="weight_kg" type="number" inputmode="decimal" step="0.1" min="35" max="250"></div>
               </div>
               <div class="field"><label for="p-work">What do you do for work, and how much do you travel?</label><input id="p-work" name="work" required></div>
             </fieldset>
@@ -106,7 +107,6 @@
                 <option>Other</option>
               </select></div>
               <div class="field"><label for="p-food">What food did you grow up on, and what do you eat most weeks?</label><input id="p-food" name="food" required placeholder="For example: Punjabi home cooking, rice and curry, takeaway twice a week"></div>
-              <div class="field"><label for="p-allergy">Allergies or intolerances <span class="opt">(optional)</span></label><input id="p-allergy" name="allergies"></div>
               <div class="field"><label for="p-drink">How often do you eat out or drink alcohol?</label>
               <select id="p-drink" name="eat_out" required>
                 <option value="">Pick one</option>
@@ -143,7 +143,21 @@
                 <option>Some experience, on and off</option>
                 <option>Training consistently for a year or more</option>
               </select></div>
-              <div class="field"><label for="p-injury">Injuries or medical conditions I should know about <span class="opt">(optional)</span></label><textarea id="p-injury" name="injuries"></textarea></div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Health details <span class="opt">(optional)</span></legend>
+              <div class="consent-box" id="p-health">
+                <h4>You don’t need to share health information to assess your application.</h4>
+                <p>Health information is sensitive, so I ask for it after you join, in the app, through a short health screen with its own consent. If there is something I should know now, such as an injury or an allergy, you can share it here.</p>
+                <label class="choice"><input type="radio" name="health_now" value="later" checked><span>I’ll share health details after I join <small>Recommended</small></span></label>
+                <label class="choice"><input type="radio" name="health_now" value="now"><span>I’d like to share something now</span></label>
+                <div class="health-fields" id="p-health-fields" hidden>
+                  <div class="field"><label for="p-allergy">Allergies or intolerances</label><input id="p-allergy" name="allergies" disabled></div>
+                  <div class="field"><label for="p-injury">Injuries or medical conditions I should know about</label><textarea id="p-injury" name="injuries" disabled></textarea></div>
+                  <label class="choice"><input type="checkbox" name="health_consent" value="yes" disabled required><span>I consent to Rewired Coaching collecting the health information I enter here to assess my application and plan my coaching. I can withdraw this consent at any time.</span></label>
+                </div>
+              </div>
             </fieldset>
 
             <fieldset>
@@ -155,7 +169,8 @@
                 <option>One-off payment</option>
                 <option>Payment plan</option>
               </select></div>
-              <label class="check"><input type="checkbox" name="consent" value="yes" required><span>I agree to Rewired Coaching using these details to assess my application and contact me. I’ve read the <a href="/privacy.html">Privacy Policy</a> and the <a href="/terms.html">Terms &amp; Conditions</a>.</span></label>
+              <label class="check"><input type="checkbox" name="consent" value="yes" required><span>I agree to Rewired Coaching using these details to assess my application and contact me, as explained in the <a href="/privacy.html">Privacy Policy</a>. The <a href="/terms.html">Terms &amp; Conditions</a> apply if I join.</span></label>
+              <label class="choice"><input type="checkbox" name="marketing" value="yes"><span>Send me occasional coaching tips and offers by email. <small>Optional. Unsubscribe any time.</small></span></label>
             </fieldset>
 
             <p class="error" id="apply-error" role="alert" hidden>Something went wrong sending your application. Please try again, or email coaching@abheyrewired.com.</p>
@@ -222,6 +237,17 @@
         });
       });
     })();
+  </script>
+  <script>
+    // Health details stay switched off (and are not sent) unless the person chooses to share them now.
+    document.querySelectorAll('[name="health_now"]').forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        var box = radio.closest('.consent-box').querySelector('.health-fields');
+        var on = radio.value === 'now' && radio.checked;
+        box.hidden = !on;
+        box.querySelectorAll('input, textarea').forEach(function (el) { el.disabled = !on; if (!on) { if (el.type === 'checkbox') el.checked = false; else el.value = ''; } });
+      });
+    });
   </script>
   <script src="/home.js?rev=faq-1"></script>
 </body>

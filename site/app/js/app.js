@@ -818,19 +818,30 @@
       <div class="card">
         <p class="kicker">Before you start</p>
         <h1>Your privacy</h1>
-        <p>To coach you, Rewired stores what you log here: your profile, daily numbers (weight, steps, food, training), weekly check-ins, body measurements and progress photos. Some of this is health information.</p>
+        <p>To coach you, Rewired stores what you log and send here. Some of it is health information, which the law treats as sensitive.</p>
         <ul>
-          <li>Only you and ${esc(COACH)} can see it. Photos are private and never public.</li>
-          <li>It's used only to run your coaching, never sold or shared for marketing.</li>
-          <li>It's stored with Supabase, our database provider, which may store it outside Australia.</li>
-          <li>You can ask to see, correct or delete your data at any time by messaging ${esc(COACH)}.</li>
+          <li>Your profile, daily logs (weight, steps, food, training, sleep), check-ins, measurements and progress photos.</li>
+          <li>Anything you choose to add, such as health markers, blood test results, a health screen, injuries or a doctor's letter.</li>
+          <li>Only you and ${esc(COACH)} can see it. Photos are kept in private storage and are never public.</li>
+          <li>It's stored with Supabase in Sydney, Australia, and used only to coach you. It's never sold.</li>
+          <li>You can ask to see, correct or delete it, or withdraw consent, at any time by messaging ${esc(COACH)}.</li>
           <li>Coaching isn't medical advice. Tell ${esc(COACH)} about any injury or condition, and check with your GP before big changes.</li>
         </ul>
-        <p><a href="/privacy.html" target="_blank" rel="noopener">Read the full privacy policy</a></p>
+        <p><a href="/privacy.html" target="_blank" rel="noopener">Read the full Privacy Policy</a></p>
         <form id="consent-form">
+          <p class="kicker" style="margin-top:8px">Needed to use the app</p>
           <div class="field" style="display:flex;gap:10px;align-items:flex-start">
-            <input id="agree" name="agree" type="checkbox" required style="width:24px;min-height:24px;margin-top:2px">
-            <label for="agree" style="font-weight:500">I agree to Rewired collecting and using this information, including health information and photos, to coach me.</label>
+            <input id="agree" name="agree" type="checkbox" required style="flex:0 0 24px;width:24px;height:24px;min-height:24px;margin-top:2px">
+            <label for="agree" style="font-weight:500">I consent to Rewired collecting and using my information, including health information and progress photos, to coach me.</label>
+          </div>
+          <p class="kicker" style="margin-top:8px">Optional. Your coaching is the same either way</p>
+          <div class="field" style="display:flex;gap:10px;align-items:flex-start">
+            <input id="opt-marketing" name="marketing" type="checkbox" style="flex:0 0 24px;width:24px;height:24px;min-height:24px;margin-top:2px">
+            <label for="opt-marketing" style="font-weight:500">Send me occasional tips and offers by email.</label>
+          </div>
+          <div class="field" style="display:flex;gap:10px;align-items:flex-start">
+            <input id="opt-photos" name="photos" type="checkbox" style="flex:0 0 24px;width:24px;height:24px;min-height:24px;margin-top:2px">
+            <label for="opt-photos" style="font-weight:500">I'm happy for ${esc(COACH)} to ask about featuring my progress photos or results. Nothing is published unless I agree to that specific use.</label>
           </div>
           <button class="btn" type="submit" style="width:100%">Agree and continue</button>
         </form>
@@ -843,11 +854,17 @@
     const form = document.getElementById('consent-form');
     form.addEventListener('submit', (e) => {
       e.preventDefault();
-      if (!form.agree.checked) return toast('Tick the box to continue.', true);
+      if (!form.agree.checked) return toast('Tick the first box to continue.', true);
       withBusy(form.querySelector('button'), async () => {
         const consent_at = new Date().toISOString();
         must(await sb.from('profiles').update({ consent_at }).eq('id', state.me.id));
         state.me.consent_at = consent_at;
+        // Optional choices are saved separately so the app still works before
+        // the consent-choices columns exist. Unticked boxes save nothing.
+        const optional = {};
+        if (form.marketing.checked) optional.marketing_consent_at = consent_at;
+        if (form.photos.checked) optional.photo_share_consent_at = consent_at;
+        if (Object.keys(optional).length) await sb.from('profiles').update(optional).eq('id', state.me.id);
         route();
       });
     });
