@@ -1,4 +1,4 @@
-/* v3 Studio Light. The grey studio wall from the shoot becomes the page.
+/* Studio Light, the live landing design (picked 2026-10-31). The grey studio wall from the shoot becomes the page.
    Thin black grotesk, white app cards floating around the photograph,
    one Rewired blue for actions. Bright and calm. */
 
@@ -41,15 +41,15 @@
   .rw[data-rw="v3"] .hero-grid { grid-template-columns: 1fr; min-height: 0; gap: 0; }
   .rw[data-rw="v3"] .hero-copy { padding: 48px 0 16px; }
   .rw[data-rw="v3"] .hero-stage { min-height: 0; height: 500px; }
-  .rw[data-rw="v3"] .hero .f1 { left: 0; top: 10%; }
+  .rw[data-rw="v3"] .hero .f1 { left: 0; top: 46%; }
   .rw[data-rw="v3"] .hero .f2 { right: 0; top: auto; bottom: 24%; }
   .rw[data-rw="v3"] .hero .f3 { display: none; }
 }
 @media (max-width: 680px) {
   .rw[data-rw="v3"] .hero-stage { height: 440px; margin-inline: -16px; }
-  .rw[data-rw="v3"] .hero .f1 { left: 12px; top: 6%; }
+  .rw[data-rw="v3"] .hero .f1 { left: 12px; top: 44%; }
   .rw[data-rw="v3"] .hero .f1 .ui-stat { width: 168px; }
-  .rw[data-rw="v3"] .hero .f2 { right: 12px; bottom: 8%; }
+  .rw[data-rw="v3"] .hero .f2 { right: 12px; bottom: 4%; }
   .rw[data-rw="v3"] .hero .ui-msg { width: 232px; }
 }
 

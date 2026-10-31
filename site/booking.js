@@ -13,7 +13,7 @@ document.querySelectorAll('[data-join]').forEach((a) => {
   a.href = window.REWIRED_JOIN_URL;
 });
 
-// The Stripe subscription payment link for Rewired Coaching (AUD $80 per
+// The Stripe subscription payment link for Rewired Coaching (weekly
 // week), behind every data-join-entry button. Paste the link from Stripe
 // here. Until then the buttons open an email to Abhey instead, so nobody hits
 // a dead checkout.

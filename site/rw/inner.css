@@ -1,0 +1,21 @@
+/* Inner pages (pricing, FAQ, apply, terms...). No photograph here, by design:
+   the landing page palette and type carry over, tokens come from studio.css. */
+
+.rw-inner h1, .rw-inner h2, .rw-inner h3 { font-weight: var(--inner-h-w, 500); }
+.rw-inner .hero h1 { letter-spacing: -.035em; }
+.rw-inner .hero h1 em { font-style: normal; color: var(--inner-em, var(--sand)); }
+.rw-inner .nav { background: color-mix(in srgb, var(--paper) 92%, transparent); }
+.rw-inner .hero-short { position: relative; isolation: isolate; }
+.rw-inner .hero-short::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.rw-inner .hero-short .eyebrow { font: 500 12px/1 'Geist Mono', 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; }
+
+/* v3 Studio Light: a light hero on the studio grey */
+.rw-inner[data-rw="v3"] .hero-short { background: radial-gradient(50% 90% at 80% 30%, #f6f5f3 0%, #ebe9e6 70%); color: #121212; border-bottom: 1px solid var(--line); }
+.rw-inner[data-rw="v3"] .hero .lead { color: #57524c; }
+.rw-inner[data-rw="v3"] .hero .eyebrow { color: #2444f9; }
+.rw-inner[data-rw="v3"] .btn { border-radius: 999px; }
+.rw-inner[data-rw="v3"] .btn-dark { background: #2444f9; }
+.rw-inner[data-rw="v3"] .btn-dark:hover { background: #1a33c9; }
+
+.rw-inner[data-rw="v3"] .hero .text-link.light { color: #121212; text-decoration-color: #2444f9; }
+.rw-inner[data-rw="v3"] .price-card .plan-label { background: #e8edff; color: #2444f9; }

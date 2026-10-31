@@ -3,287 +3,154 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Rewired Coaching with Abhey Pal</title>
-  <meta name="description" content="The 12 Week Rewired Premium Designer Coaching: one-to-one training and nutrition coaching for busy men, built around your week and the food you grew up on.">
-  <meta name="theme-color" content="#0b2545">
+  <title>Rewired Premium Coaching with Abhey Pal</title>
+  <meta name="description" content="One-to-one training and nutrition coaching for busy men, built around your week and the food you grew up on.">
+  <meta name="theme-color" content="#ebe9e6">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Rewired Coaching with Abhey Pal">
-  <meta property="og:description" content="Lose the belly, build visible muscle, keep the food you grew up on. One-to-one 12-week coaching built around your life.">
+  <meta property="og:title" content="Rewired Premium Coaching with Abhey Pal">
+  <meta property="og:description" content="Lose the softness, build real shape, keep the food you grew up on. One-to-one coaching built around your life.">
   <meta property="og:image" content="https://rewiredbyabhey.com/assets/rewired-logo.png">
   <link rel="icon" href="/app/icons/favicon-32.png" sizes="32x32">
   <link rel="apple-touch-icon" href="/app/icons/apple-touch-icon.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Source+Sans+3:ital,wght@0,400..700;1,400&display=swap">
-  <link rel="preload" href="/assets/fonts/montserrat-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/home.css?rev=hook-2">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300..700&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="/rw/base.css?rev=1">
+  <link rel="stylesheet" href="/rw/studio.css?rev=1">
   <script>
     // Sign-in links from older emails land on this page; pass them to the app.
     if (/access_token=|error_description=/.test(location.hash)) location.replace('/app/' + location.hash);
   </script>
 </head>
-<body>
-  <header class="nav">
-    <div class="wrap">
-      <a class="brand" href="#top" aria-label="Rewired Coaching with Abhey Pal, home">
-        <img src="/assets/app-icon.png" alt="" width="34" height="34">
-        <span><b>Rewired Coaching</b><small>WITH ABHEY PAL</small></span>
-      </a>
-      <nav class="nav-links" aria-label="Main">
-        <a href="/" aria-current="page">Home</a>
-        <a href="pricing.html">Pricing</a>
-        <a href="resources.html">Resources</a>
-        <a href="faq.html">FAQ</a>
-      </nav>
-      <div class="nav-actions">
-        <a class="btn btn-ghost btn-small" href="/app/">Client login</a>
-        <a class="btn btn-dark btn-small" data-book href="https://calendly.com/coaching-abheyrewired/30min" target="_blank" rel="noopener noreferrer">Book a call</a>
-      </div>
-    </div>
-  </header>
-
+<body class="rw" data-rw="v3">
+  <header class="nav"><div class="w nav-in">
+  <a class="brand" href="/" aria-label="Rewired Coaching with Abhey Pal, home"><img src="/assets/app-icon.png" alt="" width="32" height="32"><span><b>Rewired</b><small>with Abhey Pal</small></span></a>
+  <nav class="links" aria-label="Main"><a href="/" aria-current="page">Home</a><a href="pricing.html">Pricing</a><a href="resources.html">Resources</a><a href="faq.html">FAQ</a></nav>
+  <div class="nav-act"><a class="b b-line b-sm" href="/app/">Client login</a><a class="b b-primary b-sm" data-book href="https://calendly.com/coaching-abheyrewired/30min" target="_blank" rel="noopener noreferrer">Book a call</a></div>
+</div></header>
   <main id="top">
-    <section class="hero" aria-labelledby="hero-title">
-      <div class="wrap">
-        <div class="hero-copy">
-          <p class="eyebrow">The 12 Week Rewired Premium Designer Coaching, with Abhey Pal</p>
-          <h1 id="hero-title">Your next chapter, <em>rewired.</em></h1>
-          <p class="lead">I coach busy men who are tired of starting over. Twelve weeks of training and nutrition built around your job, your travel and the food you grew up on. I’ve been doing this for 15 years.</p>
-          <div class="actions">
-            <a class="btn btn-light" data-book href="https://calendly.com/coaching-abheyrewired/30min" target="_blank" rel="noopener noreferrer">Book a free 30-minute call</a>
-            <a class="text-link light" href="apply.html">Apply Now</a>
-          </div>
-        </div>
-
-        <div class="engine" id="engine" role="img" aria-label="Animation: what a client logs (meals, training, habits, supplements and check-ins) goes into the Rewired R, and the body on the right slims down and gets more defined week by week.">
-          <div class="engine-stage" id="stage" aria-hidden="true">
-            <svg class="pipes" id="pipes">
-              <path class="tube" id="tube"></path><path class="core" id="core"></path>
-              <path class="pulse" id="pulse-in" pathLength="1000" stroke-dasharray="0 1000"></path>
-              <path class="pulse blue" id="pulse-out" pathLength="1000" stroke-dasharray="0 1000"></path>
-            </svg>
-            <div class="before" id="cubes">
-              <svg class="figure-before" id="figure-before" viewBox="-96 8 192 440"></svg>
-              <span>Week 1</span>
-            </div>
-            <div id="tiles"></div>
-            <div class="e-hub" id="hub"><div class="ring"></div><div class="face"><div class="r">R<i>.</i></div></div></div>
-            <div class="packet" id="packet"><svg viewBox="0 0 24 24" id="packet-ic"></svg><span id="packet-t"></span></div>
-            <div class="body-panel" id="console">
-              <div class="bar"><i></i><i></i><i></i><span>rewired · your recomp</span><b id="bp-week">Week 1</b></div>
-              <div class="bp-main">
-                <svg class="figure" id="figure" viewBox="-96 8 192 440"></svg>
-                <dl class="bp-stats">
-                  <div><dt>Waist</dt><dd id="bp-waist">92.0 cm</dd></div>
-                  <div><dt>Body fat</dt><dd id="bp-fat">24%</dd></div>
-                  <div><dt>Muscle</dt><dd id="bp-muscle">+0.0 kg</dd></div>
-                </dl>
-              </div>
-              <p class="bp-last" id="bp-last">Logs turn into progress</p>
-              <p class="bp-note">An illustration with example numbers</p>
-            </div>
-          </div>
-          <button class="engine-ctrl" type="button" id="engine-toggle">Pause</button>
-        </div>
-      </div>
-    </section>
-
-    <section class="section letter" id="method" aria-labelledby="method-title">
-      <div class="wrap">
-        <h2 id="method-title" class="reveal">Skinny fat at 30 isn’t a life sentence.</h2>
-        <div class="letter-body reveal">
-          <p>This is a complete body recomposition. Lose the softness, build real shape, and become unrecognisable to the man who started.</p>
-          <p>If it hasn’t worked before, it’s not because you lack discipline. Usually the plan was written for someone with an empty calendar and a different kitchen.</p>
-          <p>So I start with your actual week. The hours you work, the trips you take and the food you grew up on all shape the plan, and that food stays on your plate. Then we set targets you can hit on a normal week, not a perfect one.</p>
-          <p>You won’t be handed a template and left to work it out. Every week you check in with me personally, and you can message me directly whenever you need to. It’s me on the other end, not a chatbot or an assistant.</p>
-          <p>Each week you log your meals, training and habits in the app. I review it with you and adjust your plan, so you always know exactly what to do next, from your first day to week twelve.</p>
-          <p class="sign">Abhey</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" aria-labelledby="how-title">
-      <div class="wrap film-row">
-        <div class="film-copy reveal">
-          <h2 id="how-title">Your Rewired journey <em>awaits.</em></h2>
-          <p class="film-lead">Twelve weeks, one step at a time, all in your own Rewired app.</p>
-          <ol class="film-steps" id="film-steps">
-            <li><button type="button" data-scene="2"><b>Built around you</b><span>Your goal, your schedule and your food set the plan.</span></button></li>
-            <li><button type="button" data-scene="3"><b>Train anywhere</b><span>Gym, home and hotel versions. Log every set in seconds.</span></button></li>
-            <li><button type="button" data-scene="4"><b>Eat your food</b><span>Meals from the food you grew up on, or log the macros only.</span></button></li>
-            <li><button type="button" data-scene="5"><b>Check in weekly</b><span>A reminder on check-in day, photos and measurements in one place.</span></button></li>
-            <li><button type="button" data-scene="6"><b>Stay on track</b><span>Your habits turn green, and I adjust your plan every week.</span></button></li>
-          </ol>
-        </div>
-        <figure class="film reveal" id="film" aria-label="A 25-second walkthrough of the Rewired app">
-          <div class="film-frame" data-scene="0">
-            <div class="film-sky" aria-hidden="true"></div>
-            <div class="film-wash" aria-hidden="true"></div>
-            <div class="film-win" aria-hidden="true"></div>
-
-            <section class="fs fs-clock">
-              <span class="fc-dot" aria-hidden="true"></span>
-              <div class="fc-time">
-                <small>Week 01 · Monday</small>
-                <p class="fc-digits" aria-label="6:00"><span>0</span><span class="roll"><i>5</i><i>6</i></span><span class="colon">:</span><span class="roll"><i>5</i><i>0</i></span><span class="roll"><i>9</i><i>0</i></span></p>
-                <em>Day one</em>
-                <span class="fc-line"><i></i></span>
-              </div>
-            </section>
-
-            <section class="fs fs-kinetic">
-              <span class="kt-ring" aria-hidden="true"></span>
-              <p class="kt kt-a"><span>No more</span><b>start&#8209;stop.</b></p>
-              <p class="kt kt-b"><span>This time</span><b>it sticks<i>.</i></b></p>
-            </section>
-
-            <section class="fs" data-n="01" data-title="Built around you" data-tag="Week 1" data-screen="home"></section>
-            <section class="fs" data-n="02" data-title="Log every set" data-tag="Hotel gym" data-screen="log"></section>
-            <section class="fs" data-n="03" data-title="Eat your food" data-tag="Macros only" data-screen="macro"></section>
-            <section class="fs" data-n="04" data-title="Check in weekly" data-tag="Due today" data-alert data-screen="checkin"></section>
-
-            <section class="fs fs-win">
-              <i class="cf" style="--x:86px;--y:67px;--r:0deg;--c:var(--sand)"></i><i class="cf" style="--x:98px;--y:121px;--r:73deg;--c:#ffffff"></i><i class="cf" style="--x:44px;--y:123px;--r:146deg;--c:#4ade80"></i><i class="cf" style="--x:12px;--y:170px;--r:219deg;--c:#a9bcff"></i><i class="cf" style="--x:-29px;--y:134px;--r:292deg;--c:var(--sand)"></i><i class="cf" style="--x:-86px;--y:144px;--r:5deg;--c:#ffffff"></i><i class="cf" style="--x:-90px;--y:88px;--r:78deg;--c:#4ade80"></i><i class="cf" style="--x:-138px;--y:53px;--r:151deg;--c:#a9bcff"></i><i class="cf" style="--x:-101px;--y:9px;--r:224deg;--c:var(--sand)"></i><i class="cf" style="--x:-110px;--y:-51px;--r:297deg;--c:#ffffff"></i><i class="cf" style="--x:-51px;--y:-57px;--r:10deg;--c:#4ade80"></i><i class="cf" style="--x:-14px;--y:-106px;--r:83deg;--c:#a9bcff"></i><i class="cf" style="--x:34px;--y:-69px;--r:156deg;--c:var(--sand)"></i><i class="cf" style="--x:96px;--y:-76px;--r:229deg;--c:#ffffff"></i><i class="cf" style="--x:104px;--y:-15px;--r:302deg;--c:#4ade80"></i><i class="cf" style="--x:154px;--y:26px;--r:15deg;--c:#a9bcff"></i>
-              <span class="win-check"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#4ade80" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-              <b class="win-h">On track.</b>
-              <span class="win-chip"><small>Week 4 check-in</small>−1.4 kg · waist −3 cm</span>
-              <p class="win-streak"><svg viewBox="0 0 26 32" aria-hidden="true"><path d="M13 1c1 6 9 9 9 18a9 9 0 0 1-18 0c0-4 2-7 4-8 0 3 1 5 3 6-1-6 1-12 2-16z" fill="#f4c77d"/><path d="M13 31a5 5 0 0 1-5-5c0-3 2-5 4-6 0 2 1 3 2 3 0-2 1-4 1-5 2 2 3 4 3 8a5 5 0 0 1-5 5z" fill="#fff3dc"/></svg><b data-count="7">0</b></p>
-              <small class="win-days">Days on target</small>
-              <ol class="win-dots" aria-hidden="true"><li>M</li><li>T</li><li>W</li><li>T</li><li>F</li><li>S</li><li>S</li></ol>
-              <span class="win-btn">Your week 5 plan is ready</span>
-            </section>
-
-            <section class="fs fs-end">
-              <span class="end-orb" aria-hidden="true"></span>
-              <img class="end-icon" src="/assets/app-icon.png" alt="" width="76" height="76">
-              <b class="end-name">Rewired</b>
-              <p class="end-line">12 Week Rewired Premium Designer Coaching</p>
-              <small class="end-label">Your next step</small>
-              <span class="end-bar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><i data-typed="Book a Strategy Call"></i></span>
-            </section>
-
-            <div class="fm-phone" aria-hidden="true">
-              <div class="fm-screen">
-                <div class="fm-status"><b>6:00</b><span class="fm-island"></span><i></i></div>
-
-                <div class="fm-scr" data-screen="home">
-                  <div class="u-hero"><small>Monday · Week 1 of 12</small><b>Good morning, Abhey</b></div>
-                  <div class="u-card u-session"><span class="u-ic">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8v8M18 8v8M3 10v4M21 10v4M6 12h12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></span>
-                    <small>Today’s session</small><b>Upper A · Hotel gym</b><em>45 min · 5 exercises</em></div>
-                  <div class="u-pills"><div><small>Steps</small><b>8,400</b><i style="--w:84%"></i></div><div><small>Protein</small><b>92 g</b><i style="--w:58%"></i></div></div>
-                  <div class="u-note"><span class="u-r">R<i>.</i></span><p>Biggest lever this week: 160 g protein a day.</p></div>
-                </div>
-
-                <div class="fm-scr" data-screen="log">
-                  <div class="u-head"><small>Log your workout</small><b>Bench press</b><em>Target 3 × 6–8 · 2 RIR</em></div>
-                  <div class="u-set"><span>Set 1</span><i class="u-in" data-type="60">60</i><small>kg</small><i class="u-in" data-type="8">8</i><small>reps</small></div>
-                  <div class="u-set"><span>Set 2</span><i class="u-in" data-type="62.5">62.5</i><small>kg</small><i class="u-in" data-type="7">7</i><small>reps</small></div>
-                  <div class="u-set"><span>Set 3</span><i class="u-in" data-type="65">65</i><small>kg</small><i class="u-in" data-type="6">6</i><small>reps</small></div>
-                  <div class="u-btn">Save workout</div>
-                  <div class="u-toast">✓ Training ticked on your habits</div>
-                </div>
-
-                <div class="fm-scr" data-screen="macro">
-                  <div class="u-head"><small>Add to breakfast</small><b>Protein oatmeal with berries</b></div>
-                  <div class="u-grid">
-                    <div><small>Protein</small><b data-count="40">0</b><em>g</em></div>
-                    <div><small>Carbs</small><b data-count="62">0</b><em>g</em></div>
-                    <div><small>Fat</small><b data-count="12">0</b><em>g</em></div>
-                    <div><small>Fibre</small><b data-count="9">0</b><em>g</em></div>
-                  </div>
-                  <div class="u-kcal"><span>Calories</span><b data-count="534">0</b><em>kcal</em></div>
-                  <div class="u-btn">Add</div>
-                </div>
-
-                <div class="fm-scr" data-screen="checkin">
-                  <div class="u-alert"><i></i><div><b>Your check-in is due today</b><small>Week 4: photos, measurements, your week</small></div></div>
-                  <div class="u-photos"><div><span>Front</span></div><div><span>Side</span></div><div><span>Back</span></div></div>
-                  <div class="u-btn">Send check-in</div>
-                </div>
-              </div>
-            </div>
-
-            <header class="fs-top" aria-hidden="true"><span class="fs-n"></span><span class="fs-dash"></span><span class="fs-title"></span></header>
-            <span class="fs-tag" aria-hidden="true"></span>
-          </div>
-          <button class="film-ctrl" type="button" id="film-toggle">Pause</button>
-          <figcaption class="film-note">App screens with example numbers.</figcaption>
-        </figure>
-      </div>
-    </section>
-
-    <section class="section soft" aria-labelledby="pain-title">
-      <div class="wrap">
-        <h2 id="pain-title" class="reveal">You might recognise some of this.</h2>
-        <div class="quotes">
-          <figure class="reveal">
-            <blockquote>“Slim in a shirt. Soft without it.”</blockquote>
-            <figcaption>That’s usually too little muscle rather than too much fat. We build muscle and lose fat at the same time, so the shape changes, not just the scale.</figcaption>
-          </figure>
-          <figure class="reveal">
-            <blockquote>“I start every Monday and I’m done by Thursday.”</blockquote>
-            <figcaption>No crash plans. Targets you can hit on a work week, adjusted each week from what you actually logged.</figcaption>
-          </figure>
-          <figure class="reveal">
-            <blockquote>“I can’t give up my cultural food.”</blockquote>
-            <figcaption>You don’t have to. Your plan starts from the food you grew up on.</figcaption>
-          </figure>
-          <figure class="reveal">
-            <blockquote>“Between work and travel, I can’t keep a routine.”</blockquote>
-            <figcaption>Sessions fit into 45 to 60 minutes, and the hotel and home versions are ready for the weeks that fall apart.</figcaption>
-          </figure>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="offer" aria-labelledby="offer-title">
-      <div class="wrap included">
-        <div class="included-head reveal">
-          <h2 id="offer-title">What’s included.</h2>
-          <p>Twelve weeks, one to one. Everything below runs through your own Rewired app.</p>
-          <a class="text-link" href="pricing.html">Full details on the pricing page, including weekly Rewired Coaching</a>
-        </div>
-        <dl class="list reveal">
-          <div><dt>Training</dt><dd>A programme for your goal and schedule, updated every week, with a fallback plan for busy weeks.</dd></div>
-          <div><dt>Nutrition</dt><dd>Targets and meal plans built around your preferred food choices, so you can still eat with your family.</dd></div>
-          <div><dt>The app</dt><dd>Log food, training, weight and steps. Weekly check-ins, measurements and private progress photos.</dd></div>
-          <div><dt>Feedback</dt><dd>Fortnightly video check-ins and a weekly voice note from me.</dd></div>
-          <div><dt>Support</dt><dd>My personal WhatsApp, 7 days a week, with replies within 12 hours.</dd></div>
-          <div><dt>After week 12</dt><dd>A plan to keep the results, so you don’t slide back.</dd></div>
-        </dl>
-      </div>
-    </section>
-
-    <section class="section soft" aria-labelledby="promise-title">
-      <div class="wrap">
-        <div class="promise reveal">
-          <p class="promise-label">The Week 8 Progress Promise</p>
-          <h2 id="promise-title">Notice the difference by week 8. <em>Or I keep coaching you.</em></h2>
-          <p>If you haven’t noticed a difference in your physique by the end of week 8, I’ll keep coaching you for free. At week 8 we’ll talk about what your coaching beyond week 12 looks like, and if you want to carry on, I’ll offer you reduced-price loyalty coaching.</p>
-          <small>This is a guarantee of extra coaching, not a refund. The details are in the <a href="terms.html#promise">Terms &amp; Conditions</a>.</small>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer class="footer">
-    <div class="wrap">
-      <div class="contact" aria-label="Contact">
-        <a class="ig" href="mailto:coaching@abheyrewired.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7 8 6 8-6"/></svg>coaching@abheyrewired.com</a>
-        <a class="ig" href="https://www.instagram.com/abhey.rewired/" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>@abhey.rewired</a>
-      </div>
-      <nav aria-label="Footer">
-        <a href="resources.html">Resources</a>
-        <a href="faq.html">FAQ</a>
-        <a href="privacy.html">Privacy Policy</a>
-        <a href="terms.html">Terms &amp; Conditions</a>
-        <a href="/app/?coach">Coach login</a>
-      </nav>
-      <span class="legal">© Rewired Coaching with Abhey Pal · ABN 73 322 472 368</span>
+    <section class="hero" aria-labelledby="hero-title"><div class="w hero-grid">
+    <div class="hero-copy"><span class="pill"><i></i>Rewired Premium Coaching with Abhey Pal</span><h1 id="hero-title">Your next chapter, <em>rewired.</em></h1><p class="lead">I coach busy men who are tired of starting over. Training and nutrition built around your job, your travel and the food you grew up on. I’ve been doing this for 15 years.</p><div class="cta-row"><a class="b b-primary" data-book href="https://calendly.com/coaching-abheyrewired/30min" target="_blank" rel="noopener noreferrer">Book a Strategy Call <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="b b-ghost" href="apply.html">Apply Now <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a></div></div>
+    <div class="hero-stage"><img class="person" src="/assets/abhey/rw-smile-hd-2228.webp" srcset="/assets/abhey/rw-smile-hd-1040.webp 1040w, /assets/abhey/rw-smile-hd-1559.webp 1559w, /assets/abhey/rw-smile-hd-2228.webp 2228w" sizes="(max-width: 680px) 400px, 660px" alt="Abhey Pal, your coach" fetchpriority="high"><div class="float f1"><div class="ui ui-stat"><small>Protein today</small><b><span data-count="142">142</span> g</b><i class="bar" style="--w:89%"></i><em>of 160 g</em></div></div><div class="float f2"><div class="ui ui-msg"><span class="r">R<i>.</i></span><div><small>Abhey</small><p>Great week. Carbs up 20 g on leg day.</p></div></div></div><div class="float f3"><div class="ui ui-stat"><small>Days on target</small><b data-count="7">7</b><ol class="dots"><li></li><li></li><li></li><li></li><li></li><li></li><li></li></ol></div></div></div>
+  </div><div class="w"><ul class="strip" aria-label="Built for"><li>Gym</li><li>Home</li><li>Hotel</li><li>Halal</li><li>Vegetarian</li><li>Vegan</li><li>Pescatarian</li></ul></div></section>
+    
+  <section class="sec why" aria-labelledby="why-title"><div class="w">
+    <p class="eyebrow">Why Rewired</p>
+    <h2 id="why-title" class="statement">Skinny fat at 30 isn’t a life sentence. <span class="soft">Build muscle and lose fat at the same time, with a coach who’s done it for 15 years.</span></h2>
+    <div class="why-stage">
+      <pre class="code" aria-hidden="true">"session": "Upper A",
+"place": "Hotel gym",
+"sets": 15,
+"status": "Logged"</pre><pre class="code" aria-hidden="true">"meal": "Protein oatmeal",
+"protein": "40 g",
+"kcal": 534,
+"slot": "Breakfast"</pre><pre class="code" aria-hidden="true">"habit": "Steps",
+"value": 8400,
+"target": 8000,
+"status": "Met"</pre><pre class="code" aria-hidden="true">"checkin": "Week 4",
+"waist": "-3 cm",
+"photos": 3,
+"reply": "Abhey"</pre>
+      <div class="mark" aria-hidden="true"><img src="/assets/app-icon.png" alt=""></div>
+      <div class="float w1"><div class="ui ui-stat"><small>Protein today</small><b><span data-count="142">142</span> g</b><i class="bar" style="--w:89%"></i><em>of 160 g</em></div></div><div class="float w2"><div class="ui ui-stat"><small>Days on target</small><b data-count="7">7</b><ol class="dots"><li></li><li></li><li></li><li></li><li></li><li></li><li></li></ol></div></div>
     </div>
-  </footer>
+  </div></section>
 
-  <script src="/home.js?rev=faq-1"></script>
+  <section class="sec" aria-labelledby="block-title"><div class="w"><div class="block">
+    <div class="tile tile-lead"><span class="pill"><i></i>The method</span><h2 id="block-title">Your plan starts with <span class="soft">your actual week.</span></h2><div class="big"><b>12 h</b><small>Most replies on my personal WhatsApp, 7 days a week</small></div></div>
+    <div class="tile"><span class="tile-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8v8M18 8v8M3 10v4M21 10v4M6 12h12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><h3>Train anywhere</h3><p>Sessions fit into 45 to 60 minutes, with gym, home and hotel versions ready for the weeks that fall apart.</p></div>
+    <div class="tile"><span class="tile-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/></svg></span><h3>Eat your food</h3><p>Your plan starts from the food you grew up on. Vegetarian, vegan, halal or pescatarian, it stays on your plate.</p></div>
+  </div></div></section>
+
+  <section class="sec app" aria-labelledby="app-title"><div class="w app-grid">
+    <div class="app-copy"><span class="pill"><i></i>Your Rewired app</span><h2 id="app-title">Everything runs through <span class="soft">your own Rewired app.</span></h2><p>Log meals, training, weight and steps. Weekly check-ins, measurements and private progress photos, all in one place.</p><a class="b b-line" href="pricing.html#included">See what’s included <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a></div>
+    <figure class="app-film"><video src="/rw/media/week-light.mp4" poster="/rw/media/week-light.jpg" autoplay muted loop playsinline aria-label="A week in the Rewired app, with example numbers"></video><figcaption>Rendered from the app’s own screens, example numbers.</figcaption></figure>
+  </div></section>
+
+  <section class="sec stream" aria-labelledby="stream-title"><div class="w">
+    <p class="eyebrow center">How it works</p>
+    <h2 id="stream-title" class="statement center">Every log reaches me. <span class="soft">I adjust your plan every week.</span></h2>
+    <div class="stream-stage">
+      <div class="stream-head"><i></i><div><b>Your week</b><small>Logged in the app</small></div></div>
+      <div class="stream-rows">
+        <div class="entry"><div><b>Upper A · Hotel gym</b><small>Training · 15 sets</small></div><strong>45 min</strong></div>
+        <div class="entry"><div><b>Protein oatmeal with berries</b><small>Breakfast · 40 g protein</small></div><strong>534 kcal</strong></div>
+        <div class="entry"><div><b>Steps</b><small>Habit · target 8,000</small></div><strong>8,400</strong></div>
+      </div>
+      <div class="stream-bar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><p>Your check-in comes to me personally. It’s me on the other end, not a chatbot or an assistant.</p></div>
+    </div>
+  </div></section>
+
+  
+
+  <section class="sec dark" aria-labelledby="check-title"><div class="w dark-in">
+    <p class="eyebrow center">Weekly check-ins</p>
+    <h2 id="check-title" class="statement center">Check-ins that change your plan, <span class="soft">not just record it.</span></h2>
+    <div class="check-card">
+      <div class="check-top"><b>Week 4 check-in</b><span class="ok-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg> Reviewed</span></div>
+      <dl class="check-list">
+        <div><dt>Weight</dt><dd>−1.4 kg</dd></div>
+        <div><dt>Waist</dt><dd>−3 cm</dd></div>
+        <div><dt>Photos</dt><dd>Front, side, back</dd></div>
+        <div><dt>Habits</dt><dd>6 of 7 days green</dd></div>
+      </dl>
+      <div class="check-reply"><span class="r">R<i>.</i></span><p>Great week. Carbs up 20 g on leg day, everything else stays.</p></div>
+      <p class="check-note">An example with made-up numbers.</p>
+    </div>
+  </div></section>
+
+  <section class="sec pains" aria-labelledby="pain-title"><div class="w">
+    <h2 id="pain-title" class="statement">You might recognise <span class="soft">some of this.</span></h2>
+    <div class="quotes">
+      <figure><blockquote>“Slim in a shirt. Soft without it.”</blockquote><figcaption>That’s usually too little muscle rather than too much fat. We build muscle and lose fat at the same time, so the shape changes, not just the scale.</figcaption></figure>
+      <figure><blockquote>“I start every Monday and I’m done by Thursday.”</blockquote><figcaption>No crash plans. Targets you can hit on a work week, adjusted each week from what you actually logged.</figcaption></figure>
+      <figure><blockquote>“I can’t give up my cultural food.”</blockquote><figcaption>You don’t have to. Your plan starts from the food you grew up on.</figcaption></figure>
+      <figure><blockquote>“Between work and travel, I can’t keep a routine.”</blockquote><figcaption>Sessions fit into 45 to 60 minutes, and the hotel and home versions are ready for the weeks that fall apart.</figcaption></figure>
+    </div>
+  </div></section>
+
+  <section class="sec letter" aria-labelledby="letter-title"><div class="w letter-in">
+    <h2 id="letter-title">A note from me</h2>
+    <div class="letter-body">
+      <p>This is a complete body recomposition. Lose the softness, build real shape, and become unrecognisable to the man who started.</p>
+      <p>If it hasn’t worked before, it’s not because you lack discipline. Usually the plan was written for someone with an empty calendar and a different kitchen.</p>
+      <p>So I start with your actual week. The hours you work, the trips you take and the food you grew up on all shape the plan, and that food stays on your plate. Then we set targets you can hit on a normal week, not a perfect one.</p>
+      <p>You won’t be handed a template and left to work it out. Every week you check in with me personally, and you can message me directly whenever you need to. It’s me on the other end, not a chatbot or an assistant.</p>
+      <p>Each week you log your meals, training and habits in the app. I review it with you and adjust your plan, so you always know exactly what to do next.</p>
+      <p class="sign">Abhey</p>
+    </div>
+  </div></section>
+
+  <section class="sec incl" aria-labelledby="incl-title"><div class="w incl-in">
+    <div><h2 id="incl-title" class="statement">What’s included. <span class="soft">One to one, built around you.</span></h2><a class="b b-line" href="pricing.html">Full details on the pricing page <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a></div>
+    <dl class="incl-list">
+      <div><dt>Training</dt><dd>A programme for your goal and schedule, updated every week, with a fallback plan for busy weeks.</dd></div>
+      <div><dt>Nutrition</dt><dd>Targets and meal plans built around your preferred food choices, so you can still eat with your family.</dd></div>
+      <div><dt>The app</dt><dd>Log food, training, weight and steps. Weekly check-ins, measurements and private progress photos.</dd></div>
+      <div><dt>Feedback</dt><dd>Fortnightly video check-ins and a weekly voice note from me.</dd></div>
+      <div><dt>Support</dt><dd>My personal WhatsApp, 7 days a week, with replies within 12 hours.</dd></div>
+      <div><dt>Afterwards</dt><dd>A plan to keep the results, so you don’t slide back.</dd></div>
+    </dl>
+  </div></section>
+
+  <section class="sec promise" aria-labelledby="promise-title"><div class="w"><div class="promise-card">
+    <p class="eyebrow">The Week 8 Progress Promise</p>
+    <h2 id="promise-title">Notice the difference by week 8. <span class="soft">Or I keep coaching you.</span></h2>
+    <p>If you haven’t noticed a difference in your physique by the end of week 8, I’ll keep coaching you for free. At week 8 we’ll talk about what your coaching looks like next, and if you want to carry on, I’ll offer you reduced-price loyalty coaching.</p>
+    <small>This is a guarantee of extra coaching, not a refund. The details are in the <a href="terms.html#promise">Terms &amp; Conditions</a>.</small>
+  </div></div></section>
+
+  <section class="sec final" aria-labelledby="final-title"><div class="w final-in">
+    <h2 id="final-title" class="statement center">Start with a <span class="soft">free 30-minute call.</span></h2>
+    <div class="cta-row"><a class="b b-primary" data-book href="https://calendly.com/coaching-abheyrewired/30min" target="_blank" rel="noopener noreferrer">Book a Strategy Call <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="b b-ghost" href="apply.html">Apply Now <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a></div>
+  </div></section>
+  </main>
+  <footer class="foot"><div class="w foot-in">
+  <div class="foot-brand"><img src="/assets/app-icon.png" alt="" width="40" height="40"><p>Rewired Premium Coaching with Abhey Pal</p></div>
+  <div class="foot-contact"><a href="mailto:coaching@abheyrewired.com"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="m4 7 8 6 8-6" fill="none" stroke="currentColor" stroke-width="2"/></svg>coaching@abheyrewired.com</a><a href="https://www.instagram.com/abhey.rewired/" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>@abhey.rewired</a></div>
+  <nav class="foot-nav" aria-label="Footer"><a href="resources.html">Resources</a><a href="faq.html">FAQ</a><a href="privacy.html">Privacy Policy</a><a href="terms.html">Terms &amp; Conditions</a><a href="/app/?coach">Coach login</a></nav>
+  <p class="legal">© Rewired Coaching with Abhey Pal · ABN 73 322 472 368</p>
+</div></footer>
+  <script src="/booking.js"></script>
+  <script src="/rw/rw.js?rev=1" defer></script>
 </body>
 </html>
