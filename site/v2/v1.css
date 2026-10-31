@@ -1,0 +1,68 @@
+/* v1 Espresso. Closest to the Merdian reference: an inset rounded photo hero
+   in warm espresso, a light grotesk headline whose second half fades to grey,
+   app logs as faint texture, cream pages, amber-copper accent. */
+
+.rw[data-rw="v1"] {
+  --bg: #f5efe6; --bg2: #ebe2d5; --ink: #22150e; --ink2: #8c7a6c; --line: rgba(34, 21, 14, .12);
+  --accent: #d9a04a; --on-accent: #22150e;
+  --card: #fffaf3; --card-ink: #22150e; --card-soft: #8c7a6c; --card-line: #efe5d8;
+  --dark: #22150e; --dark2: #2f1e15; --dark-ink: #f5efe6; --dark-soft: #a8968a; --dark-line: rgba(245, 239, 230, .1);
+  --display: 'Geist', 'Helvetica Neue', Arial, sans-serif; --body: 'Geist', 'Helvetica Neue', Arial, sans-serif; --mono: 'Geist Mono', ui-monospace, monospace;
+  --h-w: 300; --h-track: -.045em; --h-lh: 1;
+  --r: 26px; --btn-r: 12px;
+  --shadow: 0 24px 60px rgba(34, 21, 14, .16);
+}
+
+.rw[data-rw="v1"] .hero { padding: 12px 0 0; }
+.rw[data-rw="v1"] .hero .w { width: min(1400px, 100% - 24px); }
+.rw[data-rw="v1"] .hero-card {
+  position: relative; overflow: hidden; border-radius: 30px; min-height: min(800px, calc(100svh - 92px));
+  background: radial-gradient(60% 80% at 78% 30%, #4a2f20 0%, #2a1a12 62%, #1c110b 100%);
+  color: #f5efe6; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .92fr); grid-template-rows: 1fr auto;
+}
+.rw[data-rw="v1"] .hero-card::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, rgba(245, 239, 230, .045) 0 1px, transparent 1px 96px); pointer-events: none; }
+.rw[data-rw="v1"] .hero-card > .code { position: absolute; right: 4%; top: 6%; font-size: 12px; line-height: 1.8; color: rgba(245, 239, 230, .16); z-index: 0; }
+.rw[data-rw="v1"] .hero-copy { position: relative; z-index: 2; display: grid; gap: 26px; align-content: center; justify-items: start; padding: 72px 0 40px clamp(28px, 5vw, 76px); }
+.rw[data-rw="v1"] .hero .pill { border-color: rgba(245, 239, 230, .18); color: #e9dccd; }
+.rw[data-rw="v1"] .hero h1 { font-size: clamp(52px, 7.2vw, 108px); max-width: 9ch; }
+.rw[data-rw="v1"] .hero h1 em { font-style: normal; color: #a08a79; }
+.rw[data-rw="v1"] .hero .lead { color: #cdbcae; font-size: 18px; max-width: 30em; }
+.rw[data-rw="v1"] .hero .b-ghost { color: #f5efe6; border-color: rgba(245, 239, 230, .3); }
+.rw[data-rw="v1"] .person { position: absolute; z-index: 1; right: 2%; bottom: 0; height: 94%; width: auto; max-width: none; filter: drop-shadow(-30px 20px 60px rgba(0, 0, 0, .35)); }
+.rw[data-rw="v1"] .hero .f1 { right: 34%; bottom: 128px; }
+.rw[data-rw="v1"] .hero .f1 .ui { width: 260px; background: rgba(255, 250, 243, .96); }
+.rw[data-rw="v1"] .hero-foot { position: relative; z-index: 2; grid-column: 1 / -1; padding: 22px clamp(28px, 5vw, 76px); border-top: 1px solid rgba(245, 239, 230, .1); background: linear-gradient(transparent, rgba(20, 12, 8, .5)); }
+.rw[data-rw="v1"] .hero-foot .strip { color: #a8968a; }
+
+.rw[data-rw="v1"] .why-stage { background: #22150e; }
+.rw[data-rw="v1"] .why-stage .code { color: rgba(245, 239, 230, .3); }
+.rw[data-rw="v1"] .mark::before, .rw[data-rw="v1"] .mark::after { border-color: rgba(217, 160, 74, .25); }
+.rw[data-rw="v1"] .letter h2, .rw[data-rw="v1"] .sign { font-weight: 300; }
+.rw[data-rw="v1"] .promise-card { background: #22150e; color: #f5efe6; }
+.rw[data-rw="v1"] .promise-card .soft, .rw[data-rw="v1"] .promise-card p, .rw[data-rw="v1"] .promise-card small, .rw[data-rw="v1"] .promise-card .eyebrow { color: #a8968a; }
+
+@media (max-width: 900px) {
+  .rw[data-rw="v1"] .hero-card { grid-template-columns: 1fr; grid-template-rows: auto 460px auto; min-height: 0; }
+  .rw[data-rw="v1"] .hero-copy { padding: 48px 24px 0; }
+  .rw[data-rw="v1"] .person { right: 50%; translate: 50% 0; height: 470px; bottom: 74px; }
+  .rw[data-rw="v1"] .hero-card > .code { display: none; }
+  .rw[data-rw="v1"] .hero .f1 { right: auto; left: 16px; bottom: 96px; }
+  .rw[data-rw="v1"] .hero .f1 .ui { width: 224px; }
+  .rw[data-rw="v1"] .hero-foot { grid-row: 3; padding: 20px 24px; }
+}
+@media (max-width: 680px) {
+  .rw[data-rw="v1"] .hero .w { width: calc(100% - 16px); }
+  .rw[data-rw="v1"] .hero-card { border-radius: 22px; grid-template-rows: auto 400px auto; }
+  .rw[data-rw="v1"] .hero-copy { padding: 40px 20px 0; gap: 22px; }
+  .rw[data-rw="v1"] .person { height: 400px; bottom: 70px; }
+  .rw[data-rw="v1"] .hero .f1 { left: 12px; bottom: 86px; }
+  .rw[data-rw="v1"] .hero .strip { --sg: 22px; font-size: 12px; }
+}
+
+/* ---------- inner pages (no photo) */
+body.rw-inner[data-rw="v1"] {
+  --navy: #22150e; --navy-2: #1c110b; --navy-3: #3a2419; --ink: #22150e; --ink-2: #6f5f53; --paper: #f5efe6; --cloud: #ebe2d5; --line: #e0d4c4;
+  --sand: #d9a04a; --sand-ink: #8a5a1c; --sand-wash: #f6e6cb; --blue: #8a5a1c; --sky: #f6e6cb;
+  --serif: 'Geist', 'Helvetica Neue', Arial, sans-serif; --sans: 'Geist', 'Helvetica Neue', Arial, sans-serif;
+  --inner-h-w: 300; --inner-em: #a08a79; --inner-r: 30px;
+}

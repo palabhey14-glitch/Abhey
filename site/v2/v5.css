@@ -1,0 +1,72 @@
+/* v5 Kinetic. A dark stage with a slow light sweep, a ring turning behind
+   him and the Rewired week playing on a phone at his side. The motion
+   carries this one; the rest of the page is bright and cool. */
+
+.rw[data-rw="v5"] {
+  --bg: #f6f8fc; --bg2: #e9eef7; --ink: #06142b; --ink2: #6a7891; --line: rgba(6, 20, 43, .1);
+  --accent: #2444f9; --on-accent: #fff;
+  --card: #fff; --card-ink: #06142b; --card-soft: #6a7891; --card-line: #e6ecf4;
+  --dark: #06142b; --dark2: #0d2244; --dark-ink: #fff; --dark-soft: #94a3bd; --dark-line: rgba(169, 188, 255, .13);
+  --display: 'Albert Sans', 'Helvetica Neue', Arial, sans-serif; --body: 'Albert Sans', 'Helvetica Neue', Arial, sans-serif; --mono: 'JetBrains Mono', ui-monospace, monospace;
+  --h-w: 300; --h-track: -.04em; --h-lh: 1;
+  --r: 22px; --btn-r: 999px;
+  --shadow: 0 24px 60px rgba(6, 20, 43, .14);
+}
+.rw[data-rw="v5"] .ui-ic { background: #e8edff; color: #2444f9; }
+.rw[data-rw="v5"] .nav { background: rgba(6, 20, 43, .9); border-color: rgba(169, 188, 255, .1); color: #fff; }
+.rw[data-rw="v5"] .nav .brand small, .rw[data-rw="v5"] .nav .links a { color: #94a3bd; }
+.rw[data-rw="v5"] .nav .links a:hover, .rw[data-rw="v5"] .nav .links a[aria-current="page"] { color: #fff; }
+.rw[data-rw="v5"] .nav .b-line { color: #fff; border-color: rgba(255, 255, 255, .22); }
+
+.rw[data-rw="v5"] .hero { position: relative; overflow: hidden; background: #06142b; color: #fff; padding-bottom: 32px; }
+.rw[data-rw="v5"] .glow { position: absolute; inset: -20% -10%; background: conic-gradient(from 200deg at 68% 46%, transparent 0deg, rgba(36, 68, 249, .3) 50deg, transparent 110deg, rgba(244, 199, 125, .16) 200deg, transparent 260deg); filter: blur(60px); }
+.rw[data-rw="v5"] .hero-grid { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; min-height: min(780px, calc(100svh - 110px)); }
+.rw[data-rw="v5"] .hero-copy { display: grid; gap: 28px; align-content: center; justify-items: start; padding-block: 56px; position: relative; z-index: 2; }
+.rw[data-rw="v5"] .hero .pill { border-color: rgba(169, 188, 255, .22); color: #c9d3e6; }
+.rw[data-rw="v5"] .hero .pill i { background: #f4c77d; box-shadow: 0 0 0 4px rgba(244, 199, 125, .25); }
+.rw[data-rw="v5"] .hero h1 { font-size: clamp(56px, 7.6vw, 112px); max-width: 8ch; }
+.rw[data-rw="v5"] .hero h1 em { font-style: normal; font-weight: 700; background: linear-gradient(90deg, #f4c77d, #fff 60%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.rw[data-rw="v5"] .hero .lead { color: #b6c2d8; }
+.rw[data-rw="v5"] .hero .b-primary { background: #fff; color: #06142b; }
+.rw[data-rw="v5"] .hero .b-ghost { color: #fff; border-color: rgba(255, 255, 255, .28); }
+.rw[data-rw="v5"] .hero-stage { position: relative; min-height: 600px; }
+.rw[data-rw="v5"] .ring { position: absolute; left: 50%; top: 46%; width: min(560px, 92%); aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; background: conic-gradient(from 0deg, transparent 0 70%, rgba(244, 199, 125, .9) 86%, transparent 87%); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px)); mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px)); }
+.rw[data-rw="v5"] .ring::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 1px solid rgba(169, 188, 255, .14); }
+@keyframes rw-turn { to { rotate: 360deg; } }
+.rw-motion[data-rw="v5"] .ring, .rw-motion [data-rw="v5"] .ring { animation: rw-turn 14s linear infinite; }
+@keyframes rw-sweep { 50% { rotate: 20deg; } }
+.rw-motion [data-rw="v5"] .glow, .rw-motion[data-rw="v5"] .glow { animation: rw-sweep 16s ease-in-out infinite; }
+.rw[data-rw="v5"] .person { position: absolute; bottom: -32px; left: 56%; translate: -50% 0; height: calc(100% + 8px); width: auto; max-width: none; filter: drop-shadow(0 30px 70px rgba(0, 0, 0, .5)); }
+.rw[data-rw="v5"] .phone { position: absolute; z-index: 3; left: -2%; bottom: 6%; width: 224px; padding: 7px; border-radius: 34px; background: #0d1a30; box-shadow: 0 0 0 1px rgba(169, 188, 255, .2), 0 40px 80px rgba(0, 0, 0, .5); rotate: -6deg; }
+.rw[data-rw="v5"] .phone video { width: 100%; aspect-ratio: 1080 / 1350; object-fit: cover; border-radius: 28px; }
+.rw[data-rw="v5"] .hero > .w:last-child { position: relative; border-top: 1px solid rgba(169, 188, 255, .12); padding-top: 24px; }
+.rw[data-rw="v5"] .hero .strip { color: #7f8eaa; }
+
+.rw[data-rw="v5"] .why-stage { background: #06142b; }
+.rw[data-rw="v5"] .why-stage .code { color: rgba(169, 188, 255, .35); }
+.rw[data-rw="v5"] .mark::before, .rw[data-rw="v5"] .mark::after { border-color: rgba(169, 188, 255, .18); }
+.rw[data-rw="v5"] .big b { color: #f4c77d; }
+.rw[data-rw="v5"] .tile-ic { color: #f4c77d; }
+.rw[data-rw="v5"] .stream-bar { background: #f4c77d; color: #06142b; }
+.rw[data-rw="v5"] .promise-card { background: #fff; box-shadow: var(--shadow); }
+
+@media (max-width: 900px) {
+  .rw[data-rw="v5"] .hero-grid { grid-template-columns: 1fr; min-height: 0; gap: 0; }
+  .rw[data-rw="v5"] .hero-copy { padding: 48px 0 8px; }
+  .rw[data-rw="v5"] .hero-stage { min-height: 0; height: 520px; }
+  .rw[data-rw="v5"] .person { left: 60%; height: 100%; bottom: -24px; }
+}
+@media (max-width: 680px) {
+  .rw[data-rw="v5"] .hero-stage { height: 460px; margin-inline: -16px; }
+  .rw[data-rw="v5"] .phone { width: 140px; left: 14px; bottom: 6%; border-radius: 26px; padding: 5px; }
+  .rw[data-rw="v5"] .phone video { border-radius: 21px; }
+  .rw[data-rw="v5"] .person { left: 62%; }
+}
+
+/* ---------- inner pages */
+body.rw-inner[data-rw="v5"] {
+  --navy: #06142b; --navy-2: #06142b; --navy-3: #0d2244; --ink: #06142b; --ink-2: #4f5d72; --paper: #f6f8fc; --cloud: #e9eef7; --line: #dde4ef;
+  --sand: #f4c77d; --blue: #2444f9;
+  --serif: 'Albert Sans', 'Helvetica Neue', Arial, sans-serif; --sans: 'Albert Sans', 'Helvetica Neue', Arial, sans-serif;
+  --inner-h-w: 300; --inner-em: #f4c77d; --inner-r: 0px; --inner-glow: 1;
+}
