@@ -1,0 +1,67 @@
+/* Copy rewrite (2026-11-01): process steps, fit check and supporting styles.
+   fit check and the longer hero headline. Uses the Studio Light tokens from studio.css. */
+
+.hero-note { font-size: 14px; color: #6d6862; margin-top: -12px; }
+
+ /* Method block with four tiles: the lead tile spans both rows */
+.block.b4 .tile-lead { grid-row: span 2; }
+.block.b4 .tile { min-height: 260px; }
+
+/* How it works */
+.steps { list-style: none; margin: 56px 0 0; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.steps li { background: var(--card); border-radius: 20px; padding: 26px 22px; display: grid; gap: 10px; align-content: start; }
+.steps .n { font: 500 12px/1 var(--mono); color: #2444f9; letter-spacing: .1em; }
+.steps h3 { font: 650 18px/1.25 var(--body); letter-spacing: -.01em; }
+.steps p { font-size: 15px; line-height: 1.55; color: #5e5953; }
+.steps .you { margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--card-line); color: var(--card-ink); font-weight: 600; font-size: 14px; }
+
+/* Fit */
+.fit-grid { margin-top: 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.fit-card { border-radius: 20px; padding: 32px 30px; background: var(--card); }
+.fit-card.no { background: transparent; border: 1px solid var(--line); }
+.fit-card h3 { font: 650 20px/1.2 var(--body); margin-bottom: 16px; }
+.fit-card ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.fit-card li { position: relative; padding-left: 28px; font-size: 16px; line-height: 1.5; color: #3b3834; }
+.fit-card li::before { content: ""; position: absolute; left: 0; top: .45em; width: 14px; height: 8px; border-left: 2px solid #2444f9; border-bottom: 2px solid #2444f9; rotate: -45deg; }
+.fit-card.no li::before { width: 12px; height: 2px; border: 0; background: #85807a; rotate: 0deg; top: .7em; }
+
+/* About: portrait cut out like the hero, sitting on the same studio grey */
+.note-photo { position: relative; margin: 0 0 8px; width: 100%; aspect-ratio: 1 / 1.02; border-radius: var(--r); overflow: hidden; isolation: isolate;
+  background: radial-gradient(60% 55% at 50% 38%, #f8f7f5 0%, #ecebe8 62%, #e4e1dd 100%); }
+.note-photo::before { content: ""; position: absolute; left: 50%; top: 18%; width: 78%; aspect-ratio: 1; translate: -50% 0; border-radius: 50%; z-index: -1;
+  border: 1px solid rgba(18, 18, 18, .07); box-shadow: 0 0 0 44px rgba(255, 255, 255, .28), 0 0 0 45px rgba(18, 18, 18, .045); }
+.note-photo img { position: absolute; left: 50%; bottom: 0; translate: -50% 0; width: 104%; max-width: none; height: auto; }
+.note-photo figcaption { position: absolute; left: 14px; bottom: 14px; display: grid; gap: 2px; padding: 10px 14px; border-radius: 14px;
+  background: rgba(255, 255, 255, .86); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-shadow: 0 8px 24px rgba(30, 28, 25, .1); }
+.note-photo figcaption b { font: 650 14px/1.2 var(--body); color: #121212; }
+.note-photo figcaption span { font-size: 12px; color: #6d6862; }
+
+/* About and final */
+.letter-side { display: grid; gap: 20px; align-content: start; justify-items: start; }
+.letter-side .eyebrow { margin: 0; }
+.letter-side .proof { color: var(--ink2); font-size: 16px; line-height: 1.6; max-width: 26em; }
+.final-lead { max-width: 36em; color: var(--ink2); font-size: 18px; line-height: 1.6; }
+.final-note { font-size: 15px; color: var(--ink2); }
+.final-note a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+
+@media (max-width: 1100px) {
+  .steps { grid-template-columns: repeat(2, 1fr); }
+  .steps li:last-child { grid-column: 1 / -1; }
+}
+@media (max-width: 1000px) {
+  .block.b4 .tile-lead { grid-row: auto; }
+}
+@media (max-width: 1000px) {
+  .note-photo { max-width: 520px; }
+}
+@media (max-width: 680px) {
+  .fit-grid, .steps { grid-template-columns: 1fr; }
+  .fit-card { padding: 24px 22px; }
+  .block.b4 .tile { min-height: 0; }
+  .steps li:last-child { grid-column: auto; }
+}
+
+/* .rw h2 { margin: 0 } outranked .center, so centred statements sat left. */
+.rw .statement.center { margin-inline: auto; }
+.letter-in { align-items: start; }
+.letter-body { align-content: start; }
