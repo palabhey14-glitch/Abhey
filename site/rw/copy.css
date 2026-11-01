@@ -1,25 +1,9 @@
-/* Copy rewrite (2026-11-01): sections for the recognition cards, reframe, process,
+/* Copy rewrite (2026-11-01): process steps, fit check and supporting styles.
    fit check and the longer hero headline. Uses the Studio Light tokens from studio.css. */
 
 .hero-note { font-size: 14px; color: #6d6862; margin-top: -12px; }
 
-/* Sound familiar? */
-.tag { display: inline-block; padding: 8px 12px; border-radius: 8px; background: #e8edff; color: #2444f9; letter-spacing: .14em; }
-.fam .eyebrow { margin-bottom: 18px; }
-.fam-lead { max-width: 40em; margin: 32px auto 0; text-align: center; color: var(--ink2); font-size: 18px; line-height: 1.6; }
-.fam-grid { margin-top: 48px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.fam-card { background: var(--card); color: var(--card-ink); border: 1px solid var(--card-line); border-radius: 20px; padding: 28px 26px; box-shadow: 0 6px 0 #dcd8d3; display: grid; gap: 12px; align-content: start; }
-.fam-card h3 { font: 650 20px/1.3 var(--body); letter-spacing: -.01em; }
-.fam-card mark { background: linear-gradient(transparent 58%, #d6deff 58%); color: inherit; padding: 0 2px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
-.fam-card p { color: #5e5953; font-size: 16px; line-height: 1.55; }
-
-/* Reframe */
-.reframe-grid { margin-top: 48px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 40px; }
-.reframe-grid > div { padding-top: 24px; border-top: 1px solid var(--line); display: grid; gap: 10px; align-content: start; }
-.reframe-grid h3 { font: 650 19px/1.3 var(--body); letter-spacing: -.01em; }
-.reframe-grid p { color: var(--ink2); font-size: 16px; line-height: 1.6; }
-
-/* Method block with four tiles: the lead tile spans both rows */
+ /* Method block with four tiles: the lead tile spans both rows */
 .block.b4 .tile-lead { grid-row: span 2; }
 .block.b4 .tile { min-height: 260px; }
 
@@ -54,19 +38,14 @@
   .steps li:last-child { grid-column: 1 / -1; }
 }
 @media (max-width: 1000px) {
-  .fam-grid { grid-template-columns: 1fr 1fr; }
   .block.b4 .tile-lead { grid-row: auto; }
 }
 @media (max-width: 680px) {
-  .fam-grid, .reframe-grid, .fit-grid, .steps { grid-template-columns: 1fr; }
-  .reframe-grid { gap: 28px; }
-  .fam-lead { text-align: left; margin-inline: 0; font-size: 17px; }
-  .fam .statement.center, .fam .eyebrow.center { text-align: left; }
-  .fam-card, .fit-card { padding: 24px 22px; }
+  .fit-grid, .steps { grid-template-columns: 1fr; }
+  .fit-card { padding: 24px 22px; }
   .block.b4 .tile { min-height: 0; }
   .steps li:last-child { grid-column: auto; }
 }
 
 /* .rw h2 { margin: 0 } outranked .center, so centred statements sat left. */
-.rw .statement.center, .rw .fam-lead { margin-inline: auto; }
-@media (max-width: 680px) { .rw .fam .statement.center { margin-inline: 0; } }
+.rw .statement.center { margin-inline: auto; }
