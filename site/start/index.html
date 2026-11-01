@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Apply · Rewired Coaching with Abhey Pal</title>
+  <meta name="description" content="Apply for coaching with Abhey Pal in about 90 seconds. One question at a time, free, and no commitment.">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#ebe9e6">
+  <meta property="og:title" content="Apply for coaching with Abhey Pal">
+  <meta property="og:description" content="About 90 seconds. One question at a time.">
+  <meta property="og:image" content="https://rewiredbyabhey.com/assets/og-rewired.jpg">
+  <link rel="icon" href="/app/icons/favicon-32.png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/app/icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300..700&family=JetBrains+Mono:wght@400;500&display=swap">
+  <style>
+    /* Studio Light tokens, copied from site/rw/studio.css so this page matches the website. */
+    :root {
+      --bg: #ebe9e6; --bg-hi: #f6f5f3; --ink: #121212; --ink2: #57524c; --soft: #85807a; --muted: #a19b94;
+      --line: rgba(18, 18, 18, .1); --card: #fff; --card-line: #eeece9;
+      --accent: #2444f9; --accent-hover: #1a33c9; --accent-wash: #e8edff;
+      --shadow: 0 22px 50px rgba(30, 28, 25, .1), 0 2px 6px rgba(30, 28, 25, .05);
+      --font: 'Hanken Grotesk', 'Helvetica Neue', Arial, sans-serif;
+      --mono: 'JetBrains Mono', ui-monospace, monospace;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font: 400 17px/1.5 var(--font); color: var(--ink);
+      background: radial-gradient(60% 70% at 78% 30%, var(--bg-hi) 0%, var(--bg) 70%) fixed, var(--bg);
+      min-height: 100svh; display: flex; flex-direction: column; -webkit-font-smoothing: antialiased;
+    }
+    /* the ring motif from the landing hero */
+    body::before {
+      content: ""; position: fixed; z-index: -1; right: -22vmax; bottom: -30vmax; width: 70vmax; aspect-ratio: 1; border-radius: 50%;
+      border: 1px solid rgba(18, 18, 18, .07); box-shadow: 0 0 0 60px rgba(255, 255, 255, .25), 0 0 0 61px rgba(18, 18, 18, .045); pointer-events: none;
+    }
+    a { color: inherit; }
+    .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 20px; max-width: 720px; width: 100%; margin: 0 auto; }
+    .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
+    .brand img { width: 32px; height: 32px; border-radius: 8px; }
+    .brand b { display: block; font-weight: 600; font-size: 15px; letter-spacing: -.01em; line-height: 1.1; }
+    .brand small { display: block; font: 500 10px/1.2 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--soft); }
+    .count { font: 500 12px/1 var(--mono); letter-spacing: .1em; color: var(--soft); }
+    .bar { height: 2px; background: var(--line); max-width: 680px; width: calc(100% - 40px); margin: 0 auto; border-radius: 2px; overflow: hidden; }
+    .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .35s ease; }
+
+    main { flex: 1; display: flex; width: 100%; max-width: 680px; margin: 0 auto; padding: 28px 20px 40px; }
+    form { width: 100%; display: flex; }
+    .screen { width: 100%; display: none; flex-direction: column; justify-content: center; gap: 22px; min-height: calc(100svh - 190px); }
+    .screen.on { display: flex; animation: rise .38s cubic-bezier(.2, .8, .2, 1); }
+    .screen.back.on { animation-name: drop; }
+    @keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+    @keyframes drop { from { opacity: 0; transform: translateY(-18px); } to { opacity: 1; transform: none; } }
+    @media (prefers-reduced-motion: reduce) { .screen.on { animation: none; } .bar i { transition: none; } }
+
+    .eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin: 0; }
+    h1, h2 { font-weight: 300; letter-spacing: -.045em; line-height: 1.02; margin: 0; }
+    h1 { font-size: clamp(44px, 11vw, 76px); }
+    h2 { font-size: clamp(32px, 7.4vw, 52px); }
+    h1 em, h2 em { font-style: normal; color: var(--muted); }
+    .lead { color: var(--ink2); margin: 0; max-width: 46ch; }
+    .hint { color: var(--soft); font-size: 15px; margin: -8px 0 0; }
+
+    .text-in {
+      width: 100%; font: 300 clamp(26px, 6vw, 36px)/1.2 var(--font); letter-spacing: -.02em; color: var(--ink);
+      background: transparent; border: 0; border-bottom: 1.5px solid rgba(18, 18, 18, .22); padding: 10px 0; border-radius: 0; outline: none;
+    }
+    .text-in:focus { border-bottom-color: var(--accent); }
+    .text-in::placeholder { color: #bdb7b0; }
+
+    .opts { display: grid; gap: 10px; }
+    .opts.two { grid-template-columns: 1fr 1fr; }
+    .opt { position: relative; display: block; cursor: pointer; }
+    .opt input { position: absolute; opacity: 0; pointer-events: none; }
+    .opt span {
+      display: flex; align-items: center; gap: 14px; min-height: 60px; padding: 14px 18px; background: var(--card); border: 1px solid var(--card-line);
+      border-radius: 18px; box-shadow: 0 2px 6px rgba(30, 28, 25, .04); font-size: 17px; font-weight: 500; transition: border-color .15s, box-shadow .15s, transform .1s;
+    }
+    .opt span::before {
+      content: attr(data-key); flex: none; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 8px;
+      font: 500 12px/1 var(--mono); color: var(--soft); border: 1px solid var(--card-line);
+    }
+    .opt small { display: block; font-weight: 400; color: var(--soft); font-size: 14px; margin-top: 2px; }
+    .opt:hover span { border-color: rgba(36, 68, 249, .35); }
+    .opt input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .opt input:checked + span { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), var(--shadow); }
+    .opt input:checked + span::before { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .opt:active span { transform: scale(.99); }
+
+    .plans { display: grid; gap: 12px; }
+    .plan span { display: block; padding: 20px 20px 18px; }
+    .plan span::before { display: none; }
+    .plan .tag { display: inline-block; font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); background: var(--accent-wash); padding: 6px 8px; border-radius: 6px; margin-bottom: 10px; }
+    .plan b { display: block; font-weight: 500; font-size: 20px; letter-spacing: -.015em; line-height: 1.2; }
+    .plan ul { margin: 10px 0 0; padding: 0 0 0 18px; color: var(--ink2); font-weight: 400; font-size: 15px; }
+    .plan li { margin: 3px 0; }
+    .plan .next { display: block; margin-top: 12px; font-size: 14px; font-weight: 500; color: var(--ink); }
+
+    .checks { display: grid; gap: 12px; }
+    .check { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; color: var(--ink2); cursor: pointer; }
+    .check input { flex: none; width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--accent); }
+    .check a { text-decoration-color: var(--accent); }
+    .note { font-size: 14px; color: var(--soft); background: rgba(255, 255, 255, .5); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin: 0; }
+
+    .row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 54px; padding: 14px 26px; border-radius: 999px; border: 0;
+      font: 600 16px/1.2 var(--font); text-decoration: none; cursor: pointer; background: var(--ink); color: #fff; transition: background .2s;
+    }
+    .btn:hover { background: #2a2a2a; }
+    .btn.blue { background: var(--accent); }
+    .btn.blue:hover { background: var(--accent-hover); }
+    .btn svg { width: 16px; height: 16px; }
+    .btn[disabled] { opacity: .5; cursor: progress; }
+    .enter { font: 500 12px/1 var(--mono); color: var(--soft); letter-spacing: .06em; }
+    .back-btn { background: none; border: 0; padding: 8px 0; font: 500 14px/1 var(--font); color: var(--soft); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .back-btn:hover { color: var(--ink); }
+    .back-btn[hidden] { display: none; }
+    .err { color: #b3261e; font-size: 14px; margin: -6px 0 0; min-height: 1em; }
+    .hp { position: absolute; left: -9999px; }
+    .foot { text-align: center; font-size: 12px; color: var(--soft); padding: 0 20px 22px; }
+    .foot a { color: var(--soft); }
+
+    @media (min-width: 640px) { .plans { grid-template-columns: 1fr 1fr; } .plan span { height: 100%; } }
+    @media (max-width: 380px) { .opts.two { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="/" aria-label="Rewired Coaching with Abhey Pal, home">
+      <img src="/assets/app-icon.png" alt="" width="32" height="32">
+      <span><b>Rewired Coaching</b><small>with Abhey Pal</small></span>
+    </a>
+    <span class="count" id="count" aria-live="polite"></span>
+  </header>
+  <div class="bar" aria-hidden="true"><i id="bar"></i></div>
+
+  <main>
+    <form id="start" name="start" method="POST" action="/start/" data-netlify="true" netlify-honeypot="company" novalidate>
+      <input type="hidden" name="form-name" value="start">
+      <input type="hidden" name="source" id="f-source" value="instagram-bio">
+      <input type="hidden" name="blockers" id="f-blockers">
+      <input type="hidden" name="next_step" id="f-next">
+      <p class="hp"><label>Leave this empty <input name="company" tabindex="-1" autocomplete="off"></label></p>
+
+      <!-- 0 welcome -->
+      <section class="screen on" data-step="welcome">
+        <p class="eyebrow">Apply in about 90 seconds</p>
+        <h1>Let’s see if we’re <em>a fit.</em></h1>
+        <p class="lead">A few quick taps about your goal, your food and your week. I read every application myself. Free, and no commitment.</p>
+        <div class="row"><button type="button" class="btn blue" data-next>Start <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="enter">or press Enter</span></div>
+      </section>
+
+      <!-- 1 first name -->
+      <section class="screen" data-step="first" data-q>
+        <h2>First, what’s your <em>first name?</em></h2>
+        <input class="text-in" name="first_name" id="f-first" autocomplete="given-name" placeholder="Type here" required>
+        <p class="err" aria-live="polite"></p>
+        <div class="row"><button type="button" class="btn" data-next>OK</button><span class="enter">press Enter</span></div>
+      </section>
+
+      <!-- 2 last name -->
+      <section class="screen" data-step="last" data-q>
+        <h2>And your <em>last name,</em> <span data-name></span>?</h2>
+        <input class="text-in" name="last_name" id="f-last" autocomplete="family-name" placeholder="Type here" required>
+        <p class="err" aria-live="polite"></p>
+        <div class="row"><button type="button" class="btn" data-next>OK</button><span class="enter">press Enter</span></div>
+      </section>
+
+      <!-- 3 goal -->
+      <section class="screen" data-step="goal" data-q>
+        <h2>What’s the <em>main goal?</em></h2>
+        <div class="opts" role="radiogroup">
+          <label class="opt"><input type="radio" name="goal" value="Lose body fat" required><span data-key="A">Lose body fat</span></label>
+          <label class="opt"><input type="radio" name="goal" value="Build muscle"><span data-key="B">Build muscle</span></label>
+          <label class="opt"><input type="radio" name="goal" value="Body recomposition"><span data-key="C"><span>Body recomposition<small>Lose fat and build muscle at the same time</small></span></span></label>
+          <label class="opt"><input type="radio" name="goal" value="Get ready for an event"><span data-key="D"><span>Get ready for an event<small>Wedding, holiday, birthday, photoshoot</small></span></span></label>
+        </div>
+        <p class="err" aria-live="polite"></p>
+      </section>
+
+      <!-- 4 event (only if goal is an event) -->
+      <section class="screen" data-step="event" data-q data-if="goal=Get ready for an event">
+        <h2>What’s the <em>event?</em></h2>
+        <div class="opts two" role="radiogroup">
+          <label class="opt"><input type="radio" name="event" value="Wedding"><span data-key="A">Wedding</span></label>
+          <label class="opt"><input type="radio" name="event" value="Holiday"><span data-key="B">Holiday</span></label>
+          <label class="opt"><input type="radio" name="event" value="Birthday or milestone"><span data-key="C">Birthday or milestone</span></label>
+          <label class="opt"><input type="radio" name="event" value="Photoshoot"><span data-key="D">Photoshoot</span></label>
+          <label class="opt"><input type="radio" name="event" value="Something else"><span data-key="E">Something else</span></label>
+        </div>
+        <p class="err" aria-live="polite"></p>
+      </section>
+
+      <!-- 5 event date -->
+      <section class="screen" data-step="event_date" data-q data-if="goal=Get ready for an event">
+        <h2>When is it?</h2>
+        <p class="hint">A rough month is fine.</p>
+        <input class="text-in" type="month" name="event_date" id="f-date" required>
+        <p class="err" aria-live="polite"></p>
+        <div class="row"><button type="button" class="btn" data-next>OK</button><span class="enter">press Enter</span></div>
+      </section>
+
+      <!-- 6 blockers (multi) -->
+      <section class="screen" data-step="blockers" data-q>
+        <h2>What’s stopped you <em>getting results before?</em></h2>
+        <p class="hint">Pick as many as you like.</p>
+        <div class="opts">
+          <label class="opt"><input type="checkbox" data-multi value="Start-stop dieting"><span data-key="A">Start-stop dieting</span></label>
+          <label class="opt"><input type="checkbox" data-multi value="Work and a busy schedule"><span data-key="B">Work and a busy schedule</span></label>
+          <label class="opt"><input type="checkbox" data-multi value="Didn’t want to give up my food"><span data-key="C">Didn’t want to give up my food</span></label>
+          <label class="opt"><input type="checkbox" data-multi value="Not sure what to do in the gym"><span data-key="D">Not sure what to do in the gym</span></label>
+          <label class="opt"><input type="checkbox" data-multi value="No one keeping me accountable"><span data-key="E">No one keeping me accountable</span></label>
+        </div>
+        <p class="err" aria-live="polite"></p>
+        <div class="row"><button type="button" class="btn" data-next>OK</button></div>
+      </section>
+
+      <!-- 7 diet -->
+      <section class="screen" data-step="diet" data-q>
+        <h2>How do you <em>eat?</em></h2>
+        <p class="hint">Your plan is built around the food you grew up on.</p>
+        <div class="opts two" role="radiogroup">
+          <label class="opt"><input type="radio" name="diet" value="No restrictions"><span data-key="A">No restrictions</span></label>
+          <label class="opt"><input type="radio" name="diet" value="Vegetarian"><span data-key="B">Vegetarian</span></label>
+          <label class="opt"><input type="radio" name="diet" value="Vegan"><span data-key="C">Vegan</span></label>
+          <label class="opt"><input type="radio" name="diet" value="Halal"><span data-key="D">Halal</span></label>
+          <label class="opt"><input type="radio" name="diet" value="Pescatarian"><span data-key="E">Pescatarian</span></label>
+          <label class="opt"><input type="radio" name="diet" value="Something else"><span data-key="F">Something else</span></label>
+        </div>
+        <p class="err" aria-live="polite"></p>
+      </section>
+
+      <!-- 8 where -->
+      <section class="screen" data-step="train_where" data-q>
+        <h2>Where will you <em>train?</em></h2>
+        <div class="opts" role="radiogroup">
+          <label class="opt"><input type="radio" name="train_where" value="Gym"><span data-key="A">Gym</span></label>
+          <label class="opt"><input type="radio" name="train_where" value="Home"><span data-key="B">Home</span></label>
+          <label class="opt"><input type="radio" name="train_where" value="A mix, including hotels when I travel"><span data-key="C">A mix, including hotels when I travel</span></label>
+        </div>
+        <p class="err" aria-live="polite"></p>
+      </section>
+
+      <!-- 9 days -->
+      <section class="screen" data-step="train_days" data-q>
+        <h2>How many days a week <em>can you train?</em></h2>
+        <div class="opts two" role="radiogroup">
+          <label class="opt"><input type="radio" name="train_days" value="2"><span data-key="A">2 days</span></label>
+          <label class="opt"><input type="radio" name="train_days" value="3"><span data-key="B">3 days</span></label>
+          <label class="opt"><input type="radio" name="train_days" value="4"><span data-key="C">4 days</span></label>
+          <label class="opt"><input type="radio" name="train_days" value="5 or more"><span data-key="D">5 or more</span></label>
+        </div>
+        <p class="err" aria-live="polite"></p>
+      </section>
+
+      <!-- 10 coaching choice (the screen that routes) -->
+      <section class="screen" data-step="coaching" data-q>
+        <h2>Which coaching <em>suits you?</em></h2>
+        <div class="plans" role="radiogroup">
+          <label class="opt plan"><input type="radio" name="coaching" value="Premium"><span>
+            <i class="tag">Premium 1-on-1</i>
+            <b>Rewired Premium Coaching with Abhey Pal</b>
+            <ul><li>Fully designed around your life and food</li><li>Fortnightly video check-ins and a weekly voice note</li><li>My personal WhatsApp, 7 days a week</li><li>The Week 8 Progress Promise</li></ul>
+            <i class="next" style="font-style:normal">Next step, a free Strategy Call with me</i>
+          </span></label>
+          <label class="opt plan"><input type="radio" name="coaching" value="Weekly"><span>
+            <i class="tag">Standard 1-on-1</i>
+            <b>Rewired Coaching, weekly</b>
+            <ul><li>Your meal or macro plan and training program</li><li>Check-ins and plan updates every two weeks</li><li>Coaching by email, everything in the Rewired app</li></ul>
+            <i class="next" style="font-style:normal">Next step, start today</i>
+          </span></label>
+        </div>
+        <p class="hint" style="margin-top:0">Not sure? Pick Premium and we’ll work it out together on the call.</p>
+        <p class="err" aria-live="polite"></p>
+      </section>
+
+      <!-- 11 premium only, readiness -->
+      <section class="screen" data-step="ready" data-q data-if="coaching=Premium">
+        <h2>If we’re a fit, <em>when would you start?</em></h2>
+        <div class="opts" role="radiogroup">
+          <label class="opt"><input type="radio" name="start_when" value="Straight away"><span data-key="A">Straight away</span></label>
+          <label class="opt"><input type="radio" name="start_when" value="Within a month"><span data-key="B">Within a month</span></label>
+          <label class="opt"><input type="radio" name="start_when" value="Just exploring for now"><span data-key="C">Just exploring for now</span></label>
+        </div>
+        <p class="err" aria-live="polite"></p>
+      </section>
+
+      <!-- 12 email -->
+      <section class="screen" data-step="email" data-q>
+        <h2>Where should I <em>reach you?</em></h2>
+        <input class="text-in" type="email" name="email" id="f-email" autocomplete="email" inputmode="email" placeholder="Email" required>
+        <p class="err" aria-live="polite"></p>
+        <div class="row"><button type="button" class="btn" data-next>OK</button><span class="enter">press Enter</span></div>
+      </section>
+
+      <!-- 13 phone -->
+      <section class="screen" data-step="phone" data-q>
+        <h2>And your <em>mobile?</em></h2>
+        <p class="hint" data-phone-hint>I’ll message you on WhatsApp.</p>
+        <input class="text-in" type="tel" name="phone" id="f-phone" autocomplete="tel" inputmode="tel" placeholder="04xx xxx xxx">
+        <p class="err" aria-live="polite"></p>
+        <div class="row"><button type="button" class="btn" data-next>OK</button><span class="enter">press Enter</span></div>
+      </section>
+
+      <!-- 14 consent and send -->
+      <section class="screen" data-step="consent" data-q>
+        <h2>Last thing, <em><span data-name></span>.</em></h2>
+        <div class="checks">
+          <label class="check"><input type="checkbox" name="adult" value="yes" id="c-adult"><span>I’m 18 or over. Rewired coaching is for adults only.</span></label>
+          <label class="check" data-if="coaching=Weekly"><input type="checkbox" name="terms" value="agreed" id="c-terms"><span>I understand Rewired Coaching is billed weekly at the price shown at checkout, my first four weeks are a committed coaching period, and I can cancel at any time once my fourth weekly payment has been taken.</span></label>
+          <label class="check"><input type="checkbox" name="consent" value="yes" id="c-consent"><span>I agree to Rewired Coaching using these details to assess my application and contact me, as explained in the <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>. The <a href="/terms.html" target="_blank" rel="noopener">Terms &amp; Conditions</a> apply if I join.</span></label>
+          <label class="check"><input type="checkbox" name="marketing" value="yes"><span>Send me occasional coaching tips and offers by email. Optional, unsubscribe any time.</span></label>
+        </div>
+        <p class="note">No health details needed here. If you join, I ask for them in the app through a short health screen with its own consent.</p>
+        <p class="err" aria-live="polite"></p>
+        <div class="row"><button type="submit" class="btn blue" id="send">Send my application <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+      </section>
+
+      <!-- end, premium -->
+      <section class="screen" data-step="done_premium" data-end>
+        <p class="eyebrow">Application received</p>
+        <h2>Thanks, <span data-name></span>. <em>Now pick a time.</em></h2>
+        <p class="lead">Book your free 30-minute Strategy Call with me. We’ll look at where you are, what’s held you back and whether Premium Coaching is the right fit. Nothing is paid on the call.</p>
+        <div class="row"><a class="btn blue" id="book" href="https://calendly.com/coaching-abheyrewired/30min" target="_blank" rel="noopener">Book my Strategy Call <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a></div>
+        <p class="hint" style="margin-top:0">Can’t find a time? I’ll message you on WhatsApp.</p>
+      </section>
+
+      <!-- end, weekly -->
+      <section class="screen" data-step="done_weekly" data-end>
+        <p class="eyebrow">Application received</p>
+        <h2>You’re ready, <span data-name></span>. <em>Let’s start.</em></h2>
+        <p class="lead">Join Rewired Coaching through secure Stripe checkout. Once you’re in, I’ll set up your Rewired app and send your onboarding form.</p>
+        <div class="row"><a class="btn blue" id="join" href="https://buy.stripe.com/28E14hg0N4iba5HdjL0Ny02">Join now <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a></div>
+        <p class="hint" style="margin-top:0">Want to talk first? <a href="https://calendly.com/coaching-abheyrewired/30min" target="_blank" rel="noopener">Book a free call</a>.</p>
+      </section>
+    </form>
+  </main>
+
+  <div class="top" style="padding-top:0"><button type="button" class="back-btn" id="back" hidden><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M13 8H3M7 4L3 8l4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg> Back</button></div>
+  <p class="foot">© Rewired Coaching with Abhey Pal · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></p>
+
+  <script src="/booking.js?rev=start-1"></script>
+  <script>
+  (function () {
+    var form = document.getElementById('start');
+    var screens = Array.prototype.slice.call(form.querySelectorAll('.screen'));
+    var backBtn = document.getElementById('back');
+    var bar = document.getElementById('bar');
+    var count = document.getElementById('count');
+    var history = [0];
+    var cur = 0;
+
+    // ?src=story or ?src=dm tags where the click came from. Default is the bio link.
+    var src = new URLSearchParams(location.search).get('src');
+    if (src) document.getElementById('f-source').value = 'instagram-' + src.replace(/[^a-z0-9-]/gi, '').slice(0, 30);
+
+    function val(name) {
+      var el = form.querySelector('[name="' + name + '"]:checked') || form.querySelector('input[name="' + name + '"]:not([type=radio]):not([type=checkbox])');
+      return el ? el.value.trim() : '';
+    }
+    function applies(el) {
+      var cond = el.getAttribute('data-if');
+      if (!cond) return true;
+      var p = cond.split('=');
+      return val(p[0]) === p[1];
+    }
+    function questions() { return screens.filter(function (s) { return s.hasAttribute('data-q') && applies(s); }); }
+
+    function show(i, backward) {
+      screens[cur].classList.remove('on', 'back');
+      cur = i;
+      var s = screens[i];
+      s.classList.toggle('back', !!backward);
+      s.classList.add('on');
+      var first = val('first_name');
+      form.querySelectorAll('[data-name]').forEach(function (n) { n.textContent = first; });
+      form.querySelectorAll('.check[data-if]').forEach(function (c) {
+        var on = applies(c); c.hidden = !on; c.querySelector('input').disabled = !on;
+      });
+      var weekly = val('coaching') === 'Weekly';
+      document.getElementById('f-phone').placeholder = weekly ? 'Optional' : '04xx xxx xxx';
+      form.querySelector('[data-phone-hint]').textContent = weekly ? 'Optional. Coaching on this plan happens by email.' : 'I’ll message you on WhatsApp.';
+      var qs = questions(), qi = qs.indexOf(s);
+      var isEnd = s.hasAttribute('data-end');
+      bar.style.width = isEnd ? '100%' : (qi < 0 ? 0 : Math.round((qi / qs.length) * 100)) + '%';
+      count.textContent = qi < 0 ? '' : (qi + 1) + ' / ' + qs.length;
+      backBtn.hidden = i === 0 || isEnd;
+      var input = s.querySelector('.text-in');
+      if (input) setTimeout(function () { input.focus({ preventScroll: true }); }, 60);
+      window.scrollTo(0, 0);
+    }
+
+    function error(s, msg) { var e = s.querySelector('.err'); if (e) e.textContent = msg || ''; }
+
+    function valid(s) {
+      var step = s.getAttribute('data-step');
+      error(s, '');
+      var text = s.querySelector('.text-in');
+      if (text) {
+        if (step === 'phone') {
+          var weekly = val('coaching') === 'Weekly';
+          var digits = text.value.replace(/\D/g, '');
+          if (!weekly && digits.length < 8) { error(s, 'Please add a mobile number so I can message you.'); return false; }
+          if (digits.length && digits.length < 8) { error(s, 'That number looks short. Please check it.'); return false; }
+          return true;
+        }
+        if (!text.value.trim()) { error(s, 'Please fill this in.'); return false; }
+        if (step === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text.value.trim())) { error(s, 'That email doesn’t look right. Please check it.'); return false; }
+        return true;
+      }
+      if (s.querySelector('[data-multi]')) {
+        var picked = Array.prototype.map.call(s.querySelectorAll('[data-multi]:checked'), function (c) { return c.value; });
+        if (!picked.length) { error(s, 'Pick at least one.'); return false; }
+        document.getElementById('f-blockers').value = picked.join(', ');
+        return true;
+      }
+      var radios = s.querySelectorAll('input[type=radio]');
+      if (radios.length && !s.querySelector('input[type=radio]:checked')) { error(s, 'Pick one to continue.'); return false; }
+      if (step === 'consent') {
+        var need = ['c-adult', 'c-consent'];
+        if (val('coaching') === 'Weekly') need.push('c-terms');
+        for (var k = 0; k < need.length; k++) {
+          if (!document.getElementById(need[k]).checked) { error(s, 'Please tick the boxes above to send your application.'); return false; }
+        }
+      }
+      return true;
+    }
+
+    function nextIndex(from) {
+      for (var i = from + 1; i < screens.length; i++) {
+        var s = screens[i];
+        if (s.hasAttribute('data-end')) return -1;
+        if (applies(s)) return i;
+      }
+      return -1;
+    }
+
+    function next() {
+      var s = screens[cur];
+      if (s.getAttribute('data-step') === 'consent') { form.requestSubmit ? form.requestSubmit() : submit(); return; }
+      if (!valid(s)) return;
+      var n = nextIndex(cur);
+      if (n < 0) return;
+      history.push(n);
+      show(n);
+    }
+
+    backBtn.addEventListener('click', function () {
+      if (history.length < 2) return;
+      history.pop();
+      show(history[history.length - 1], true);
+    });
+
+    form.addEventListener('click', function (e) { if (e.target.closest('[data-next]')) next(); });
+
+    // Single-choice answers move on by themselves, like tapping through a story.
+    form.addEventListener('change', function (e) {
+      var t = e.target;
+      if (t.type === 'radio' && t.closest('.screen') === screens[cur]) {
+        error(screens[cur], '');
+        setTimeout(next, 260);
+      }
+    });
+
+    form.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && e.target.tagName !== 'A' && e.target.type !== 'submit') { e.preventDefault(); next(); return; }
+      // Letter keys pick options on desktop.
+      if (e.target.classList && e.target.classList.contains('text-in')) return;
+      if (e.metaKey || e.ctrlKey || e.altKey || e.key.length !== 1) return;
+      var opt = screens[cur].querySelector('.opt span[data-key="' + e.key.toUpperCase() + '"]');
+      if (opt) { e.preventDefault(); opt.previousElementSibling.click(); }
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && cur === 0 && e.target === document.body) { e.preventDefault(); next(); }
+    });
+
+    function submit() {
+      var s = screens[cur];
+      if (!valid(s)) return;
+      var weekly = val('coaching') === 'Weekly';
+      document.getElementById('f-next').value = weekly ? 'Stripe checkout (weekly)' : 'Book Strategy Call (Premium)';
+      var btn = document.getElementById('send');
+      btn.disabled = true;
+      fetch('/start/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(new FormData(form)).toString()
+      }).then(function (r) {
+        if (!r.ok) throw new Error(r.status);
+        finish(weekly);
+      }).catch(function () {
+        btn.disabled = false;
+        error(s, 'Something went wrong sending your application. Please try again, or email coaching@abheyrewired.com.');
+      });
+    }
+
+    function finish(weekly) {
+      var name = (val('first_name') + ' ' + val('last_name')).trim();
+      var email = val('email');
+      var book = document.getElementById('book');
+      var bookBase = window.REWIRED_BOOKING_URL || book.href.split('?')[0];
+      book.href = bookBase + '?name=' + encodeURIComponent(name) + '&email=' + encodeURIComponent(email);
+      var join = document.getElementById('join');
+      var joinBase = window.REWIRED_ENTRY_JOIN_URL || join.href.split('?')[0];
+      join.href = joinBase + '?prefilled_email=' + encodeURIComponent(email);
+      var end = screens.findIndex(function (x) { return x.getAttribute('data-step') === (weekly ? 'done_weekly' : 'done_premium'); });
+      history = [end];
+      show(end);
+    }
+
+    form.addEventListener('submit', function (e) { e.preventDefault(); submit(); });
+    show(0);
+  })();
+  </script>
+</body>
+</html>
