@@ -124,6 +124,37 @@
     .foot { text-align: center; font-size: 12px; color: var(--soft); padding: 0 20px 22px; }
     .foot a { color: var(--soft); }
 
+    /* Welcome screen, Abhey's studio photo sitting on the same grey wall as the landing hero */
+    .welcome { justify-content: flex-start; gap: 18px; padding-top: 4px; }
+    .welcome h1 { font-size: clamp(40px, 10.5vw, 72px); }
+    .w-stage { position: relative; flex: 1 0 auto; min-height: 320px; margin: 4px -20px -40px; overflow: hidden; pointer-events: none; }
+    .w-stage::before {
+      content: ""; position: absolute; left: 50%; bottom: 0; width: min(92%, 520px); aspect-ratio: 1; translate: -50% 30%; border-radius: 50%;
+      background: radial-gradient(closest-side, rgba(255, 255, 255, .55), rgba(255, 255, 255, 0));
+      border: 1px solid rgba(18, 18, 18, .08); box-shadow: 0 0 0 44px rgba(255, 255, 255, .22), 0 0 0 45px rgba(18, 18, 18, .05);
+    }
+    .w-stage img {
+      position: absolute; bottom: 0; left: 50%; translate: -50% 0; height: 100%; max-height: 560px; width: auto; max-width: none;
+      -webkit-mask-image: linear-gradient(to bottom, #000 78%, transparent 100%); mask-image: linear-gradient(to bottom, #000 78%, transparent 100%);
+    }
+    .w-chip {
+      position: absolute; z-index: 2; left: 20px; bottom: 26%; display: flex; align-items: center; gap: 10px; padding: 10px 14px 10px 10px;
+      background: #fff; border-radius: 16px; box-shadow: var(--shadow); font-size: 13px; line-height: 1.25; animation: bob 6s ease-in-out infinite;
+    }
+    .w-chip i { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--accent); color: #fff; font: 700 14px/1 var(--font); font-style: normal; }
+    .w-chip b { display: block; font-weight: 600; }
+    .w-chip small { color: var(--soft); }
+    @keyframes bob { 50% { transform: translateY(-6px); } }
+    @media (prefers-reduced-motion: reduce) { .w-chip { animation: none; } }
+    @media (min-width: 860px) {
+      main:has(.welcome.on) { max-width: 1080px; }
+      .welcome.on { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr auto auto auto 1fr; column-gap: 40px; }
+      .welcome > :not(.w-stage) { grid-column: 1; }
+      .welcome .eyebrow { align-self: end; }
+      .w-stage { grid-column: 2; grid-row: 1 / -1; margin: 0 0 -40px; min-height: min(640px, calc(100svh - 170px)); }
+      .w-chip { left: 0; }
+    }
+
     @media (min-width: 640px) { .plans { grid-template-columns: 1fr 1fr; } .plan span { height: 100%; } }
     @media (max-width: 380px) { .opts.two { grid-template-columns: 1fr; } }
   </style>
@@ -147,11 +178,15 @@
       <p class="hp"><label>Leave this empty <input name="company" tabindex="-1" autocomplete="off"></label></p>
 
       <!-- 0 welcome -->
-      <section class="screen on" data-step="welcome">
+      <section class="screen welcome on" data-step="welcome">
         <p class="eyebrow">Apply in about 90 seconds</p>
         <h1>Let’s see if we’re <em>a fit.</em></h1>
         <p class="lead">A few quick taps about your goal, your food and your week. I read every application myself. Free, and no commitment.</p>
         <div class="row"><button type="button" class="btn blue" data-next>Start <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="enter">or press Enter</span></div>
+        <div class="w-stage" aria-hidden="true">
+          <img src="/assets/abhey/rw-smile-hd-1040.webp" srcset="/assets/abhey/rw-smile-hd-1040.webp 1040w, /assets/abhey/rw-smile-hd-1559.webp 1559w" sizes="(max-width: 860px) 360px, 520px" alt="" fetchpriority="high">
+          <div class="w-chip"><i>R.</i><span><b>Abhey Pal</b><small>Your coach, 15 years in</small></span></div>
+        </div>
       </section>
 
       <!-- 1 first name -->
