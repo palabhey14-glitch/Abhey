@@ -1,8 +1,6 @@
 /* Copy rewrite (2026-11-01): sections for the recognition cards, reframe, process,
    fit check and the longer hero headline. Uses the Studio Light tokens from studio.css. */
 
-.rw[data-rw="v3"] .hero h1 { font-size: clamp(46px, 5.6vw, 86px); max-width: 12ch; }
-.rw[data-rw="v3"] .hero h1 em { display: block; margin-top: .08em; }
 .hero-note { font-size: 14px; color: #6d6862; margin-top: -12px; }
 
 /* Sound familiar? */

@@ -52,7 +52,7 @@ Claims avoided because every coach makes them: "personalised plans", "sustainabl
 ### Home (`site/index.html`)
 New order: Hero → hook (your pick, unchanged) → **Sound familiar?** → **Why it hasn't stuck** → How I coach → App → **How it works** → Check-in example → What's included → **Is this for you?** → A note from me → Week 8 Promise → Final CTA.
 
-- **Hero.** Headline is now "Lose the softness. *Keep the food you grew up on.*" (your old line is offered back below). The lead says who it's for, the outcome, the approach and 15 years. The CTA is "Book a free Strategy Call", with Apply Now kept. A new line under the buttons reads "A 30-minute call with me, not a sales team. Nothing is paid on the call."
+- **Hero.** Headline stays "Your next chapter, rewired." (Abhey chose to keep it on 2026-11-01). The lead says who it's for, the outcome, the approach and 15 years. The CTA is "Book a free Strategy Call", with Apply Now kept. A new line under the buttons reads "A 30-minute call with me, not a sales team. Nothing is paid on the call."
 - **Hook.** "Skinny fat at 30 isn't a life sentence..." stays exactly as you chose it.
 - **Sound familiar? (new).** Uses the same pattern as the reference screenshot: a tag, a headline ("You've started over more times than you'd like to count."), a short paragraph, then 6 white cards with highlighted titles. The cards are Slim in a shirt / Strong on Monday, gone by Thursday / The diet had no room for your food / Travel breaks the routine / You know plenty, it hasn't added up / Nobody changed the plan. These replace the old fake-quote section.
 - **Why it hasn't stuck (new).** Headline is "It probably wasn't your discipline. The plan was written for a quieter week and a different kitchen." It has three reasons: eating less made you smaller, not leaner; the plan assumed nothing would go wrong; nobody adjusted it.
@@ -138,7 +138,7 @@ New order: Hero → hook (your pick, unchanged) → **Sound familiar?** → **Wh
 
 | Section | Before | After |
 |---|---|---|
-| Hero H1 | Your next chapter, rewired. | Lose the softness. Keep the food you grew up on. |
+| Hero H1 | Your next chapter, rewired. | Unchanged (Abhey's choice) |
 | Hero lead | I coach busy men who are tired of starting over... | One-to-one training and nutrition coaching for busy men who look fine in a shirt and soft without it... I've been coaching body recomposition for 15 years. |
 | Under CTA | (nothing) | A 30-minute call with me, not a sales team. Nothing is paid on the call. |
 | Recognition | "You might recognise some of this", 4 fake quotes, near the bottom | "Sound familiar?", 6 situation cards, straight after the hook |
