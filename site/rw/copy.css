@@ -25,6 +25,17 @@
 .fit-card li::before { content: ""; position: absolute; left: 0; top: .45em; width: 14px; height: 8px; border-left: 2px solid #2444f9; border-bottom: 2px solid #2444f9; rotate: -45deg; }
 .fit-card.no li::before { width: 12px; height: 2px; border: 0; background: #85807a; rotate: 0deg; top: .7em; }
 
+/* About: portrait cut out like the hero, sitting on the same studio grey */
+.note-photo { position: relative; margin: 0 0 8px; width: 100%; aspect-ratio: 1 / 1.02; border-radius: var(--r); overflow: hidden; isolation: isolate;
+  background: radial-gradient(60% 55% at 50% 38%, #f8f7f5 0%, #ecebe8 62%, #e4e1dd 100%); }
+.note-photo::before { content: ""; position: absolute; left: 50%; top: 18%; width: 78%; aspect-ratio: 1; translate: -50% 0; border-radius: 50%; z-index: -1;
+  border: 1px solid rgba(18, 18, 18, .07); box-shadow: 0 0 0 44px rgba(255, 255, 255, .28), 0 0 0 45px rgba(18, 18, 18, .045); }
+.note-photo img { position: absolute; left: 50%; bottom: 0; translate: -50% 0; width: 104%; max-width: none; height: auto; }
+.note-photo figcaption { position: absolute; left: 14px; bottom: 14px; display: grid; gap: 2px; padding: 10px 14px; border-radius: 14px;
+  background: rgba(255, 255, 255, .86); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-shadow: 0 8px 24px rgba(30, 28, 25, .1); }
+.note-photo figcaption b { font: 650 14px/1.2 var(--body); color: #121212; }
+.note-photo figcaption span { font-size: 12px; color: #6d6862; }
+
 /* About and final */
 .letter-side { display: grid; gap: 20px; align-content: start; justify-items: start; }
 .letter-side .eyebrow { margin: 0; }
@@ -40,6 +51,9 @@
 @media (max-width: 1000px) {
   .block.b4 .tile-lead { grid-row: auto; }
 }
+@media (max-width: 1000px) {
+  .note-photo { max-width: 520px; }
+}
 @media (max-width: 680px) {
   .fit-grid, .steps { grid-template-columns: 1fr; }
   .fit-card { padding: 24px 22px; }
@@ -49,3 +63,5 @@
 
 /* .rw h2 { margin: 0 } outranked .center, so centred statements sat left. */
 .rw .statement.center { margin-inline: auto; }
+.letter-in { align-items: start; }
+.letter-body { align-content: start; }
