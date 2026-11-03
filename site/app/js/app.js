@@ -804,6 +804,25 @@
     });
   }
 
+  // Coach login opened while a client account is signed in on this device.
+  function renderCoachSwitch() {
+    const who = state.me.full_name || state.session.user.email || 'a client';
+    loginScreen(`
+      <img class="login-logo" src="icons/icon-192.png" alt="Rewired">
+      <p class="login-kicker">Coach login</p>
+      <h1>You're signed in as a client</h1>
+      <p>This device is still signed in as <b>${esc(who)}</b>${state.session.user.email && who !== state.session.user.email ? ` (${esc(state.session.user.email)})` : ''}. Sign out to sign in with your coach email.</p>
+      <div class="card">
+        <button class="btn" type="button" data-coach-switch style="width:100%">Sign out and use coach login</button>
+        <p class="hint"><a href="./">Open ${esc(who)}'s client app instead</a></p>
+      </div>`);
+    const btn = root.querySelector('[data-coach-switch]');
+    btn.addEventListener('click', () => {
+      btn.disabled = true;
+      signOut();
+    });
+  }
+
   async function signOut() {
     // Signing out inside Client view would sign the coach out too.
     if (state.preview) return toast(PREVIEW_MSG, true);
@@ -4453,6 +4472,9 @@
     try {
       if (!state.me) await loadMe();
       if (id !== state.renderId) return;
+      // Coach login with a client still signed in on this device: say so and
+      // offer to switch, instead of quietly opening that client's app.
+      if (COACH_LOGIN && state.me.role !== 'coach' && !state.preview) return renderCoachSwitch();
       if (state.me.role === 'client' && state.workoutSession && !location.hash.startsWith('#training/log')) {
         const leavingWorkout = root.querySelector('#workout-log');
         if (leavingWorkout) {
