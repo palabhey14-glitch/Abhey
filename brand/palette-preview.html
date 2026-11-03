@@ -1,0 +1,206 @@
+<title>Abhey Pal Palettes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400&display=swap">
+<style>
+/* Layout: one column of palette sections; each shows two 4:5 Instagram slides beside its swatch/rules panel. */
+:root {
+  --bg: #F6F8FB; --surface: #FFFFFF; --fg: #152033; --muted: #5A6578; --line: #DDE3EC; --pass: #1E7B4F; --fail: #B3261E;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "DM Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "DM Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0E1420; --surface: #161E2D; --fg: #E6EBF3; --muted: #9AA6B8; --line: #2A3548; --pass: #5BC08A; --fail: #F08A82; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0E1420; --surface: #161E2D; --fg: #E6EBF3; --muted: #9AA6B8; --line: #2A3548; --pass: #5BC08A; --fail: #F08A82; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.55; padding-inline: 16px; padding-block: 32px 64px }
+.wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 48px }
+header h1 { font-family: var(--display); font-weight: 800; font-size: clamp(28px, 5vw, 42px); line-height: 1.1; margin: 0 0 8px; text-wrap: balance }
+header p { margin: 0; color: var(--muted); max-width: 62ch }
+
+section.pal { display: grid; gap: 20px; padding-top: 32px; border-top: 1px solid var(--line) }
+.pal-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 14px }
+.pal-head h2 { font-family: var(--display); font-weight: 600; font-size: 26px; margin: 0 }
+.tag { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted) }
+.tag.rec { background: var(--fg); color: var(--bg); border-color: var(--fg) }
+.pal-head p { flex-basis: 100%; margin: 0; color: var(--muted); max-width: 70ch }
+
+.row { display: grid; grid-template-columns: repeat(2, minmax(0, 260px)) minmax(0, 1fr); gap: 20px; align-items: start }
+@media (max-width: 860px) { .row { grid-template-columns: repeat(2, minmax(0, 1fr)) } .panel { grid-column: 1 / -1 } }
+@media (max-width: 480px) { .row { grid-template-columns: 1fr } }
+
+/* Instagram slide mock, 1080x1350 at 4:5 */
+.slide { aspect-ratio: 4 / 5; max-width: 100%; border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; padding: 8%; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.08) }
+.slide .kicker { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase }
+.slide h3 { font-family: var(--display); font-weight: 800; font-size: clamp(20px, 2.4vw, 26px); line-height: 1.12; margin: 10px 0 0; text-wrap: balance }
+.slide .chip { align-self: flex-start; margin-top: auto; font-size: 12px; font-weight: 700; padding: 7px 14px; border-radius: 999px }
+.slide .foot { font-size: 9.5px; margin-top: 12px; opacity: .85 }
+.slide ol { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; font-size: 13px; line-height: 1.35 }
+.slide li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; align-items: start }
+.slide li b { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; font-size: 11px }
+.slide .pager { position: absolute; top: 6%; right: 8%; font-family: var(--mono); font-size: 10px; opacity: .7 }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px; display: grid; gap: 16px; min-width: 0 }
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 10px }
+.sw { display: grid; gap: 4px; font-size: 12px }
+.sw i { display: block; height: 44px; border-radius: 4px; border: 1px solid var(--line) }
+.sw span { font-weight: 700 }
+.sw code { font-family: var(--mono); color: var(--muted); font-size: 11.5px }
+.rules { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 13px }
+.rules li { display: grid; grid-template-columns: 1fr auto; gap: 12px; border-bottom: 1px dashed var(--line); padding-bottom: 6px }
+.rules li:last-child { border-bottom: 0 }
+.rules .r { font-family: var(--mono); font-variant-numeric: tabular-nums }
+.ok { color: var(--pass) } .no { color: var(--fail) }
+.panel h4 { margin: 0; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted) }
+footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 20px; max-width: 75ch }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Three blue-and-white directions for Abhey Pal</h1>
+    <p>Each palette is shown on two example Instagram carousel slides (a cover and an inside slide) at the real 4:5 feed size. Contrast ratios use WCAG 2.x: 4.5 or higher passes for body text, 3 or higher passes for large headlines only.</p>
+  </header>
+
+  <!-- A -->
+  <section class="pal">
+    <div class="pal-head">
+      <h2>A. Clear Sky</h2><span class="tag rec">Recommended</span>
+      <p>A bright, clean blue on white and pale sky, with warm sand as the only accent. Reads as trustworthy without looking like a big bank, and the sand CTA gives paid posts something to stop the scroll.</p>
+    </div>
+    <div class="row">
+      <div class="slide" style="background:#1A5FD0;color:#FFFFFF">
+        <span class="pager">1/6</span>
+        <span class="kicker" style="color:#E8F1FD">First home buyers</span>
+        <h3>Your first home loan, explained in six slides</h3>
+        <span class="chip" style="background:#F4C77D;color:#0B2545">Swipe to start →</span>
+        <span class="foot">Abhey Pal · Mortgage Navigators</span>
+      </div>
+      <div class="slide" style="background:#E8F1FD;color:#0B2545">
+        <span class="pager">3/6</span>
+        <span class="kicker" style="color:#1A5FD0">Before you apply</span>
+        <h3>Get these ready first</h3>
+        <ol>
+          <li><b style="background:#1A5FD0;color:#FFFFFF">1</b>Recent payslips and a savings history</li>
+          <li><b style="background:#1A5FD0;color:#FFFFFF">2</b>A list of every debt, including buy now pay later</li>
+          <li><b style="background:#1A5FD0;color:#FFFFFF">3</b>Your deposit amount and where it came from</li>
+        </ol>
+        <span class="foot" style="margin-top:auto">General information only. Credit Rep No. [your number]</span>
+      </div>
+      <div class="panel">
+        <div class="swatches">
+          <div class="sw"><i style="background:#1A5FD0"></i><span>Brand blue</span><code>#1A5FD0</code></div>
+          <div class="sw"><i style="background:#0B2545"></i><span>Navy text</span><code>#0B2545</code></div>
+          <div class="sw"><i style="background:#E8F1FD"></i><span>Sky</span><code>#E8F1FD</code></div>
+          <div class="sw"><i style="background:#FFFFFF"></i><span>White</span><code>#FFFFFF</code></div>
+          <div class="sw"><i style="background:#F4C77D"></i><span>Sand accent</span><code>#F4C77D</code></div>
+        </div>
+        <h4>Text pairings</h4>
+        <ul class="rules">
+          <li>Navy on white<span class="r ok">15.39 pass</span></li>
+          <li>Navy on sky<span class="r ok">13.51 pass</span></li>
+          <li>Navy on sand<span class="r ok">9.75 pass</span></li>
+          <li>White on brand blue<span class="r ok">5.85 pass</span></li>
+          <li>Brand blue on sky<span class="r ok">5.13 pass</span></li>
+          <li>White on sand<span class="r no">1.58 never</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- B -->
+  <section class="pal">
+    <div class="pal-head">
+      <h2>B. Coastal</h2><span class="tag">Softer</span>
+      <p>A muted ocean blue with misty aqua and a coral accent. Warmer and more lifestyle-led, which suits first home buyers, but coral is a common choice for property and lifestyle accounts right now, so it stands out less.</p>
+    </div>
+    <div class="row">
+      <div class="slide" style="background:#2A6F97;color:#FFFFFF">
+        <span class="pager">1/6</span>
+        <span class="kicker" style="color:#E7F3F5">Refinancing</span>
+        <h3>Three questions to ask before you switch lenders</h3>
+        <span class="chip" style="background:#FF8A6B;color:#12304A">Swipe →</span>
+        <span class="foot">Abhey Pal · Mortgage Navigators</span>
+      </div>
+      <div class="slide" style="background:#E7F3F5;color:#12304A">
+        <span class="pager">2/6</span>
+        <span class="kicker" style="color:#2A6F97">Question one</span>
+        <h3>What will it cost to leave?</h3>
+        <ol>
+          <li><b style="background:#2A6F97;color:#FFFFFF">1</b>Discharge fees from your current lender</li>
+          <li><b style="background:#2A6F97;color:#FFFFFF">2</b>Break costs if you're on a fixed rate</li>
+          <li><b style="background:#2A6F97;color:#FFFFFF">3</b>Setup fees on the new loan</li>
+        </ol>
+        <span class="foot" style="margin-top:auto">General information only. Credit Rep No. [your number]</span>
+      </div>
+      <div class="panel">
+        <div class="swatches">
+          <div class="sw"><i style="background:#2A6F97"></i><span>Ocean</span><code>#2A6F97</code></div>
+          <div class="sw"><i style="background:#12304A"></i><span>Navy text</span><code>#12304A</code></div>
+          <div class="sw"><i style="background:#E7F3F5"></i><span>Mist</span><code>#E7F3F5</code></div>
+          <div class="sw"><i style="background:#FFFFFF"></i><span>White</span><code>#FFFFFF</code></div>
+          <div class="sw"><i style="background:#FF8A6B"></i><span>Coral accent</span><code>#FF8A6B</code></div>
+        </div>
+        <h4>Text pairings</h4>
+        <ul class="rules">
+          <li>Navy on white<span class="r ok">13.57 pass</span></li>
+          <li>Navy on mist<span class="r ok">11.98 pass</span></li>
+          <li>Navy on coral<span class="r ok">5.88 pass</span></li>
+          <li>White on ocean<span class="r ok">5.50 pass</span></li>
+          <li>Ocean on mist<span class="r ok">4.85 pass</span></li>
+          <li>White on coral<span class="r no">2.31 never</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- C -->
+  <section class="pal">
+    <div class="pal-head">
+      <h2>C. Harbour</h2><span class="tag">Brightest</span>
+      <p>Deep navy carries the text and a lighter cornflower adds brightness, with butter yellow as the accent. The most playful of the three. Cornflower is too light for small text, so it only works for shapes and big headlines.</p>
+    </div>
+    <div class="row">
+      <div class="slide" style="background:#13315C;color:#FFFFFF">
+        <span class="pager">1/6</span>
+        <span class="kicker" style="color:#FFD978">Myth vs fact</span>
+        <h3>"You need a 20% deposit to buy." Not always.</h3>
+        <span class="chip" style="background:#FFD978;color:#13315C">See why →</span>
+        <span class="foot">Abhey Pal · Mortgage Navigators</span>
+      </div>
+      <div class="slide" style="background:#F1F5FF;color:#13315C">
+        <span class="pager">2/6</span>
+        <span class="kicker" style="color:#13315C">Options to ask about</span>
+        <h3 style="color:#13315C">Buying with less than 20%</h3>
+        <ol>
+          <li><b style="background:#13315C;color:#FFFFFF">1</b>Lenders mortgage insurance (LMI)</li>
+          <li><b style="background:#13315C;color:#FFFFFF">2</b>Government home buyer schemes, if you're eligible</li>
+          <li><b style="background:#13315C;color:#FFFFFF">3</b>A family guarantee</li>
+        </ol>
+        <span class="foot" style="margin-top:auto">General information only. Credit Rep No. [your number]</span>
+      </div>
+      <div class="panel">
+        <div class="swatches">
+          <div class="sw"><i style="background:#13315C"></i><span>Navy</span><code>#13315C</code></div>
+          <div class="sw"><i style="background:#4F7FE0"></i><span>Cornflower</span><code>#4F7FE0</code></div>
+          <div class="sw"><i style="background:#F1F5FF"></i><span>Ice</span><code>#F1F5FF</code></div>
+          <div class="sw"><i style="background:#FFFFFF"></i><span>White</span><code>#FFFFFF</code></div>
+          <div class="sw"><i style="background:#FFD978"></i><span>Butter accent</span><code>#FFD978</code></div>
+        </div>
+        <h4>Text pairings</h4>
+        <ul class="rules">
+          <li>Navy on white<span class="r ok">12.95 pass</span></li>
+          <li>Navy on ice<span class="r ok">11.87 pass</span></li>
+          <li>Navy on butter<span class="r ok">9.53 pass</span></li>
+          <li>White on cornflower<span class="r no">3.86 large only</span></li>
+          <li>Navy on cornflower<span class="r no">3.36 large only</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Slide copy is example content to show the colours in context. It is not credit advice. Before posting, confirm with your licensee or aggregator what your posts must show, such as your Credit Representative number, and whether Mortgage Navigators has brand colours you are required to use.
+  </footer>
+</div>
