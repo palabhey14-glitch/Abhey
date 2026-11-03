@@ -1,0 +1,436 @@
+{
+ "generated": "2026-11-02T20:00:00+00:00",
+ "note": "SAMPLE ONLY: these posts are invented fixture data to show the report format. They are not real observations, and the links do not work. Run a live scan for real trends.",
+ "posts": [
+  {
+   "platform": "youtube",
+   "id": "FIXTUREYT01",
+   "url": "https://www.youtube.com/watch?v=FIXTUREYT01",
+   "title": "Stop doing cardio for fat loss (do this instead)",
+   "creator": "Jeff Lift",
+   "community": "UC-fixture-JeffLift",
+   "published": "2026-10-29T20:00:00+00:00",
+   "query": "fitness coaching",
+   "metrics": {
+    "views": 410000,
+    "likes": 21000,
+    "comments": 1900,
+    "duration": "PT10M"
+   },
+   "text": ""
+  },
+  {
+   "platform": "youtube",
+   "id": "FIXTUREYT02",
+   "url": "https://www.youtube.com/watch?v=FIXTUREYT02",
+   "title": "I tried creatine for 30 days as a woman over 40",
+   "creator": "Coach Mel",
+   "community": "UC-fixture-CoachMel",
+   "published": "2026-10-24T20:00:00+00:00",
+   "query": "fitness coaching",
+   "metrics": {
+    "views": 220000,
+    "likes": 9800,
+    "comments": 1400,
+    "duration": "PT10M"
+   },
+   "text": ""
+  },
+  {
+   "platform": "youtube",
+   "id": "FIXTUREYT03",
+   "url": "https://www.youtube.com/watch?v=FIXTUREYT03",
+   "title": "5 protein breakfast ideas for fat loss",
+   "creator": "Meal Prep Max",
+   "community": "UC-fixture-MealPrepMax",
+   "published": "2026-10-27T20:00:00+00:00",
+   "query": "fitness coaching",
+   "metrics": {
+    "views": 180000,
+    "likes": 7600,
+    "comments": 640,
+    "duration": "PT10M"
+   },
+   "text": ""
+  },
+  {
+   "platform": "youtube",
+   "id": "FIXTUREYT04",
+   "url": "https://www.youtube.com/watch?v=FIXTUREYT04",
+   "title": "Why you're not losing belly fat (gut health explained)",
+   "creator": "Dr Gut Coach",
+   "community": "UC-fixture-DrGutCoach",
+   "published": "2026-10-30T20:00:00+00:00",
+   "query": "fitness coaching",
+   "metrics": {
+    "views": 350000,
+    "likes": 15000,
+    "comments": 2600,
+    "duration": "PT10M"
+   },
+   "text": ""
+  },
+  {
+   "platform": "youtube",
+   "id": "FIXTUREYT05",
+   "url": "https://www.youtube.com/watch?v=FIXTUREYT05",
+   "title": "The truth about walking 10k steps for weight loss",
+   "creator": "Lean Science",
+   "community": "UC-fixture-LeanScience",
+   "published": "2026-10-21T20:00:00+00:00",
+   "query": "fitness coaching",
+   "metrics": {
+    "views": 260000,
+    "likes": 8900,
+    "comments": 1100,
+    "duration": "PT10M"
+   },
+   "text": ""
+  },
+  {
+   "platform": "youtube",
+   "id": "FIXTUREYT06",
+   "url": "https://www.youtube.com/watch?v=FIXTUREYT06",
+   "title": "How to start strength training at 40 with no gym",
+   "creator": "Coach Mel",
+   "community": "UC-fixture-CoachMel",
+   "published": "2026-10-18T20:00:00+00:00",
+   "query": "fitness coaching",
+   "metrics": {
+    "views": 140000,
+    "likes": 6100,
+    "comments": 520,
+    "duration": "PT10M"
+   },
+   "text": ""
+  },
+  {
+   "platform": "youtube",
+   "id": "FIXTUREYT07",
+   "url": "https://www.youtube.com/watch?v=FIXTUREYT07",
+   "title": "My full day of eating for fat loss (high protein)",
+   "creator": "Fit Sam",
+   "community": "UC-fixture-FitSam",
+   "published": "2026-10-31T20:00:00+00:00",
+   "query": "fitness coaching",
+   "metrics": {
+    "views": 95000,
+    "likes": 4200,
+    "comments": 380,
+    "duration": "PT10M"
+   },
+   "text": ""
+  },
+  {
+   "platform": "youtube",
+   "id": "FIXTUREYT08",
+   "url": "https://www.youtube.com/watch?v=FIXTUREYT08",
+   "title": "Creatine myths: what the research actually says",
+   "creator": "Lean Science",
+   "community": "UC-fixture-LeanScience",
+   "published": "2026-10-13T20:00:00+00:00",
+   "query": "fitness coaching",
+   "metrics": {
+    "views": 310000,
+    "likes": 12000,
+    "comments": 1700,
+    "duration": "PT10M"
+   },
+   "text": ""
+  },
+  {
+   "platform": "youtube",
+   "id": "FIXTUREYT09",
+   "url": "https://www.youtube.com/watch?v=FIXTUREYT09",
+   "title": "Beginner full body workout: 3 days a week",
+   "creator": "Strength Simple",
+   "community": "UC-fixture-StrengthSimple",
+   "published": "2026-10-25T20:00:00+00:00",
+   "query": "fitness coaching",
+   "metrics": {
+    "views": 120000,
+    "likes": 5400,
+    "comments": 300,
+    "duration": "PT10M"
+   },
+   "text": ""
+  },
+  {
+   "platform": "youtube",
+   "id": "FIXTUREYT10",
+   "url": "https://www.youtube.com/watch?v=FIXTUREYT10",
+   "title": "Bloating and weight gain: 3 gut health mistakes",
+   "creator": "Dr Gut Coach",
+   "community": "UC-fixture-DrGutCoach",
+   "published": "2026-10-22T20:00:00+00:00",
+   "query": "fitness coaching",
+   "metrics": {
+    "views": 160000,
+    "likes": 6000,
+    "comments": 900,
+    "duration": "PT10M"
+   },
+   "text": ""
+  },
+  {
+   "platform": "youtube",
+   "id": "FIXTUREYT11",
+   "url": "https://www.youtube.com/watch?v=FIXTUREYT11",
+   "title": "Is walking enough for fat loss? Honest answer",
+   "creator": "Fit Sam",
+   "community": "UC-fixture-FitSam",
+   "published": "2026-10-28T20:00:00+00:00",
+   "query": "fitness coaching",
+   "metrics": {
+    "views": 88000,
+    "likes": 3300,
+    "comments": 410,
+    "duration": "PT10M"
+   },
+   "text": ""
+  },
+  {
+   "platform": "youtube",
+   "id": "FIXTUREYT12",
+   "url": "https://www.youtube.com/watch?v=FIXTUREYT12",
+   "title": "Protein intake for women over 40: how much you really need",
+   "creator": "Coach Mel",
+   "community": "UC-fixture-CoachMel",
+   "published": "2026-10-15T20:00:00+00:00",
+   "query": "fitness coaching",
+   "metrics": {
+    "views": 130000,
+    "likes": 5200,
+    "comments": 700,
+    "duration": "PT10M"
+   },
+   "text": ""
+  },
+  {
+   "platform": "youtube",
+   "id": "FIXTUREYT13",
+   "url": "https://www.youtube.com/watch?v=FIXTUREYT13",
+   "title": "Why online fitness coaching fails most people",
+   "creator": "Coach Dan",
+   "community": "UC-fixture-CoachDan",
+   "published": "2026-10-26T20:00:00+00:00",
+   "query": "fitness coaching",
+   "metrics": {
+    "views": 60000,
+    "likes": 2600,
+    "comments": 800,
+    "duration": "PT10M"
+   },
+   "text": ""
+  },
+  {
+   "platform": "youtube",
+   "id": "FIXTUREYT14",
+   "url": "https://www.youtube.com/watch?v=FIXTUREYT14",
+   "title": "I lost 12kg without cardio. Here's what I did",
+   "creator": "Fit Sam",
+   "community": "UC-fixture-FitSam",
+   "published": "2026-10-08T20:00:00+00:00",
+   "query": "fitness coaching",
+   "metrics": {
+    "views": 450000,
+    "likes": 19000,
+    "comments": 3000,
+    "duration": "PT10M"
+   },
+   "text": ""
+  },
+  {
+   "platform": "reddit",
+   "id": "fixrd01",
+   "url": "https://www.reddit.com/r/xxfitness/comments/fixrd01/",
+   "title": "Is creatine worth it for women over 40?",
+   "creator": "u/runlift40",
+   "community": "r/xxfitness",
+   "published": "2026-10-27T20:00:00+00:00",
+   "query": "r/xxfitness",
+   "metrics": {
+    "score": 820,
+    "comments": 310,
+    "upvote_ratio": 0.95
+   },
+   "text": ""
+  },
+  {
+   "platform": "reddit",
+   "id": "fixrd02",
+   "url": "https://www.reddit.com/r/loseit/comments/fixrd02/",
+   "title": "Walking 10k steps a day but not losing weight. What am I missing?",
+   "creator": "u/stepsandsalad",
+   "community": "r/loseit",
+   "published": "2026-10-30T20:00:00+00:00",
+   "query": "r/loseit",
+   "metrics": {
+    "score": 1400,
+    "comments": 620,
+    "upvote_ratio": 0.95
+   },
+   "text": ""
+  },
+  {
+   "platform": "reddit",
+   "id": "fixrd03",
+   "url": "https://www.reddit.com/r/loseit/comments/fixrd03/",
+   "title": "Gut health and bloating ruined my progress. Anyone else?",
+   "creator": "u/bloatedbutbusy",
+   "community": "r/loseit",
+   "published": "2026-10-24T20:00:00+00:00",
+   "query": "r/loseit",
+   "metrics": {
+    "score": 960,
+    "comments": 410,
+    "upvote_ratio": 0.95
+   },
+   "text": ""
+  },
+  {
+   "platform": "reddit",
+   "id": "fixrd04",
+   "url": "https://www.reddit.com/r/Fitness/comments/fixrd04/",
+   "title": "How much protein do you actually need for fat loss?",
+   "creator": "u/macroquestion",
+   "community": "r/Fitness",
+   "published": "2026-10-29T20:00:00+00:00",
+   "query": "r/Fitness",
+   "metrics": {
+    "score": 2100,
+    "comments": 900,
+    "upvote_ratio": 0.95
+   },
+   "text": ""
+  },
+  {
+   "platform": "reddit",
+   "id": "fixrd05",
+   "url": "https://www.reddit.com/r/personaltraining/comments/fixrd05/",
+   "title": "Hired an online coach, got a PDF and no feedback. Is this normal?",
+   "creator": "u/disappointedclient",
+   "community": "r/personaltraining",
+   "published": "2026-10-25T20:00:00+00:00",
+   "query": "r/personaltraining",
+   "metrics": {
+    "score": 640,
+    "comments": 380,
+    "upvote_ratio": 0.95
+   },
+   "text": ""
+  },
+  {
+   "platform": "reddit",
+   "id": "fixrd06",
+   "url": "https://www.reddit.com/r/fitness30plus/comments/fixrd06/",
+   "title": "Strength training at 40: where do I start with no gym?",
+   "creator": "u/late_starter",
+   "community": "r/fitness30plus",
+   "published": "2026-10-28T20:00:00+00:00",
+   "query": "r/fitness30plus",
+   "metrics": {
+    "score": 530,
+    "comments": 210,
+    "upvote_ratio": 0.95
+   },
+   "text": ""
+  },
+  {
+   "platform": "reddit",
+   "id": "fixrd07",
+   "url": "https://www.reddit.com/r/fitness30plus/comments/fixrd07/",
+   "title": "My 6 month progress: walking plus strength training 3 days a week",
+   "creator": "u/steadyeddie",
+   "community": "r/fitness30plus",
+   "published": "2026-10-19T20:00:00+00:00",
+   "query": "r/fitness30plus",
+   "metrics": {
+    "score": 3100,
+    "comments": 240,
+    "upvote_ratio": 0.95
+   },
+   "text": ""
+  },
+  {
+   "platform": "reddit",
+   "id": "fixrd08",
+   "url": "https://www.reddit.com/r/Fitness/comments/fixrd08/",
+   "title": "Creatine bloating: is it water or fat?",
+   "creator": "u/gymnewbie22",
+   "community": "r/Fitness",
+   "published": "2026-10-17T20:00:00+00:00",
+   "query": "r/Fitness",
+   "metrics": {
+    "score": 780,
+    "comments": 330,
+    "upvote_ratio": 0.95
+   },
+   "text": ""
+  },
+  {
+   "platform": "reddit",
+   "id": "fixrd09",
+   "url": "https://www.reddit.com/r/personaltraining/comments/fixrd09/",
+   "title": "Coaches: how do you keep clients consistent after month two?",
+   "creator": "u/ptowner",
+   "community": "r/personaltraining",
+   "published": "2026-10-23T20:00:00+00:00",
+   "query": "r/personaltraining",
+   "metrics": {
+    "score": 410,
+    "comments": 190,
+    "upvote_ratio": 0.95
+   },
+   "text": ""
+  },
+  {
+   "platform": "reddit",
+   "id": "fixrd10",
+   "url": "https://www.reddit.com/r/loseit/comments/fixrd10/",
+   "title": "What protein breakfast keeps you full until lunch?",
+   "creator": "u/hungryby10",
+   "community": "r/loseit",
+   "published": "2026-10-31T20:00:00+00:00",
+   "query": "r/loseit",
+   "metrics": {
+    "score": 690,
+    "comments": 450,
+    "upvote_ratio": 0.95
+   },
+   "text": ""
+  },
+  {
+   "platform": "reddit",
+   "id": "fixrd11",
+   "url": "https://www.reddit.com/r/xxfitness/comments/fixrd11/",
+   "title": "Cardio vs strength training for fat loss over 40?",
+   "creator": "u/pick_one",
+   "community": "r/xxfitness",
+   "published": "2026-10-12T20:00:00+00:00",
+   "query": "r/xxfitness",
+   "metrics": {
+    "score": 1200,
+    "comments": 520,
+    "upvote_ratio": 0.95
+   },
+   "text": ""
+  },
+  {
+   "platform": "reddit",
+   "id": "fixrd12",
+   "url": "https://www.reddit.com/r/loseit/comments/fixrd12/",
+   "title": "Gut health supplements: anyone seen real results?",
+   "creator": "u/skeptic_sue",
+   "community": "r/loseit",
+   "published": "2026-10-20T20:00:00+00:00",
+   "query": "r/loseit",
+   "metrics": {
+    "score": 380,
+    "comments": 260,
+    "upvote_ratio": 0.95
+   },
+   "text": ""
+  }
+ ]
+}

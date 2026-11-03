@@ -1,1 +1,6 @@
 supabase/.temp/
+
+# Local secrets (trend scanner API keys etc.)
+.env
+*.env.local
+__pycache__/

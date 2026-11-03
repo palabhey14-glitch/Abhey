@@ -1,0 +1,78 @@
+name: Daily trend scan
+
+# 20:00 UTC = 7am Sydney in summer (AEDT), 6am in winter (AEST).
+on:
+  schedule:
+    - cron: "0 20 * * *"
+  workflow_dispatch:
+    inputs:
+      keywords:
+        description: "Comma-separated keywords (blank = scripts/trends/config.json)"
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: trend-scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      # Reports live on their own branch so daily commits never trigger a
+      # Netlify deploy of main.
+      - name: Check out the trend-reports branch
+        run: |
+          if git ls-remote --exit-code --heads origin trend-reports >/dev/null; then
+            git fetch --depth 1 origin trend-reports
+            git worktree add _reports origin/trend-reports
+            git -C _reports checkout -B trend-reports
+          else
+            git worktree add --detach _reports
+            git -C _reports checkout --orphan trend-reports
+            git -C _reports rm -rf --quiet .
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run scan
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+          REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          KEYWORDS: ${{ github.event.inputs.keywords }}
+        run: |
+          args=(--out _reports/reports/trends)
+          if [ -n "$KEYWORDS" ]; then args+=(--keywords "$KEYWORDS"); fi
+          python scripts/trends/scan.py "${args[@]}"
+
+      - name: Add report to the job summary
+        if: always()
+        run: |
+          f=$(ls -t _reports/reports/trends/*.md 2>/dev/null | head -1)
+          [ -n "$f" ] && cat "$f" >> "$GITHUB_STEP_SUMMARY" || true
+
+      - name: Commit report
+        if: always()
+        run: |
+          cd _reports
+          git config user.name "trend-scan bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports
+          git diff --cached --quiet && exit 0
+          git commit -m "Trend report $(TZ=Australia/Sydney date +%F)"
+          git push origin trend-reports
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trend-report
+          path: _reports/reports/trends/
+          retention-days: 30
