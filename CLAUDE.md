@@ -7,6 +7,12 @@ decision, a preference), add it here before the session ends.
 ## Who I'm working with
 - Name/handle: Abhey (GitHub: palabhey14-glitch)
 - Pronouns: not stated. Use they/them.
+- Name: Abhey Pal. Australia-based, writes in Australian English.
+- Two businesses:
+  - **Mortgage Navigators**: mortgage broking for refinancers and first home
+    buyers in Australia. Marketed mainly on Instagram (carousels plus one paid post).
+  - **Rewired Coaching**: online body-recomposition coaching for busy men. The
+    website and client app in this repo (`site/`, `supabase/`, `netlify/`) are Rewired.
 - Focus: business ideas, trending internet opportunities, and turning vague ideas
   into concrete, researched plans.
 
@@ -25,6 +31,32 @@ decision, a preference), add it here before the session ends.
 ## Projects
 <!-- One block per project. Keep each to a few lines. -->
 
+### Content Dashboard
+- **One-line pitch:** a daily content-strategy engine that finds what is trending
+  and turns it into content ideas and scripts in Abhey's own voice.
+- **Stage:** building
+- **Scope:** scrape latest research plus YouTube, Instagram, TikTok and Reddit;
+  summarise what trended in the last 30 days; run daily; an honest content advisor
+  says what to add, change or delete; scripts must not read as AI slop and should
+  be easy to rewrite in Abhey's tone.
+- **Business served:** Rewired Coaching (fitness coaching niche), per Abhey's
+  2026-11-03 build request. Audience: people considering fitness coaching.
+- **Build:** Python dashboard (Streamlit default) with on-demand 30-day scans,
+  per-platform connector status, CSV import fallback, dated snapshots. Never show
+  demo or estimated data as live, and never invent client results or testimonials.
+
+### Rewired Coaching brand
+- R. logo. Royal blue `#2444F9`, navy `#0B2545`, white, sky `#E8F1FD`, restrained
+  gold `#F4C77D` accents.
+
+### Mortgage Navigators brand
+- **Palette:** Clear Sky. Brand blue `#1A5FD0`, navy text `#0B2545`, sky
+  `#E8F1FD`, white, sand `#F4C77D` for CTAs only (never white text on sand).
+- **Brief:** bright, clean, blue and white, nothing too sharp.
+- **Files:** `brand/brand-guide.md` (decision and usage rules),
+  `brand/color-palettes.md` (shortlist and contrast checks),
+  `brand/palette-preview.html` (visual preview).
+
 ### Template
 - **Name:**
 - **One-line pitch:**
@@ -39,6 +71,7 @@ decision, a preference), add it here before the session ends.
 
 ## Decisions made (don't re-litigate without new evidence)
 <!-- Date | Decision | Reason -->
+- 2026-10 | Mortgage Navigators uses the Clear Sky palette | Matches the bright blue-and-white brief and passes WCAG AA for navy text on every background (see `brand/brand-guide.md`).
 
 ## Connected tools available in Claude sessions
 Gmail, Notion, Shopify, Canva, Clay, ElevenLabs, Firecrawl, Indeed, GitHub.
