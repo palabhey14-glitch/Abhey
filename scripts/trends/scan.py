@@ -99,7 +99,7 @@ def main(argv: list[str] | None = None) -> int:
 
     stem = f"{today}-sample" if args.fixture else today
     (out / f"{stem}.md").write_text(md)
-    if not args.fixture:
+    if posts and not args.fixture:  # a failed run must not become the comparison baseline
         (data_dir / f"{today}.json").write_text(json.dumps({
             "generated": generated.isoformat(), "status": status,
             "topics": [t.phrase for t in tops],
