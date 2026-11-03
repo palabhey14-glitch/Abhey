@@ -1,0 +1,95 @@
+# One phrase per line, matched case-insensitively as a fixed string.
+# Lines starting with # are ignored. Add your own whenever a draft makes you cringe.
+# --- openers that scream "AI wrote this" ---
+stop scrolling
+did you know
+let's dive in
+let's dive into
+dive into
+let's break it down
+let's unpack
+here's the thing
+here's the kicker
+here's the truth
+buckle up
+picture this
+imagine this
+in today's
+fast-paced world
+ever wondered
+# --- inflated words ---
+game-changer
+game changer
+unlock
+unleash
+elevate
+empower
+supercharge
+skyrocket
+revolutionize
+revolutionise
+transformative
+seamless
+seamlessly
+navigate the
+navigating the
+delve
+landscape
+realm
+tapestry
+robust
+leverage
+crucial
+pivotal
+plethora
+myriad
+embark
+journey
+holistic
+synergy
+cutting-edge
+next level
+next-level
+level up
+# --- empty filler ---
+it's important to note
+it's worth noting
+at the end of the day
+in conclusion
+furthermore
+moreover
+additionally
+the secret to
+the secret is
+nobody talks about
+no one talks about
+what they don't want you to know
+this one simple
+one simple trick
+hack
+# --- tacky CTAs ---
+smash that
+don't forget to like
+like and subscribe
+link in bio for more
+drop a comment below
+let me know in the comments
+# --- compliance red flags (mortgage) ---
+guaranteed approval
+guaranteed
+risk-free
+lowest rate
+best rate
+best rates
+you will save
+you'll save thousands
+everyone qualifies
+# --- compliance red flags (fitness) ---
+melt fat
+burn belly fat
+spot reduce
+detox
+toxins
+in just 7 days
+in 30 days or less
+doctors hate
