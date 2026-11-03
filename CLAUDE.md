@@ -39,8 +39,15 @@ decision, a preference), add it here before the session ends.
   summarise what trended in the last 30 days; run daily; an honest content advisor
   says what to add, change or delete; scripts must not read as AI slop and should
   be easy to rewrite in Abhey's tone.
-- **Next action:** decide which business each daily run serves (Mortgage
-  Navigators, Rewired, or both) and which sources are reachable.
+- **Business served:** Rewired Coaching (fitness coaching niche), per Abhey's
+  2026-11-03 build request. Audience: people considering fitness coaching.
+- **Build:** Python dashboard (Streamlit default) with on-demand 30-day scans,
+  per-platform connector status, CSV import fallback, dated snapshots. Never show
+  demo or estimated data as live, and never invent client results or testimonials.
+
+### Rewired Coaching brand
+- R. logo. Royal blue `#2444F9`, navy `#0B2545`, white, sky `#E8F1FD`, restrained
+  gold `#F4C77D` accents.
 
 ### Mortgage Navigators brand
 - **Palette:** Clear Sky. Brand blue `#1A5FD0`, navy text `#0B2545`, sky
