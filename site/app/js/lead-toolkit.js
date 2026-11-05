@@ -76,6 +76,20 @@
     if(['yesno','scale'].includes(q.type))return inputs.find(x=>x.checked)?.value||'';
     return inputs[0]?.value||'';
   }
-  const api={settings,read,question,answer};
+  // The reverse of answer(): puts a saved answer back into a drawn form, so a
+  // completed response can be shown in the same layout the visitor saw.
+  function fill(form,q,v){
+    if(v==null||v==='')return;
+    const one=(name)=>form.querySelector(`[name="${name}"]`);
+    if(q.type==='signature'){const n=one(`answer_${q.id}`);if(n)n.value=v.name||'';const c=one(`consent_${q.id}`);if(c)c.checked=!!v.agreed;return;}
+    if(q.type==='terms'){const c=one(`answer_${q.id}`);if(c)c.checked=!!v;return;}
+    if(q.type==='grid'){form.querySelectorAll(`[name^="answer_${q.id}_"]`).forEach(x=>{if(v[x.dataset.gridRow]!=null)x.value=v[x.dataset.gridRow];});return;}
+    if(q.type==='contact'){form.querySelectorAll(`[name^="answer_${q.id}_"]`).forEach(x=>{if(v[x.dataset.contact]!=null)x.value=v[x.dataset.contact];});return;}
+    const inputs=[...form.querySelectorAll(`[name="answer_${q.id}"]`)];
+    if(q.type==='ranking'){inputs.forEach((x,i)=>{if(v[i]!=null)x.value=v[i];});return;}
+    if(['multiselect','bodymap','availability','yesno','scale'].includes(q.type)){const want=(Array.isArray(v)?v:[v]).map(String);inputs.forEach(x=>{x.checked=want.includes(x.value);});return;}
+    if(inputs[0])inputs[0].value=v;
+  }
+  const api={settings,read,question,answer,fill};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.RewiredLeadToolkit=api;
 })(typeof window!=='undefined'?window:globalThis);

@@ -65,6 +65,7 @@ const functions = {
   'food-barcode': (ev) => require(path.join(REPO, 'netlify/functions/food-barcode'))._handler(ev, {}, fakeFetch),
   'recipe-import': (ev) => require(path.join(REPO, 'netlify/functions/recipe-import'))._handler(ev, {}, { fetch: fakeFetch, safeFetch: fakeSafeFetch }),
   'add-client': (ev) => require(path.join(REPO, 'netlify/functions/add-client'))._handler(ev, {}, fetch),
+  'lead-forms': (ev) => require(path.join(REPO, 'netlify/functions/lead-forms'))._handler(ev, {}, fetch),
 };
 // Supabase's admin "create user", against the scratch database's auth.users.
 function adminCreateUser(body) {
