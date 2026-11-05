@@ -4465,6 +4465,7 @@
 
   async function route() {
     const id = ++state.renderId;
+    state.renderedDay = S.today();
     const lead = location.hash.match(/^#lead\/([^/?]+)/);
     if (lead) return PRUI.publicForm(lead[1]);
     if (!sb) return renderSetupNeeded();
@@ -4585,6 +4586,28 @@
   }
   document.addEventListener('visibilitychange', refreshOpenClientPlan);
   setInterval(refreshOpenClientPlan, 60000);
+
+  // A phone keeps the app open in the background, so a screen drawn last
+  // night still says "Today" for yesterday when it is opened in the morning.
+  // When the date has changed, redraw the screens that show today's day
+  // (Home, Nutrition, Habits, Training, daily log). A screen opened on a date
+  // that was today then (Home links carry the date) moves to the new today;
+  // a date picked by hand is left alone, and so is anything being typed.
+  function refreshOnNewDay() {
+    if (document.hidden || !state.me || state.me.role !== 'client' || state.preview) return;
+    const was = state.renderedDay;
+    const now = S.today();
+    if (!was || was === now) return;
+    const m = location.hash.match(/^#?(home|today|meals|habits|log|training)?(?:\/(\d{4}-\d{2}-\d{2}))?(\/all)?$/);
+    if (!m || (m[2] && (!m[1] || m[2] !== was)) || (m[1] === 'training' && !m[2])) return;
+    const el = document.activeElement;
+    if (el && root.contains(el) && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
+    if (m[2]) location.hash = `#${m[1]}/${now}${m[3] || ''}`;
+    else route();
+  }
+  document.addEventListener('visibilitychange', refreshOnNewDay);
+  window.addEventListener('pageshow', refreshOnNewDay);
+  setInterval(refreshOnNewDay, 60000);
 
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     navigator.serviceWorker.register('sw.js').catch(() => {});
