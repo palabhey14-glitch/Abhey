@@ -2363,6 +2363,30 @@
 
   // Pick clients by searching, then send. A draft, or a form with edits that
   // aren't published yet, is published first so clients get the latest copy.
+  // After Send: email each client a link to the form (Netlify function, via
+  // Resend). The form is already in their app, so a failed email only warns.
+  async function emailClients(ids) {
+    if (!ids || !ids.length) return;
+    try {
+      const { data } = await sb.auth.getSession();
+      const token = data && data.session ? data.session.access_token : null;
+      if (!token) return;
+      const res = await (window.REWIRED_PREVIEW_FETCH || fetch)('/.netlify/functions/send-form-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ assignment_ids: ids }),
+      });
+      if (res.status === 404) return; // Function not deployed (local preview).
+      const out = await res.json().catch(() => ({}));
+      const failed = Array.isArray(out.failed) ? out.failed.length : 0;
+      if (!res.ok || failed) {
+        notify(`The form is in their app, but ${failed > 1 ? `${failed} emails` : 'the email'} didn’t send. ${out.error || (out.failed && out.failed[0] && out.failed[0].error) || ''}`.trim(), { error: true });
+      }
+    } catch (_) {
+      notify('The form is in their app, but the email didn’t send. Check your connection.', { error: true });
+    }
+  }
+
   async function sendModal(form, after) {
     const inBuilder = B && B.form.id === form.id;
     const [clients, assigns, latest, fresh] = await Promise.all([
@@ -2509,6 +2533,7 @@
         d.remove();
         notify(`Sent to ${F.plural(made, 'client')}.${skipped ? ` ${skipped} already had it.` : ''} It’s on their Home screen now.`);
         if (after) after(made);
+        emailClients(rows.filter((r) => r.created).map((r) => r.assignment_id));
       } catch (err) {
         busy = false;
         box.querySelector('.fm-err').textContent = explain(err);
