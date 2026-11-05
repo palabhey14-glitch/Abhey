@@ -1,21 +1,27 @@
 // POST /.netlify/functions/send-form-email  { assignment_ids: [uuid, ...] }
 // Coach only. Called by the dashboard straight after the coach presses Send in
 // Forms. Emails each client a short note with a link to the form in their app,
-// sent through Resend from coaching@abheyrewired.com.
+// sent from coaching@abheyrewired.com through Google Workspace (Gmail SMTP).
 //
 // Netlify settings it reads:
-//   RESEND_API_KEY   required. From resend.com, with abheyrewired.com verified.
+//   SMTP_PASSWORD    required. A Google app password for SMTP_USER.
+//   SMTP_USER        optional. Defaults to coaching@abheyrewired.com.
+//   SMTP_HOST        optional. Defaults to smtp.gmail.com (port 465, TLS).
 //   FORM_EMAIL_FROM  optional. Defaults to "Rewired Coaching <coaching@abheyrewired.com>".
 //   COACH_NAME       optional. Defaults to "Abhey".
 //   APP_URL          optional. Defaults to Netlify's own URL setting, then the caller's origin.
 // Plus the Supabase settings every function uses (see netlify/lib/supabase.js).
 'use strict';
 const { json, requireUser, rest } = require('../lib/supabase');
+const smtp = require('../lib/smtp');
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX = 50;
 const FROM = 'Rewired Coaching <coaching@abheyrewired.com>';
 const REPLY_TO = 'coaching@abheyrewired.com';
+// Only copies sent in the last few minutes, so a replayed request can't
+// email a client again days later.
+const FRESH_MINUTES = 15;
 
 function setting(name) {
   if (process.env[name]) return process.env[name].trim();
@@ -62,7 +68,7 @@ function buildEmail({ firstName, formName, coach, link, base }) {
   return { subject, text, html };
 }
 
-async function handler(event, _context, fetchImpl = fetch) {
+async function handler(event, _context, fetchImpl = fetch, smtpOpen = smtp.open) {
   try {
     if (event.httpMethod !== 'POST') return json(405, { error: 'Use POST' });
     const { user, token } = await requireUser(event, fetchImpl);
@@ -75,11 +81,12 @@ async function handler(event, _context, fetchImpl = fetch) {
     if (!ids.length) return json(400, { error: 'No forms to email.' });
     if (ids.length > MAX || ids.some((id) => !UUID.test(id))) return json(400, { error: 'Those form links don’t look right.' });
 
-    const apiKey = setting('RESEND_API_KEY');
-    if (!apiKey) return json(503, { error: 'Form emails need RESEND_API_KEY in Netlify. See docs/form-emails.md.' });
+    const pass = setting('SMTP_PASSWORD').replace(/\s+/g, '');
+    if (!pass) return json(503, { error: 'Form emails need SMTP_PASSWORD (a Google app password) in Netlify. See docs/form-emails.md.' });
+    const smtpUser = setting('SMTP_USER') || REPLY_TO;
 
     // Only open copies this coach sent. Anything else is skipped quietly.
-    const assigns = await rest(`/form_assignments?id=in.(${ids.join(',')})&assigned_by=eq.${user.id}&submitted_at=is.null&cancelled_at=is.null&select=id,form_id,client_id`, { service: true }, fetchImpl) || [];
+    const assigns = await rest(`/form_assignments?id=in.(${ids.join(',')})&assigned_by=eq.${user.id}&submitted_at=is.null&cancelled_at=is.null&assigned_at=gte.${encodeURIComponent(new Date(Date.now() - FRESH_MINUTES * 60000).toISOString())}&select=id,form_id,client_id`, { service: true }, fetchImpl) || [];
     if (!assigns.length) return json(200, { sent: 0, failed: [] });
     const formIds = [...new Set(assigns.map((a) => a.form_id))];
     const clientIds = [...new Set(assigns.map((a) => a.client_id))];
@@ -95,30 +102,36 @@ async function handler(event, _context, fetchImpl = fetch) {
     const from = setting('FORM_EMAIL_FROM') || FROM;
     let sent = 0;
     const failed = [];
+    const jobs = [];
     for (const a of assigns) {
       const form = formById.get(a.form_id);
       const person = personById.get(a.client_id);
       if (!form || !person || !person.email) { failed.push({ id: a.id, error: 'Client has no email address.' }); continue; }
       const firstName = String(person.full_name || '').trim().split(/\s+/)[0] || 'there';
       const link = `${base}/app/#form/${a.id}`;
-      const mail = buildEmail({ firstName, formName: form.name, coach, link, base });
+      jobs.push({ a, person, mail: buildEmail({ firstName, formName: form.name, coach, link, base }) });
+    }
+    if (jobs.length) {
+      let conn;
       try {
-        const res = await fetchImpl('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-            // One email per sent copy, even if the request is retried.
-            'Idempotency-Key': `form-assignment-${a.id}`,
-          },
-          body: JSON.stringify({ from, to: [person.email], reply_to: REPLY_TO, subject: mail.subject, html: mail.html, text: mail.text }),
-        });
-        if (res.ok) { sent += 1; continue; }
-        const out = await res.json().catch(() => ({}));
-        const msg = String(out.message || out.error || `Resend error ${res.status}`).slice(0, 200);
-        failed.push({ id: a.id, email: person.email, error: msg });
+        conn = await smtpOpen({ host: setting('SMTP_HOST') || 'smtp.gmail.com', port: Number(setting('SMTP_PORT')) || 465, user: smtpUser, pass });
       } catch (err) {
-        failed.push({ id: a.id, email: person.email, error: 'Couldn’t reach Resend.' });
+        const msg = /Sign-in|535|534/.test(String(err.message))
+          ? 'Google refused the sign-in. Check SMTP_PASSWORD is an app password for coaching@abheyrewired.com.'
+          : 'Couldn’t reach the Google email server.';
+        for (const j of jobs) failed.push({ id: j.a.id, email: j.person.email, error: msg });
+      }
+      if (conn) {
+        for (const j of jobs) {
+          try {
+            await conn.send({ from, to: j.person.email, replyTo: REPLY_TO, subject: j.mail.subject, text: j.mail.text, html: j.mail.html });
+            sent += 1;
+          } catch (err) {
+            failed.push({ id: j.a.id, email: j.person.email, error: String(err.message || 'Email failed.').slice(0, 200) });
+            await conn.reset();
+          }
+        }
+        await conn.close();
       }
     }
     return json(failed.length && !sent ? 502 : 200, { sent, failed, ...(failed.length && !sent ? { error: failed[0].error } : {}) });
