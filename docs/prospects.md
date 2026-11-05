@@ -69,4 +69,10 @@ Fixed at the same time: the public lead page called `fetch` unbound, which
 browsers refuse ("Illegal invocation"), and the scale question's hidden radio
 inputs stretched the page wider than a phone.
 
-Browser test: `tests/e2e/lead-from-forms.js` (12 checks).
+Prospects has a third tab, Completed forms (#prospects/completed): every lead
+form response, newest first, as "<form> · Completed by <name> · <email>", with
+a filter by form. Each opens at #prospects/completed/<id> in the same layout the
+prospect filled in (all pages shown, read-only, files as download buttons),
+with Print, Open prospect and Convert to client. The email notice links here.
+
+Browser test: `tests/e2e/lead-from-forms.js` (16 checks).

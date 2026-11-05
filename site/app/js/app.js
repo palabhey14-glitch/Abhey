@@ -4489,7 +4489,7 @@
       const parts = path.split('/');
 
       if (state.me.role === 'coach') {
-        if (parts[0] === 'prospects') return await PRUI.render(parts[1] === 'forms' ? 'forms' : 'list', parts[2]);
+        if (parts[0] === 'prospects') return await PRUI.render(['forms', 'completed'].includes(parts[1]) ? parts[1] : 'list', parts[2]);
         if (parts[0] === 'client' && parts[1]) return await renderClient(parts[1], parts[2], parts[3], parts[4]);
         if (parts[0] === 'inbox') return await renderInbox(parts[1]);
         if (parts[0] === 'messages') return await MSG.coachInbox(parts[1]);

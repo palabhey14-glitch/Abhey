@@ -87,6 +87,25 @@ const check = (c, what, d) => { if (c) { passed++; console.log(`  ok  ${what}`);
   await page.screenshot({ path: `${OUT}/lead-prospects-list.png` });
   await page.click('text=Sam Prospect'); await page.waitForTimeout(400);
   await page.screenshot({ path: `${OUT}/lead-prospect-detail.png` });
+  await page.keyboard.press('Escape');
+  // Completed forms tab: list, then the read-only form in the public layout.
+  await page.goto(`${BASE}/app/?coach#prospects/completed`); await page.waitForLoadState('networkidle'); await page.waitForSelector('.pr-done-row');
+  const row = await page.textContent('.pr-done-row');
+  check(row.includes('Rewired onboarding') && row.includes('Completed by Sam Prospect · sam@example.com'), 'Completed forms lists the response', row);
+  await page.screenshot({ path: `${OUT}/lead-completed-list.png` });
+  await page.click('.pr-done-row'); await page.waitForSelector('.pr-done-sheet form');
+  const shown = await page.evaluate(() => {
+    const f = document.querySelector('.pr-done-sheet form');
+    return { email: f.querySelector('[name=email]').value, success: f.querySelector('textarea').value, muscle: f.querySelector('input[value="Build muscle"]').checked, stronger: f.querySelector('input[value="Get stronger"]').checked, years: [...f.querySelectorAll('select')][0].value, hidden: f.querySelectorAll('[data-pr-lead-page][hidden]').length, editable: [...f.querySelectorAll('input,select,textarea')].filter((x) => !x.disabled).length };
+  });
+  check(shown.email === 'sam@example.com' && shown.success.startsWith('Lose the belly') && shown.muscle && !shown.stronger && shown.years === '1 to 3 years', 'Completed form shows his answers', shown);
+  check(shown.hidden === 0 && shown.editable === 0, 'All pages shown, nothing editable', shown);
+  await page.screenshot({ path: `${OUT}/lead-completed-form.png`, fullPage: true });
+  const pm = await pc.newPage();
+  await pc.addInitScript((v) => localStorage.setItem('sb-localhost-auth-token', v), value);
+  await pm.goto(`${BASE}/app/?coach#prospects/completed`); await pm.waitForSelector('.pr-done-row');
+  await pm.screenshot({ path: `${OUT}/lead-completed-list-390.png` });
+  check(await pm.evaluate(() => document.documentElement.scrollWidth <= 390), 'Completed forms fits a phone');
   check(!errors.length, 'No page errors', errors);
   await browser.close();
   console.log(`\n${passed} passed, ${failures.length} failed`); process.exit(failures.length ? 1 : 0);

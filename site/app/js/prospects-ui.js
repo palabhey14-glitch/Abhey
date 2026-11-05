@@ -19,7 +19,7 @@
   async function all(table){const result=[];for(let i=0;;i+=500){const r=await h.sb.from(table).select('*').order('created_at',{ascending:false}).range(i,i+499);if(r.error)throw r.error;result.push(...r.data);if(r.data.length<500)return result;}}
   function frame(tab,body,title='Prospects'){
     h.state.coachView={section:'prospects'};
-    h.shell(title,'Leads and enquiries, from first contact to converted client',`<div class="pr-page"><div class="pr-top">${button('How Prospects work','data-pr-help')}</div><nav class="crm-tabs pr-tabs" aria-label="Prospects pages"><a href="#prospects"${tab==='list'?' aria-current="page"':''}>Prospects</a><a href="#prospects/forms"${tab==='forms'?' aria-current="page"':''}>Lead Forms</a></nav>${body}</div>`);
+    h.shell(title,'Leads and enquiries, from first contact to converted client',`<div class="pr-page"><div class="pr-top">${button('How Prospects work','data-pr-help')}</div><nav class="crm-tabs pr-tabs" aria-label="Prospects pages"><a href="#prospects"${tab==='list'?' aria-current="page"':''}>Prospects</a><a href="#prospects/forms"${tab==='forms'?' aria-current="page"':''}>Lead Forms</a><a href="#prospects/completed"${tab==='completed'?' aria-current="page"':''}>Completed forms</a></nav>${body}</div>`);
     h.root.querySelector('[data-pr-help]').addEventListener('click',()=>modal('How Prospects work',`<div class="pr-help"><p>Add people manually or share a published lead form. Form submissions arrive here with their contact details and answers.</p><p>Move prospects through New lead, Call not scheduled, Call scheduled, Call completed and Following up. Track deal value, close percentage, tags and days in stage.</p><p>Use the row menu to view responses, edit details or convert a prospect to a client. Conversion opens the existing client setup form; it does not send an invitation automatically.</p><p>Published form links accept enquiries without a client login. Pausing a form stops new enquiries. Archiving keeps the prospect's record available to restore.</p></div>`));
   }
   async function render(tab='list',id){
@@ -28,6 +28,7 @@
     try{[prospects,forms]=await Promise.all([all('prospects'),all('prospect_lead_forms')]);}
     catch(error){if(renderId!==h.state.renderId)return;frame(tab,`<article class="card pr-empty"><h2>Prospects could not be loaded</h2><p>Please try again.</p>${button('Retry','data-pr-retry')}</article>`);h.root.querySelector('[data-pr-retry]').onclick=()=>render(tab,id);return;}
     if(renderId!==h.state.renderId)return;
+    if(tab==='completed')return id?completedForm(prospects.find(p=>p.id===id),prospects):completedList(prospects,forms);
     if(tab==='forms'&&id)return builder(forms.find(f=>f.id===id&&!f.archived_at),prospects);
     if(tab==='forms')return leadForms(forms,prospects);
     const tags=P.tags(prospects.flatMap(p=>p.tags||[])).sort();
@@ -79,8 +80,42 @@
   function detail(p,tags=[]){
     const questions=(p.form_snapshot?.questions||[]).filter(q=>!P.CONTENT.includes(q.type));
     const answer=(q)=>{const value=p.answers?.[q.id];return Array.isArray(value)?value.join(', '):value&&typeof value==='object'?Object.entries(value).map(([key,item])=>`${key}: ${item}`).join(' · '):value||'No answer supplied';};
-    const dialog=modal(label(p),`<div class="pr-detail"><div class="pr-detail-summary">${stageBadge(p)}<span>${date(p.created_at)}</span><span>${money(p.deal_value)}</span></div><dl><div><dt>Email</dt><dd>${e(p.email||'Not supplied')}</dd></div><div><dt>Phone</dt><dd>${e(p.phone||'Not supplied')}</dd></div><div><dt>Close percentage</dt><dd>${p.close_percentage==null?'–':p.close_percentage+'%'}</dd></div><div><dt>Source</dt><dd>${p.source==='lead_form'?e(p.form_snapshot?.title||'Lead form'):'Manually added'}</dd></div></dl>${p.notes?`<h3>Notes</h3><p class="pr-pre">${e(p.notes)}</p>`:''}${questions.length?`<h3>Lead form response</h3>${questions.map(q=>`<section class="pr-answer"><h4>${e(q.label)}</h4>${q.type==='file'?(p.answers?.[q.id]||[]).map((f,i)=>button(e(f.name),`data-pr-file="lead/${p.id}/${q.id}/${i}"`)).join('')||'<p>No file supplied</p>':`<p>${e(answer(q))}</p>`}</section>`).join('')}`:p.source==='lead_form'?'<p>Contact details were submitted with this enquiry.</p>':''}<footer>${button('Edit prospect','data-pr-detail-edit')}${p.converted_client_id?`<a class="btn btn-small" href="#client/${e(p.converted_client_id)}/overview" data-pr-open-client>Open client</a>`:!p.archived_at?button('Convert to client','data-pr-detail-convert',true):''}</footer></div>`,true);
+    const dialog=modal(label(p),`<div class="pr-detail"><div class="pr-detail-summary">${stageBadge(p)}<span>${date(p.created_at)}</span><span>${money(p.deal_value)}</span></div><dl><div><dt>Email</dt><dd>${e(p.email||'Not supplied')}</dd></div><div><dt>Phone</dt><dd>${e(p.phone||'Not supplied')}</dd></div><div><dt>Close percentage</dt><dd>${p.close_percentage==null?'–':p.close_percentage+'%'}</dd></div><div><dt>Source</dt><dd>${p.source==='lead_form'?e(p.form_snapshot?.title||'Lead form'):'Manually added'}</dd></div></dl>${p.notes?`<h3>Notes</h3><p class="pr-pre">${e(p.notes)}</p>`:''}${questions.length?`<h3>Lead form response</h3>${questions.map(q=>`<section class="pr-answer"><h4>${e(q.label)}</h4>${q.type==='file'?(p.answers?.[q.id]||[]).map((f,i)=>button(e(f.name),`data-pr-file="lead/${p.id}/${q.id}/${i}"`)).join('')||'<p>No file supplied</p>':`<p>${e(answer(q))}</p>`}</section>`).join('')}`:p.source==='lead_form'?'<p>Contact details were submitted with this enquiry.</p>':''}<footer>${p.source==='lead_form'&&p.form_snapshot&&!p.archived_at?`<a class="btn btn-ghost btn-small" href="#prospects/completed/${e(p.id)}" data-pr-close>View completed form</a>`:''}${button('Edit prospect','data-pr-detail-edit')}${p.converted_client_id?`<a class="btn btn-small" href="#client/${e(p.converted_client_id)}/overview" data-pr-open-client>Open client</a>`:!p.archived_at?button('Convert to client','data-pr-detail-convert',true):''}</footer></div>`,true);
     dialog.querySelectorAll('[data-pr-file]').forEach(b=>b.onclick=async()=>{const tab=window.open('about:blank','_blank');try{b.disabled=true;const result=await h.sb.storage.from('form-files').createSignedUrl(b.dataset.prFile,3600);if(result.error)throw result.error;if(tab){tab.opener=null;tab.location.href=result.data.signedUrl;}else location.href=result.data.signedUrl;}catch(error){tab?.close();h.toast('This file is not available yet.',true);}finally{b.disabled=false;}});dialog.querySelector('[data-pr-detail-edit]').onclick=()=>{dialog.close();editProspect(p,tags);};dialog.querySelector('[data-pr-detail-convert]')?.addEventListener('click',()=>{dialog.close();h.convert(p);});dialog.querySelector('[data-pr-open-client]')?.addEventListener('click',()=>dialog.close());
+  }
+  // Completed forms: every lead form response, newest first, and each one
+  // shown in the same layout the prospect filled in, read-only.
+  const isResponse=(p)=>p.source==='lead_form'&&p.form_snapshot&&!p.archived_at;
+  const when=(v)=>v?new Intl.DateTimeFormat('en-AU',{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit'}).format(new Date(v)):'–';
+  function completedList(prospects,forms){
+    const rows=prospects.filter(isResponse).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
+    const titles=[...new Set(rows.map(p=>p.form_snapshot?.title||'Lead form'))].sort();
+    frame('completed',`<div class="pr-toolbar"><p>Every form a prospect has completed from your shared links.</p><div class="pr-toolbar-end"><select class="pr-filter" data-pr-done-filter aria-label="Filter by form"><option value="">All forms</option>${titles.map(t=>`<option>${e(t)}</option>`).join('')}</select></div></div>
+      <div class="pr-done-list" data-pr-done-list></div>`,'Prospects');
+    const list=h.root.querySelector('[data-pr-done-list]'),pick=h.root.querySelector('[data-pr-done-filter]');
+    const draw=()=>{const shown=rows.filter(p=>!pick.value||(p.form_snapshot?.title||'Lead form')===pick.value);
+      list.innerHTML=shown.length?shown.map(p=>`<a class="card pr-done-row" href="#prospects/completed/${e(p.id)}"><span class="pr-done-icon">${h.CI.icon('forms',true)}</span><span class="pr-done-main"><b>${e(p.form_snapshot?.title||'Lead form')}</b><small>Completed by ${e(label(p))}${p.email?` · ${e(p.email)}`:''}</small></span><span class="pr-done-when">${e(when(p.created_at))}</span>${stageBadge(p)}<span class="pr-done-open" aria-hidden="true">View →</span></a>`).join(''):`<article class="card pr-empty"><h2>No completed forms yet</h2><p>Publish a lead form, copy its link and send it to a prospect. Their answers appear here as soon as they finish.</p><a class="btn btn-small" href="#prospects/forms">Go to Lead Forms</a></article>`;};
+    pick.onchange=draw;draw();
+  }
+  function completedForm(p,prospects){
+    if(!p||!isResponse(p)){frame('completed','<article class="card pr-empty"><h2>Completed form not found</h2><a href="#prospects/completed">Back to Completed forms</a></article>');return;}
+    let schema;try{schema=P.schema(p.form_snapshot);}catch(_){schema={title:p.form_snapshot.title||'Lead form',description:'',questions:p.form_snapshot.questions||[]};}
+    frame('completed',`<div class="pr-builder-top"><a href="#prospects/completed">← Completed forms</a><div>${button('Print','data-pr-done-print')}${button('Open prospect','data-pr-done-detail')}${p.converted_client_id?`<a class="btn btn-small" href="#client/${e(p.converted_client_id)}/overview">Open client</a>`:button('Convert to client','data-pr-done-convert',true)}</div></div>
+      <div class="pr-done-meta card"><div><small>Completed by</small><b>${e(label(p))}</b></div><div><small>Email</small><b>${e(p.email||'Not supplied')}</b></div><div><small>Phone</small><b>${e(p.phone||'Not supplied')}</b></div><div><small>Completed</small><b>${e(when(p.created_at))}</b></div><div><small>Stage</small>${stageBadge(p)}</div></div>
+      <section class="card pr-public-card pr-done-sheet">${leadHTML(schema,true)}</section>`,'Prospects');
+    const form=h.root.querySelector('.pr-done-sheet form'),LT=root.RewiredLeadToolkit;
+    const set=(n,v)=>{const x=form.querySelector(`[name="${n}"]`);if(x)x.value=v||'';};
+    set('first_name',p.first_name);set('last_name',p.last_name);set('email',p.email);set('phone',p.phone);
+    schema.questions.forEach(q=>{if(q.type==='file'){const files=p.answers?.[q.id]||[];const input=form.querySelector(`[name="answer_${q.id}"]`);if(input)input.outerHTML=files.length?`<div class="pr-done-files">${files.map((f,i)=>button(e(f.name),`data-pr-file="lead/${p.id}/${q.id}/${i}"`)).join('')}</div>`:'<p class="pr-setting-note">No file supplied</p>';}else LT.fill(form,q,p.answers?.[q.id]);});
+    form.querySelectorAll('[data-pr-lead-page]').forEach(pg=>{pg.hidden=false;});
+    form.querySelectorAll('.pr-page-actions,.pr-honeypot,.pr-privacy,.pr-error').forEach(x=>x.remove());
+    form.querySelectorAll('input,select,textarea').forEach(x=>{x.disabled=true;});
+    form.querySelectorAll('textarea').forEach(t=>{t.style.height='auto';t.style.height=`${Math.max(t.scrollHeight,60)}px`;});
+    form.onsubmit=ev=>ev.preventDefault();
+    h.root.querySelectorAll('[data-pr-file]').forEach(b=>b.onclick=async()=>{const tab=window.open('about:blank','_blank');try{b.disabled=true;const result=await h.sb.storage.from('form-files').createSignedUrl(b.dataset.prFile,3600);if(result.error)throw result.error;if(tab){tab.opener=null;tab.location.href=result.data.signedUrl;}else location.href=result.data.signedUrl;}catch(error){tab?.close();h.toast(errorText(error),true);}finally{b.disabled=false;}});
+    h.root.querySelector('[data-pr-done-print]').onclick=()=>window.print();
+    h.root.querySelector('[data-pr-done-detail]').onclick=()=>detail(p,P.tags(prospects.flatMap(x=>x.tags||[])));
+    h.root.querySelector('[data-pr-done-convert]')?.addEventListener('click',()=>h.convert(p));
   }
   function leadURL(token){return `${h.previewMode?location.href.split('#')[0]:location.origin+location.pathname}#lead/${token}`;}
   async function copyLink(token){try{await navigator.clipboard.writeText(leadURL(token));h.toast('Lead form link copied.');}catch{modal('Lead form link',`<p>Share this link to collect enquiries.</p><input class="pr-link-input" readonly value="${e(leadURL(token))}" aria-label="Lead form link">`);}}
@@ -167,7 +202,7 @@
   }
   async function notifyCoach(schema,values){
     const name=[values.first_name,values.last_name].filter(Boolean).join(' ');
-    const body=new URLSearchParams({'form-name':'lead-form-submitted',subject:`${schema.title} completed by ${name}`,form_title:schema.title,prospect_name:name,prospect_email:values.email||'',prospect_phone:values.phone||'',sent_at:new Date().toLocaleString('en-AU',{dateStyle:'medium',timeStyle:'short'}),answers:responseText(schema,values),review_link:`${location.origin}/app/?coach#prospects`});
+    const body=new URLSearchParams({'form-name':'lead-form-submitted',subject:`${schema.title} completed by ${name}`,form_title:schema.title,prospect_name:name,prospect_email:values.email||'',prospect_phone:values.phone||'',sent_at:new Date().toLocaleString('en-AU',{dateStyle:'medium',timeStyle:'short'}),answers:responseText(schema,values),review_link:`${location.origin}/app/?coach#prospects/completed`});
     try{await fetch('/',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body.toString()});}catch(_){/* Coach still sees it in Prospects. */}
   }
   // New leads (stage "New lead") on the Prospects menu item, like unread messages.

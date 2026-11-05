@@ -180,3 +180,24 @@
 .pr-copy-note p,.pr-copy-note li{margin:6px 0 0;color:var(--ink-2);font-size:11px;line-height:1.5}
 .pr-copy-note ul{margin:6px 0 0;padding-left:18px}
 .pr-form select{width:100%}
+/* Completed forms */
+.pr-done-list{display:grid;gap:10px}
+.pr-done-row{display:grid;grid-template-columns:auto 1fr auto auto auto;align-items:center;gap:14px;padding:14px 18px!important;color:var(--navy);text-decoration:none;transition:border-color .15s,box-shadow .15s}
+.pr-done-row:hover{border-color:var(--brand-blue);box-shadow:0 6px 18px rgba(36,68,249,.08)}
+.pr-done-icon{display:grid;place-items:center;width:38px;height:38px;border-radius:10px;background:var(--sky);color:var(--brand-blue)}
+.pr-done-main{display:grid;gap:3px;min-width:0}
+.pr-done-main b{font-size:13px}
+.pr-done-main small,.pr-done-when{color:var(--ink-2);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pr-done-open{color:var(--brand-blue);font-size:11px;font-weight:700}
+.pr-done-meta{display:flex;flex-wrap:wrap;gap:14px 34px;padding:16px 20px!important;margin-bottom:14px;max-width:660px}
+.pr-done-meta div{display:grid;gap:4px;align-content:start}
+.pr-done-meta small{color:var(--ink-2);font-size:10px;text-transform:uppercase;letter-spacing:.06em}
+.pr-done-meta b{font-size:12px}
+.pr-done-sheet{max-width:660px}
+.pr-done-sheet [data-pr-lead-page]+[data-pr-lead-page]{margin-top:17px}
+.pr-done-sheet input:disabled,.pr-done-sheet select:disabled,.pr-done-sheet textarea:disabled{opacity:1;color:var(--navy);-webkit-text-fill-color:var(--navy);background:var(--white);cursor:default;resize:none}
+.pr-done-sheet .pr-public-choice input:disabled{opacity:1}
+.pr-done-sheet .pr-public-choice:has(input:checked){color:var(--brand-blue);font-weight:700}
+.pr-done-files{display:flex;flex-wrap:wrap;gap:8px}
+@media(max-width:600px){.pr-done-row{grid-template-columns:auto 1fr;row-gap:6px}.pr-done-when,.pr-done-open{grid-column:2}.pr-done-row .pr-stage{grid-column:2;justify-self:start}}
+@media print{.crm-rail,.crm-sections,.crm-head,.pr-top,.pr-tabs,.pr-builder-top{display:none!important}.crm-main{padding:0!important}.pr-done-sheet,.pr-done-meta{box-shadow:none!important;border:0!important;max-width:none}}
