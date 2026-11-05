@@ -20,6 +20,8 @@ decision, a preference), add it here before the session ends.
   strongest counter-argument, and separate facts from assumptions.
 - Use the `honest-advisor` skill (`.claude/skills/honest-advisor/`) for
   brainstorming, idea validation, market/trend analysis, decisions and conflicts.
+- Use the `humanizer` skill (`.claude/skills/humanizer/`) on any copy before it
+  ships (site, captions, emails, DMs). It holds Abhey's hard voice rules.
 - Lead with substance. No opening validation or filler.
 
 ## Projects
