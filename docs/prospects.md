@@ -47,3 +47,26 @@ Submission request IDs prevent duplicate prospect records on retry.
 
 The standalone previews use fictional sample data and a local request adapter.
 They do not create clients or prospects in production.
+
+## Lead forms from Content > Forms (2026-11-05)
+
+New Lead Form has a "Start from" picker listing the coach's own forms (their
+published version, else the draft) and the built-in Forms templates. The copy
+is a new lead form draft; the original form is never changed. Sections become
+page breaks, "Other" becomes an option, and show-if rules (lead forms have none)
+leave those questions optional with a note saying when to answer. The builder
+lists anything that changed. Lead forms now hold up to 40 items.
+
+Each completed lead form is also posted to the Netlify form
+`lead-form-submitted` (declared in `site/app/index.html`) with the contact
+details and every answer as readable text. Netlify's form notification emails
+it to the coach. One-off setup in Netlify: Forms, Form notifications, Add
+notification, Email, form `lead-form-submitted`, coaching@abheyrewired.com.
+
+The Prospects menu item shows how many prospects are at "New lead".
+
+Fixed at the same time: the public lead page called `fetch` unbound, which
+browsers refuse ("Illegal invocation"), and the scale question's hidden radio
+inputs stretched the page wider than a phone.
+
+Browser test: `tests/e2e/lead-from-forms.js` (12 checks).

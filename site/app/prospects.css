@@ -158,8 +158,8 @@
 .pr-public-form .pr-measure input{flex:1}
 .pr-measure span{font-size:12px;color:var(--ink-2)}
 .pr-scale{display:flex;gap:6px;flex-wrap:wrap}
-.pr-scale label{cursor:pointer}
-.pr-scale input{position:absolute;opacity:0}
+.pr-scale label{position:relative;cursor:pointer}
+.pr-scale input{position:absolute;inset:0;width:100%;height:100%;min-height:0;margin:0;opacity:0;cursor:pointer}
 .pr-scale span{display:grid;place-items:center;width:36px;height:36px;border:1px solid var(--hair);border-radius:8px;font-size:12px}
 .pr-scale input:checked+span{border-color:var(--brand-blue);background:var(--sky);color:var(--brand-blue);font-weight:700}
 .pr-scale-labels{display:flex;justify-content:space-between;color:var(--ink-2);font-size:10px}
@@ -176,3 +176,7 @@
 .pr-public-success p{margin:0;font-size:13px;color:var(--ink-2);line-height:1.7}
 @media(max-width:1000px){.pr-builder{grid-template-columns:1fr}.pr-toolkit{max-height:none}.pr-form-cards{grid-template-columns:1fr}.pr-table table{min-width:880px}}
 @media(max-width:600px){.pr-two{grid-template-columns:1fr}.pr-modal{padding:20px}.pr-toolbar-end{margin-left:0}.pr-search{flex:1}.pr-builder-top{align-items:flex-start;flex-direction:column}.pr-pager{gap:7px}.pr-public{padding:20px 12px 50px}.pr-public-card{padding:22px!important}.pr-detail dl>div{grid-template-columns:100px 1fr}.pr-stage{font-size:9px}}
+.pr-copy-note{padding:16px;margin-bottom:14px;border:1px solid var(--line,#dfe5f2);border-left:3px solid #2444F9;border-radius:10px;font-size:12px;background:#fff}
+.pr-copy-note p,.pr-copy-note li{margin:6px 0 0;color:var(--ink-2);font-size:11px;line-height:1.5}
+.pr-copy-note ul{margin:6px 0 0;padding-left:18px}
+.pr-form select{width:100%}

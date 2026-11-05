@@ -11,6 +11,7 @@
   const TYPES = { ...Object.assign({}, ...Object.values(GROUPS)), number: 'Number' };
   const CONTENT = ['info','media','pagebreak'];
   const CHOICES = ['select','multiselect','dropdown','ranking'];
+  const MAX_QUESTIONS = 40;
   const UNITS = ['kg','lb','cm','in','%','bpm','mmHg','hours','litres','steps'];
   const BODY = ['Head','Neck','Shoulder','Chest','Upper back','Lower back','Arm','Elbow','Wrist or hand','Abdomen','Hip','Glutes','Thigh','Hamstring','Knee','Shin or calf','Ankle or foot'];
   function newQuestion(type,id) {
@@ -51,7 +52,7 @@
     const title = clean(values.title), description = clean(values.description);
     if (!title || title.length > 120 || description.length > 500) throw Error('Add a form title (up to 120 characters) and keep its introduction under 500 characters.');
     const ids = new Set();
-    if (!Array.isArray(values.questions) || values.questions.length > 20) throw Error('A lead form can have up to 20 questions.');
+    if (!Array.isArray(values.questions) || values.questions.length > MAX_QUESTIONS) throw Error(`A lead form can have up to ${MAX_QUESTIONS} questions.`);
     const questions = values.questions.map((q) => {
       const id = clean(q.id), type = q.type, label = clean(q.label), required = !!q.required;
       if (!UUID.test(id) || ids.has(id) || !Object.hasOwn(TYPES,type) || !label || label.length > 160) throw Error('Give each question a label (up to 160 characters) and choose its answer type.');
@@ -112,8 +113,58 @@
   }
   const name = (p) => `${p.first_name} ${p.last_name || ''}`.trim();
   const daysInStage = (p, today) => Math.max(0, Math.floor((Date.parse(`${today}T12:00:00Z`) - Date.parse(`${String(p.stage_changed_at || p.created_at).slice(0,10)}T12:00:00Z`)) / 86400000));
+  // Copies a Content > Forms form (forms.js content: welcome, sections,
+  // questions) into a lead form draft. Sections become page breaks, choice
+  // options become plain text, "Other" becomes an option, and show-if rules
+  // (lead forms have none) leave that question optional. Returns the draft
+  // plus notes on anything that changed, for the coach to check.
+  const FROM_FORMS = { short: 'text', long: 'textarea', single: 'select', multi: 'multiselect', ack: 'terms' };
+  function fromForm(content, name, makeId) {
+    const id = makeId || (() => crypto.randomUUID());
+    const c = content || {}, notes = [], questions = [];
+    const labels = (list) => (list || []).map((o) => clean(typeof o === 'string' ? o : o && o.label)).filter(Boolean);
+    const cut = (v, n) => clean(v).slice(0, n);
+    const byId = {};
+    (c.sections || []).forEach((sec) => (sec.questions || []).forEach((q) => { byId[q.id] = q; }));
+    let followUps = 0;
+    (c.sections || []).forEach((sec, si) => {
+      questions.push({ id: id(), type: 'pagebreak', label: cut(sec.title, 160) || `Part ${si + 1}`, text: cut(sec.description, 2000), required: false, options: [], help: '' });
+      if (sec.showIf) notes.push(`The "${clean(sec.title) || `Part ${si + 1}`}" page only showed for some answers before. Lead forms always show it, so its questions are now optional.`);
+      (sec.questions || []).forEach((src) => {
+        const type = FROM_FORMS[src.type] || src.type;
+        if (!Object.hasOwn(TYPES, type)) { notes.push(`Left out "${clean(src.label) || src.type}" (type not available on lead forms).`); return; }
+        const q = { ...newQuestion(type, id()), label: cut(src.label, 160) || 'Question', help: cut(src.help, 300), required: !!src.required };
+        if (CHOICES.includes(type)) { q.options = tags(labels(src.options).map((o) => o.slice(0, 80))).slice(0, 20); if (src.allowOther && !q.options.some((o) => o.toLowerCase() === 'other')) q.options.push('Other'); }
+        if (type === 'text' || type === 'textarea') { q.maxLength = Math.min(2000, Number(src.maxLength) || (type === 'text' ? 250 : 1000)); q.placeholder = cut(src.placeholder, 80); }
+        if (['scale', 'measurement', 'number'].includes(type)) { q.min = src.min ?? q.min ?? null; q.max = src.max ?? q.max ?? null; }
+        if (type === 'scale') { q.lowLabel = cut(src.lowLabel, 40); q.highLabel = cut(src.highLabel, 40); }
+        if (type === 'measurement') { q.unit = UNITS.includes(src.unit) ? src.unit : 'kg'; q.placeholder = cut(src.placeholder, 80); }
+        if (type === 'grid') { q.rows = labels(src.rows); q.columns = labels(src.columns); }
+        if (type === 'date') q.allowed = src.allowed || 'any';
+        if (type === 'multiselect') { q.minPicks = src.minPicks ?? null; q.maxPicks = src.maxPicks ?? null; }
+        if (type === 'info') q.text = cut(src.text, 2000);
+        if (type === 'media') { q.url = clean(src.url); q.caption = cut(src.caption, 200); }
+        if (type === 'terms') { q.text = cut(src.terms || src.text || src.label, 8000); q.agreeLabel = cut(src.agreeLabel || src.tickLabel, 120) || 'I agree'; }
+        if (type === 'signature') { q.statement = cut(src.statement, 1000); q.agreeLabel = cut(src.tickLabel || src.agreeLabel, 120) || 'I agree'; }
+        if (type === 'file') { q.maxFiles = Math.min(5, Math.max(1, Number(src.maxFiles) || 1)); q.accept = src.accept || 'both'; }
+        if (sec.showIf) q.required = false;
+        if (src.showIf) {
+          q.required = false; followUps++;
+          const from = byId[src.showIf.q], is = src.showIf.is;
+          const answer = from && (is === 'yes' ? 'Yes' : is === 'no' ? 'No' : clean(((from.options || []).find((o) => o.id === is) || {}).label));
+          if (from && answer && !q.help) q.help = cut(`Only if you answered "${answer}" to "${clean(from.label)}".`, 300);
+        }
+        questions.push(q);
+      });
+    });
+    if (followUps) notes.push(`${followUps} follow-up ${followUps === 1 ? 'question is' : 'questions are'} now always shown and optional, with a note saying when to answer, because lead forms have no show-if rules.`);
+    if (questions.length > MAX_QUESTIONS) { notes.push(`Lead forms hold ${MAX_QUESTIONS} items, so the last ${questions.length - MAX_QUESTIONS} were left out.`); questions.length = MAX_QUESTIONS; }
+    const w = c.welcome && c.welcome.enabled !== false ? c.welcome : null;
+    const description = cut(w ? w.text : '', 500);
+    return { title: cut(name, 120) || 'Onboarding', description, questions, notes };
+  }
   function filtered(rows, view) { const q = clean(view.q).toLowerCase();return rows.filter((p) => !!p.archived_at === !!view.archived && (!view.stage || p.stage === view.stage) && (!view.tag || (p.tags || []).includes(view.tag)) && (!q || [name(p), p.email, p.phone, ...(p.tags || [])].join(' ').toLowerCase().includes(q))); }
-  const api = { STAGES, TYPES, GROUPS, CONTENT, CHOICES, UNITS, BODY, newQuestion, UUID, EMAIL, tags, validateProspect, schema, submission, name, daysInStage, filtered };
+  const api = { STAGES, TYPES, GROUPS, CONTENT, CHOICES, UNITS, BODY, newQuestion, UUID, EMAIL, tags, validateProspect, schema, submission, name, daysInStage, filtered, fromForm, MAX_QUESTIONS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.RewiredProspects = api;
 })(typeof window !== 'undefined' ? window : globalThis);

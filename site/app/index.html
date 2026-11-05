@@ -61,5 +61,10 @@
     <input name="bot-field"><input name="subject"><input name="client_name"><input name="client_email">
     <input name="week"><input name="sent_at"><input name="review_link">
   </form>
+  <!-- Same idea for Prospects lead forms: each completed form is emailed to the coach. -->
+  <form name="lead-form-submitted" data-netlify="true" netlify-honeypot="bot-field" hidden>
+    <input name="bot-field"><input name="subject"><input name="form_title"><input name="prospect_name">
+    <input name="prospect_email"><input name="prospect_phone"><input name="sent_at"><textarea name="answers"></textarea><input name="review_link">
+  </form>
 </body>
 </html>

@@ -401,7 +401,7 @@
         <a class="crm-brand" href="#clients"><img src="icons/icon-192.png" alt=""><span>Rewired<small>Coach</small></span></a>
         <p class="crm-group">Workspace</p>
         ${item('#clients', !['prospects', 'inbox', 'library', 'exercise-library', 'forms', 'messages', 'files'].includes(v.section), ICONS.profile, 'Clients')}
-        ${item('#prospects', v.section === 'prospects', ICONS.prospects, 'Prospects')}
+        ${item('#prospects', v.section === 'prospects', ICONS.prospects, 'Prospects<b class="nav-badge" data-pr-badge title="New leads" hidden></b>')}
         ${item('#inbox', v.section === 'inbox', ICONS.checkin, 'Check-ins')}
         ${item('#messages', v.section === 'messages', ICONS.messages, 'Messages<b class="nav-badge" data-msg-badge hidden></b>')}
         ${item('#files', v.section === 'files', ICONS.files, 'Files')}
@@ -430,6 +430,7 @@
     if (v.clientId) WUI.bindHeader(state.ctx[v.clientId]);
     root.querySelector('[data-signout]').addEventListener('click', signOut);
     MSG.badge();
+    PRUI.badge();
     const pv = root.querySelector('[data-client-view]');
     if (pv) pv.addEventListener('click', () => openClientView(v));
     const current = root.querySelector('.crm-sections [aria-current]');
@@ -4455,7 +4456,7 @@
   EUI.init({ sb, state, root, X, esc, shell, toast, friendlyError, must, withBusy, loadExerciseLibrary });
   CUI.init({ sb, state, root, S, N: window.RewiredNutrition, esc, fmt, shell, toast, friendlyError, must, withBusy });
   PUI.init({ sb, state, root, S, CI, esc, shell, toast, friendlyError, must, invalidate });
-  PRUI.init({ sb, state, root, S, CI, P: PR, esc, shell, toast, friendlyError, must, convert: convertProspect, request: window.REWIRED_PREVIEW_FETCH || fetch, previewMode: !!window.REWIRED_PREVIEW_FETCH });
+  PRUI.init({ sb, state, root, S, CI, P: PR, esc, shell, toast, friendlyError, must, convert: convertProspect, request: window.REWIRED_PREVIEW_FETCH || ((...args) => fetch(...args)), previewMode: !!window.REWIRED_PREVIEW_FETCH });
   WUI.init({ sb, state, root, S, W, esc, fmt, shell, toast, friendlyError, must, withBusy, invalidate, rerender: route, refreshHabits: renderHabits });
   TUI.init({ sb, state, root, S, T, X, EUI, CI, esc, fmt, shell, toast, friendlyError, must, withBusy, invalidate, loadExerciseLibrary });
   MSG.init({ sb, state, COACH, esc, friendlyError, toast, shell });
